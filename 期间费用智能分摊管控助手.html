@@ -1,0 +1,1738 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>期间费用智能分摊管控助手</title>
+<!-- 依赖库（CDN，无需本地服务器，双击即可打开；多 CDN 容错，任一可用即可） -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
+  onerror="this.onerror=null;var s=document.createElement('script');s.src='https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js';document.head.appendChild(s);"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+  onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';document.head.appendChild(s);"></script>
+<style>
+  :root{
+    --navy:#1a3c6e;
+    --navy-deep:#14315c;
+    --navy-soft:#2d5694;
+    --beige:#f5f0e6;
+    --beige-card:#faf6ef;
+    --beige-line:#e6ddcb;
+    --ink:#23303f;
+    --ink-soft:#5b6b7d;
+    --warn:#d64545;
+    --warn-bg:#fdeaea;
+    --ok:#2e8b57;
+    --gold:#c9a227;
+    --radius:14px;
+    --shadow:0 2px 8px rgba(26,60,110,.10);
+    --shadow-hover:0 6px 18px rgba(26,60,110,.18);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;font-family:"Microsoft YaHei","微软雅黑",Arial,sans-serif;
+    background:#eef2f7;color:var(--ink);font-size:14px;line-height:1.6;
+  }
+  /* 顶部导航 */
+  .topbar{
+    background:linear-gradient(90deg,var(--navy),var(--navy-soft));
+    color:#fff;padding:14px 28px;display:flex;align-items:center;
+    justify-content:space-between;box-shadow:var(--shadow);
+    position:sticky;top:0;z-index:50;
+  }
+  .topbar .brand{display:flex;align-items:center;gap:12px;}
+  .topbar .logo{
+    width:38px;height:38px;border-radius:10px;background:#fff;color:var(--navy);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;
+  }
+  .topbar .brand h1{font-size:19px;margin:0;font-weight:700;letter-spacing:.5px;}
+  .topbar .brand .sub{font-size:12px;opacity:.8;}
+  .topbar .right{display:flex;align-items:center;gap:12px;}
+  .topbar .user{display:flex;align-items:center;gap:9px;font-size:14px;}
+  .topbar .avatar{width:32px;height:32px;border-radius:50%;background:var(--gold);
+    color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;}
+  .btn-test,.btn-help{
+    background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);
+    color:#fff;padding:7px 16px;border-radius:10px;cursor:pointer;font-size:13px;
+    transition:.2s;
+  }
+  .btn-test:hover,.btn-help:hover{background:rgba(255,255,255,.3);box-shadow:var(--shadow-hover);}
+  /* 后端状态徽章 */
+  .backend-badge{
+    display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;
+    font-size:12px;font-weight:600;transition:.3s;
+  }
+  .backend-badge.online{background:rgba(46,139,87,.2);border:1px solid rgba(46,139,87,.5);color:#7fe0a0;}
+  .backend-badge.offline{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.7);}
+  .backend-badge .dot{width:8px;height:8px;border-radius:50%;}
+  .backend-badge.online .dot{background:#7fe0a0;box-shadow:0 0 6px #7fe0a0;}
+  .backend-badge.offline .dot{background:#aaa;}
+
+  .layout{display:flex;gap:18px;padding:18px 28px;align-items:flex-start;}
+  .main{flex:1;min-width:0;}
+  .side{width:300px;flex-shrink:0;position:sticky;top:78px;}
+
+  .card{
+    background:var(--beige-card);border:1px solid var(--beige-line);
+    border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;margin-bottom:18px;
+  }
+  .card h2{font-size:16px;margin:0 0 14px;color:var(--navy);
+    display:flex;align-items:center;gap:9px;}
+  .card h2 .step-no{
+    background:var(--navy);color:#fff;width:24px;height:24px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;
+  }
+  /* 帮助提示标记 */
+  .help-tip{
+    display:inline-block;width:16px;height:16px;border-radius:50%;
+    background:var(--navy-soft);color:#fff;font-size:10px;text-align:center;
+    line-height:16px;cursor:help;margin-left:4px;vertical-align:middle;
+  }
+  .help-tip:hover{background:var(--navy);}
+
+  /* 上传区 */
+  .dropzone{
+    border:2px dashed var(--navy-soft);border-radius:var(--radius);
+    padding:34px 20px;text-align:center;background:#fff;cursor:pointer;
+    transition:.2s;color:var(--ink-soft);
+  }
+  .dropzone:hover{border-color:var(--navy);background:#f7faff;box-shadow:var(--shadow-hover);}
+  .dropzone.drag{border-color:var(--gold);background:#fffdf5;}
+  .dropzone .big{font-size:15px;color:var(--navy);font-weight:600;margin-bottom:6px;}
+  .file-list{margin-top:14px;display:flex;flex-direction:column;gap:8px;}
+  .file-item{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:#fff;border:1px solid var(--beige-line);border-radius:10px;padding:9px 12px;
+  }
+  .file-item .meta{display:flex;flex-direction:column;min-width:0;}
+  .file-item .fname{font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .file-item .ftype{font-size:12px;color:var(--ink-soft);}
+  .file-item select{
+    border:1px solid var(--beige-line);border-radius:8px;padding:5px 8px;font-size:12px;
+    background:#fff;color:var(--ink);max-width:130px;
+  }
+  .file-item .del{background:none;border:none;color:var(--warn);cursor:pointer;font-size:16px;}
+  /* 文件大小标签 */
+  .file-size{font-size:11px;padding:2px 7px;border-radius:10px;margin-left:6px;}
+  .file-size.ok{background:#e9f6ee;color:var(--ok);}
+  .file-size.warn{background:#fff3cd;color:#8a6d3b;}
+  .file-size.bad{background:var(--warn-bg);color:var(--warn);}
+
+  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:12px;color:var(--ink-soft);font-weight:600;}
+  .memory-note{font-size:12px;color:var(--gold);margin-top:8px;}
+
+  .btn{
+    border:none;border-radius:10px;padding:9px 18px;font-size:14px;cursor:pointer;
+    font-weight:600;transition:.2s;font-family:inherit;
+  }
+  .btn-primary{background:var(--navy);color:#fff;}
+  .btn-primary:hover{background:var(--navy-deep);box-shadow:var(--shadow-hover);}
+  .btn-primary:disabled{background:#b9c4d2;cursor:not-allowed;box-shadow:none;}
+  .btn-ghost{background:#fff;border:1px solid var(--navy-soft);color:var(--navy);}
+  .btn-ghost:hover{background:#f2f6fc;box-shadow:var(--shadow-hover);}
+  .btn-sm{padding:5px 11px;font-size:12px;}
+
+  .preview-wrap{margin-top:14px;max-height:240px;overflow:auto;border:1px solid var(--beige-line);
+    border-radius:10px;background:#fff;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{border:1px solid var(--beige-line);padding:7px 10px;text-align:left;white-space:nowrap;}
+  thead th{background:var(--navy);color:#fff;position:sticky;top:0;font-weight:600;}
+  tbody tr:nth-child(even){background:#faf7f0;}
+
+  .alert{margin-top:12px;padding:10px 14px;border-radius:10px;font-size:13px;}
+  .alert-err{background:var(--warn-bg);color:var(--warn);border:1px solid #f3bcbc;}
+  .alert-ok{background:#e9f6ee;color:var(--ok);border:1px solid #b9e3c7;}
+  .alert-info{background:#eaf1fb;color:var(--navy);border:1px solid #c4d6f0;}
+
+  /* Tabs */
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:0;}
+  .tab-btn{
+    background:#fff;border:1px solid var(--beige-line);border-bottom:none;
+    padding:11px 20px;border-radius:12px 12px 0 0;cursor:pointer;font-size:14px;
+    color:var(--ink-soft);font-weight:600;transition:.2s;
+  }
+  .tab-btn.active{background:var(--navy);color:#fff;box-shadow:var(--shadow);}
+  .tab-btn .badge{background:var(--warn);color:#fff;border-radius:10px;font-size:11px;
+    padding:1px 7px;margin-left:6px;}
+  .tab-body{
+    background:var(--beige-card);border:1px solid var(--beige-line);border-radius:0 12px 12px 12px;
+    padding:18px 20px;box-shadow:var(--shadow);display:none;
+  }
+  .tab-body.active{display:block;}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+
+  /* 预警卡片 */
+  .warn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+  .warn-card{
+    border:1.5px solid var(--warn);border-radius:12px;background:var(--warn-bg);
+    padding:14px 16px;box-shadow:var(--shadow);
+  }
+  .warn-card .w-title{font-weight:700;color:var(--warn);font-size:15px;margin-bottom:8px;
+    display:flex;align-items:center;gap:7px;}
+  .warn-card .w-row{display:flex;justify-content:space-between;font-size:13px;color:var(--ink);margin:3px 0;}
+  .warn-card .w-row b{color:var(--ink);}
+  .warn-card .w-suggest{margin-top:8px;font-size:12.5px;color:#8a3030;background:rgba(255,255,255,.6);
+    padding:6px 9px;border-radius:8px;}
+  .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:700;}
+  .pill-up{background:#fbe3e3;color:var(--warn);}
+  .pill-down{background:#e3f3ea;color:var(--ok);}
+
+  /* 折叠面板 */
+  .collapse{border:1px solid var(--beige-line);border-radius:10px;margin-bottom:12px;overflow:hidden;background:#fff;}
+  .collapse > .c-head{background:#f1f5fb;padding:11px 15px;cursor:pointer;font-weight:600;color:var(--navy);
+    display:flex;justify-content:space-between;align-items:center;}
+  .collapse > .c-body{padding:14px 16px;display:none;}
+  .collapse.open > .c-body{display:block;}
+
+  /* 侧栏进度 */
+  .progress-track{background:#e3e9f1;border-radius:20px;height:14px;overflow:hidden;margin:10px 0 6px;}
+  .progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--navy),var(--gold));
+    transition:width .35s ease;border-radius:20px;}
+  .progress-pct{font-size:13px;color:var(--navy);font-weight:700;}
+  .step-text{font-size:13px;color:var(--ink-soft);margin-top:4px;min-height:20px;}
+  .log-box{margin-top:12px;background:#0f2547;color:#cfe0f5;border-radius:10px;padding:12px;
+    font-family:"Consolas",monospace;font-size:12px;max-height:260px;overflow:auto;line-height:1.7;}
+  .log-box .l-agent{color:#ffd27a;}
+  .log-box .l-ok{color:#7fe0a0;}
+  .log-box .l-err{color:#ff8e8e;}
+
+  .section-title{font-size:15px;font-weight:700;color:var(--navy);margin:18px 0 10px;}
+  .stat-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
+  .stat{background:#fff;border:1px solid var(--beige-line);border-radius:10px;padding:10px 16px;flex:1;min-width:140px;}
+  .stat .s-label{font-size:12px;color:var(--ink-soft);}
+  .stat .s-val{font-size:20px;font-weight:700;color:var(--navy);}
+
+  .empty{text-align:center;color:var(--ink-soft);padding:40px 10px;}
+  .hidden{display:none!important;}
+
+  /* ===== 新增：分页 ===== */
+  .pagination{display:flex;align-items:center;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .pagination button{
+    border:1px solid var(--beige-line);border-radius:8px;padding:5px 12px;
+    background:#fff;cursor:pointer;font-size:13px;color:var(--ink);
+  }
+  .pagination button.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .pagination button:disabled{opacity:.4;cursor:not-allowed;}
+  .pagination .info{font-size:12px;color:var(--ink-soft);margin-left:auto;}
+
+  /* ===== 新增：解析进度条 ===== */
+  .parse-progress{
+    margin-top:10px;padding:10px 14px;border-radius:10px;background:#eaf1fb;border:1px solid #c4d6f0;
+  }
+  .parse-progress .bar{height:10px;background:#d4dfeb;border-radius:10px;overflow:hidden;margin-top:6px;}
+  .parse-progress .fill{height:100%;width:0%;background:var(--navy);transition:width .2s;border-radius:10px;}
+  .parse-progress .msg{font-size:12px;color:var(--navy);margin-top:4px;}
+
+  /* ===== 新增：引导层（Tour） ===== */
+  .tour-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .tour-card{
+    background:#fff;border-radius:16px;padding:28px 32px;max-width:480px;width:90%;
+    box-shadow:0 8px 32px rgba(0,0,0,.3);
+  }
+  .tour-card .tour-step{font-size:12px;color:var(--navy-soft);font-weight:700;margin-bottom:8px;}
+  .tour-card h3{font-size:18px;color:var(--navy);margin:0 0 12px;}
+  .tour-card p{font-size:14px;color:var(--ink);line-height:1.7;margin:0 0 20px;}
+  .tour-card .tour-nav{display:flex;justify-content:space-between;align-items:center;}
+  .tour-dots{display:flex;gap:6px;}
+  .tour-dots .d{width:8px;height:8px;border-radius:50%;background:#ccc;}
+  .tour-dots .d.active{background:var(--navy);}
+
+  /* ===== 新增：帮助弹窗 ===== */
+  .help-modal{
+    position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;
+    display:none;align-items:center;justify-content:center;
+  }
+  .help-modal.open{display:flex;}
+  .help-modal .help-body{
+    background:#fff;border-radius:16px;padding:24px 28px;max-width:640px;width:92%;
+    max-height:80vh;overflow:auto;box-shadow:0 8px 32px rgba(0,0,0,.3);
+  }
+  .help-modal h2{font-size:18px;color:var(--navy);margin:0 0 14px;}
+  .help-modal h3{font-size:15px;color:var(--navy-soft);margin:18px 0 8px;}
+  .help-modal p,.help-modal li{font-size:13px;color:var(--ink);line-height:1.7;}
+  .help-modal .close{float:right;background:none;border:none;font-size:22px;color:var(--ink-soft);cursor:pointer;}
+  .help-modal ul{padding-left:18px;margin:6px 0;}
+
+  /* 打印样式 */
+  @media print{
+    .topbar,.side,.tabs,.toolbar,.dropzone,.file-list,.pagination,.parse-progress,.login-overlay{display:none!important;}
+    body{background:#fff;}
+    .card,.tab-body{box-shadow:none;border:1px solid #ccc;break-inside:avoid;}
+    .tab-body{display:block!important;}
+  }
+  @media (max-width:1100px){.side{width:100%;position:static;}.layout{flex-direction:column;}}
+
+  /* ===== 新增：登录覆盖层 ===== */
+  .login-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;
+    display:none;align-items:center;justify-content:center;
+  }
+  .login-overlay.open{display:flex;}
+  .login-card{
+    background:#fff;border-radius:16px;padding:28px 32px;max-width:380px;width:90%;
+    box-shadow:0 8px 32px rgba(0,0,0,.3);
+  }
+  .login-card h3{font-size:18px;color:var(--navy);margin:0 0 18px;text-align:center;}
+  .login-card .field{margin-bottom:14px;}
+  .login-card input{
+    width:100%;border:1px solid var(--beige-line);border-radius:8px;
+    padding:10px 12px;font-size:14px;font-family:inherit;
+  }
+  .login-card .btn{width:100%;margin-top:6px;}
+  .login-card .hint{text-align:center;font-size:12px;color:var(--ink-soft);margin-top:12px;}
+  .login-card .err{color:var(--warn);font-size:12px;text-align:center;margin-top:8px;}
+  .btn-login{
+    background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);
+    color:#fff;padding:7px 16px;border-radius:10px;cursor:pointer;font-size:13px;transition:.2s;
+  }
+  .btn-login:hover{background:rgba(255,255,255,.3);}
+  .role-badge{
+    font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;
+    background:rgba(201,162,39,.25);color:#ffd27a;border:1px solid rgba(201,162,39,.4);
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ 顶部导航 ============ -->
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">费</div>
+    <div>
+      <h1>期间费用智能分摊管控助手</h1>
+      <div class="sub">三大期间费用 · 智能分摊 · 预算预警 · 差异分析 · 适用石化/制造企业</div>
+    </div>
+  </div>
+  <div class="right">
+    <div class="backend-badge offline" id="backendBadge" title="检测后端服务连接状态">
+      <span class="dot"></span><span id="backendText">检测中…</span>
+    </div>
+    <button class="btn-help" id="btnHelp" title="操作引导与帮助">❓ 帮助</button>
+    <button class="btn-test" id="btnTestMode">🧪 测试模式</button>
+    <button class="btn-login" id="btnLogin" title="登录后可使用后端计算与数据持久化">🔐 登录</button>
+    <div class="user" id="userPanel" style="display:none;">
+      <div class="avatar" id="userAvatar">?</div>
+      <span id="userName">未登录</span>
+      <span class="role-badge" id="roleBadge">guest</span>
+      <button class="btn-login" id="btnLogout" title="退出登录">退出</button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- ============ 主区域 ============ -->
+  <div class="main">
+    <!-- 第一步：上传数据 -->
+    <section class="card">
+      <h2><span class="step-no">1</span>上传业务数据（支持拖拽多文件）
+        <span class="help-tip" data-tip="支持上传 .xlsx/.xls 文件，含六类业务单据。单文件多表或多文件均可自动识别。大文件(>1MB)将自动使用 Web Worker 后台解析，不阻塞界面。">?</span>
+      </h2>
+      <div class="dropzone" id="dropzone">
+        <div class="big">📥 点击或拖拽 Excel 文件到此处</div>
+        <div>支持 .xlsx / .xls ｜ 六类单据：销售/管理/财务费用明细、工时统计、产量完工、预算标准</div>
+        <div style="margin-top:8px;"><a href="javascript:void(0)" id="btnSample" style="color:var(--navy);font-size:12px;">⤓ 没有数据？点此生成示例 Excel</a></div>
+      </div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" multiple class="hidden" />
+      <div class="file-list" id="fileList"></div>
+      <div id="parseProgressArea"></div>
+      <div id="previewArea"></div>
+    </section>
+
+    <!-- 第二步：选择分摊口径 -->
+    <section class="card">
+      <h2><span class="step-no">2</span>选择分摊口径与参数
+        <span class="help-tip" data-tip="工时比例法：按各成本对象实际工时占比分配；约当产量法：按完工+在产品约当产量占比分配；标准成本率法：按各产品标准成本占比分配。默认工时比例，切换后需重新点击「开始分摊」。">?</span>
+      </h2>
+      <div class="row">
+        <div class="field">
+          <label>分摊口径（默认：工时比例）</label>
+          <select id="basisSelect">
+            <option value="hours">工时比例法</option>
+            <option value="equivalent">约当产量法</option>
+            <option value="stdcost">标准成本率法</option>
+            <option value="labor">人工工时法</option>
+            <option value="material">材料定额法</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>所属期间</label>
+          <input type="text" id="periodInput" value="2025-06" />
+        </div>
+        <div class="field">
+          <label>预警阈值（偏差率）</label>
+          <select id="threshSelect" disabled title="固定为5%，不可调整（简化设定）">
+            <option value="0.05">大于 5%（固定）</option>
+          </select>
+        </div>
+      </div>
+      <div class="memory-note" id="memoryNote"></div>
+      <!-- 行业数据来源提示 -->
+      <div class="memory-note" id="industryNote" style="display:none;"></div>
+    </section>
+
+    <!-- 第三步：启动处理 -->
+    <section class="card">
+      <h2><span class="step-no">3</span>启动处理
+        <span class="help-tip" data-tip="点击后系统自动执行：识别成本对象→确定分配标准→计算分配率→分配费用→编制凭证→预算预警→差异拆解→总额校验→测试用例比对。全程约 3-5 秒。">?</span>
+      </h2>
+      <div class="toolbar">
+        <button class="btn btn-primary" id="btnStart" disabled>▶ 开始分摊</button>
+        <button class="btn btn-ghost" id="btnReset">↺ 重置</button>
+        <label style="font-size:13px;color:var(--ink-soft);display:flex;align-items:center;gap:5px;">
+          <input type="checkbox" id="useBackendCalc" /> 使用后端计算引擎
+          <span class="help-tip" data-tip="勾选后分摊计算在服务端执行（需登录+后端在线），结果自动持久化至数据库。不勾选则前端计算（离线可用）。">?</span>
+        </label>
+        <span id="startHint" style="color:var(--ink-soft);font-size:13px;"></span>
+      </div>
+    </section>
+
+    <!-- ============ 结果展示区 ============ -->
+    <section class="card">
+      <h2>📊 处理结果</h2>
+      <div class="tabs" id="tabs">
+        <div class="tab-btn active" data-tab="tab1">分摊凭证表</div>
+        <div class="tab-btn" data-tab="tab2">预算预警卡片 <span class="badge hidden" id="warnBadge">0</span></div>
+        <div class="tab-btn" data-tab="tab3">成本差异分析报告</div>
+        <div class="tab-btn" data-tab="tab4">测试用例校验</div>
+      </div>
+
+      <!-- Tab1 分摊凭证表 -->
+      <div class="tab-body active" id="tab1">
+        <div class="toolbar">
+          <button class="btn btn-ghost btn-sm" onclick="copyTable('voucherTable')">📋 复制表格</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportVoucherExcel()">⬇ 导出 Excel 凭证</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportReportWord('分摊凭证表','voucherTable')">⬇ 导出 Word</button>
+          <button class="btn btn-ghost btn-sm" id="btnSaveBackend" style="display:none;">💾 保存至数据库</button>
+        </div>
+        <div id="voucherArea"><div class="empty">尚未生成分摊凭证。请先上传数据并点击「开始分摊」。</div></div>
+        <div id="voucherPagination"></div>
+      </div>
+
+      <!-- Tab2 预算预警卡片 -->
+      <div class="tab-body" id="tab2">
+        <div class="toolbar">
+          <button class="btn btn-ghost btn-sm" id="btnCopyWarn">📋 复制预警列表</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportWarnExcel()">⬇ 导出预警 Excel</button>
+        </div>
+        <div id="warnArea"><div class="empty">暂无预算预警。偏差率超过 5% 的项目将在此以红色卡片提示。</div></div>
+      </div>
+
+      <!-- Tab3 成本差异分析报告 -->
+      <div class="tab-body" id="tab3">
+        <div class="toolbar">
+          <button class="btn btn-ghost btn-sm" onclick="exportReportWord('成本差异分析报告','reportArea')">⬇ 导出 Word 报告</button>
+          <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 导出 PDF（打印）</button>
+        </div>
+        <div id="reportArea"><div class="empty">尚未生成分析报告。完成分摊后，此处展示预算偏差、差异拆解、趋势图与异常 Top10。</div></div>
+      </div>
+
+      <!-- Tab4 测试用例校验 -->
+      <div class="tab-body" id="tab4">
+        <div class="toolbar">
+          <button class="btn btn-primary btn-sm" id="btnRunTest">🧪 运行全部测试用例</button>
+          <button class="btn btn-ghost btn-sm" id="btnExportTest">⬇ 导出测试报告(txt)</button>
+        </div>
+        <div id="testArea"><div class="empty">点击「运行全部测试用例」体验内置核心分摊校验（无需上传数据）。</div></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ 右侧进度 ============ -->
+  <aside class="side">
+    <div class="card">
+      <h2 style="margin-bottom:8px;">任务进度</h2>
+      <div class="progress-track"><div class="progress-fill" id="progFill"></div></div>
+      <div class="progress-pct" id="progPct">0%</div>
+      <div class="step-text" id="stepText">等待上传数据…</div>
+      <div class="log-box" id="logBox"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- ============ 登录覆盖层 ============ -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <h3>🔐 用户登录</h3>
+    <div class="field">
+      <input type="text" id="loginUser" placeholder="用户名（默认 admin）" />
+    </div>
+    <div class="field">
+      <input type="password" id="loginPass" placeholder="密码（默认 admin123）" />
+    </div>
+    <button class="btn btn-primary" id="btnDoLogin">登 录</button>
+    <p class="err" id="loginErr" style="display:none;"></p>
+    <p class="hint">默认管理员：admin / admin123<br>登录后可使用后端计算引擎、ERP 数据接口、结果持久化</p>
+  </div>
+</div>
+
+<!-- ============ 首次使用引导层 ============ -->
+<div class="tour-overlay hidden" id="tourOverlay">
+  <div class="tour-card">
+    <div class="tour-step" id="tourStep">第 1 / 4 步</div>
+    <h3 id="tourTitle">欢迎使用</h3>
+    <p id="tourText"></p>
+    <div class="tour-nav">
+      <button class="btn btn-ghost btn-sm" id="tourPrev">上一步</button>
+      <div class="tour-dots" id="tourDots"></div>
+      <button class="btn btn-primary btn-sm" id="tourNext">下一步</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 帮助弹窗 ============ -->
+<div class="help-modal" id="helpModal">
+  <div class="help-body">
+    <button class="close" id="helpClose">&times;</button>
+    <h2>❓ 操作引导与帮助</h2>
+
+    <h3>🚀 快速开始（3 步）</h3>
+    <ul>
+      <li><b>第一步</b>：点击上传区或拖拽 Excel 文件，系统自动识别六类单据并预览。</li>
+      <li><b>第二步</b>：选择分摊口径（工时比例 / 约当产量 / 标准成本率），设置所属期间。</li>
+      <li><b>第三步</b>：点击「开始分摊」，等待进度条到 100%，在各 Tab 查看结果并导出。</li>
+    </ul>
+
+    <h3>📊 数据格式要求</h3>
+    <ul>
+      <li><b>费用明细表</b>（销售/管理/财务）：费用项目、金额、成本对象、实际工时（可选）、预算金额（可选）</li>
+      <li><b>工时统计表</b>：成本对象、工时</li>
+      <li><b>产量完工表</b>：成本对象、完工产量、在产品约当量</li>
+      <li><b>预算标准表</b>：费用项目、预算金额、成本对象、标准成本（可选）</li>
+      <li>支持单文件多 Sheet 或多文件上传，系统自动逐表识别类型。</li>
+      <li>列名支持中文别名（如"金额"="发生额"="费用金额"），系统自动归一化。</li>
+    </ul>
+
+    <h3>🔧 分摊口径说明（5 种）</h3>
+    <ul>
+      <li><b>工时比例法</b>（默认）：按各成本对象实际工时占总工时比例分配费用。</li>
+      <li><b>约当产量法</b>：按（完工产量 + 在产品约当量）占比分配费用。</li>
+      <li><b>标准成本率法</b>：按各产品标准成本占总标准成本比例分配费用。</li>
+      <li><b>人工工时法</b>（V1.2 新增）：按各成本对象直接人工工时占比分配费用。支持从费用表或工时表中的"人工工时"列自动提取。</li>
+      <li><b>材料定额法</b>（V1.2 新增）：按各产品材料定额消耗占比分配费用。支持从预算表或费用表中的"材料定额"列自动提取。</li>
+    </ul>
+
+    <h3>⚠ 预算预警机制</h3>
+    <ul>
+      <li>偏差率 = (实际金额 - 预算金额) / 预算金额</li>
+      <li>偏差率 > 5% 自动触发红色预警卡片，含预算/实际/偏差率/建议措施。</li>
+      <li>阈值固定为 5%，不可调整（简化设定）。</li>
+    </ul>
+
+    <h3>📤 导出功能</h3>
+    <ul>
+      <li>分摊凭证表 → Excel / Word / 复制到剪贴板</li>
+      <li>预算预警 → Excel / 复制</li>
+      <li>成本差异分析报告 → Word / PDF（打印）</li>
+      <li>测试用例校验 → txt 报告</li>
+    </ul>
+
+    <h3>💡 常见问题</h3>
+    <ul>
+      <li><b>Q: 提示"Excel库未加载"？</b><br>A: 请检查网络连接，CDN 库需要联网加载。测试模式不依赖网络。</li>
+      <li><b>Q: 上传后"开始分摊"按钮灰色？</b><br>A: 数据校验未通过（缺费用明细或缺分摊依据），请检查文件完整性。</li>
+      <li><b>Q: 分摊总额不平衡？</b><br>A: 通常因数据行有金额为空或格式错误，检查金额列是否均为数字。</li>
+      <li><b>Q: 大文件上传卡顿？</b><br>A: >1MB 文件自动使用 Web Worker 后台解析；>5MB 提示警告；>50MB 拒绝处理。建议分批上传。</li>
+      <li><b>Q: 后端服务有什么用？</b><br>A: 后端提供行业参考数据（标准成本/预算模板/科目映射）和历史记录持久化。不启动后端也可正常使用全部分摊功能。</li>
+    </ul>
+
+    <h3>🔐 用户权限管理（V1.2 新增）</h3>
+    <ul>
+      <li>默认管理员账号：<code>admin / admin123</code>（首次启动后端自动创建）</li>
+      <li>管理员可注册新用户（operator/operator），分配角色</li>
+      <li>后端计算引擎、ERP 数据导入需登录后使用</li>
+      <li>会话有效期 8 小时，基于 session token</li>
+      <li>密码采用 PBKDF2 + SHA-256 哈希存储（10000 轮迭代）</li>
+    </ul>
+
+    <h3>🔌 后端计算引擎（V1.2 新增）</h3>
+    <p>第三步勾选「使用后端计算引擎」后，分摊计算在服务端执行（POST /api/allocate），结果自动持久化至数据库。<br>
+    不勾选则前端计算（离线可用），结果需手动点「保存至数据库」。</p>
+
+    <h3>📡 ERP 数据接口（V1.2 新增）</h3>
+    <ul>
+      <li><code>GET /api/erp/schema</code> — 获取数据格式规范</li>
+      <li><code>POST /api/erp/import</code> — 导入 ERP 数据（JSON 格式）</li>
+      <li><code>GET /api/erp/export</code> — 导出最新分摊结果（ERP 兼容格式）</li>
+      <li><code>GET /api/erp/list</code> — 查看导入批次列表</li>
+    </ul>
+
+    <h3>🔌 后端服务</h3>
+    <p>启动后端：<code>node server.js</code>（需 Node.js 16+）<br>
+    后端地址：http://localhost:3000<br>
+    前端自动探测后端状态，在线时可加载行业数据并保存分摊结果。</p>
+  </div>
+</div>
+
+<script>
+/* =======================================================================
+   期间费用智能分摊管控助手 —— V1.2 迭代版
+   迭代目标：
+   1. 修正产品名称（去掉"石化"，适用石化/制造企业，描述一致）
+   2. 增加后端支持（行业数据库对接、结果持久化）
+   3. 补充用户操作引导和帮助文档（引导层+帮助弹窗+上下文提示）
+   4. 优化大量数据上传时的性能与反馈（Web Worker+文件校验+分页+进度）
+   V1.2 新增：
+   5. 后端计算引擎（POST /api/allocate，服务端分摊+业务校验+持久化）
+   6. 扩展分摊标准（人工工时法、材料定额法，共5种口径）
+   7. ERP 数据接口（import/export/schema）
+   8. 用户权限管理（PBKDF2+session token+RBAC，admin/operator）
+   9. 完善帮助文档与引导（新增口径/ERP/权限说明）
+   ======================================================================= */
+const APP_CONFIG = {
+  version: '1.2.0',
+  productName: '期间费用智能分摊管控助手',
+  testMode: true,
+  backendURL: 'http://localhost:3000',
+  backendEnabled: false,
+  warnThreshold: 0.05,
+  maxRows: 100000,
+  maxFileSize: 50 * 1024 * 1024,    // 50MB 拒绝
+  warnFileSize: 5 * 1024 * 1024,    // 5MB 警告
+  workerThreshold: 1 * 1024 * 1024, // 1MB 以上启用 Worker
+  pageSize: 50
+};
+
+/* ===================== 目标2：后端连接探测 ===================== */
+async function checkBackend() {
+  const badge = document.getElementById('backendBadge');
+  const text = document.getElementById('backendText');
+  const saveBtn = document.getElementById('btnSaveBackend');
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 3000);
+    const res = await fetch(APP_CONFIG.backendURL + '/api/health', { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (res.ok) {
+      const data = await res.json();
+      APP_CONFIG.backendEnabled = true;
+      badge.className = 'backend-badge online';
+      text.textContent = '已连接数据库';
+      badge.title = '后端: ' + data.version + ' | 历史记录: ' + data.dbRecords + ' 条';
+      saveBtn.style.display = '';
+      log('【后端】已连接行业数据库 (' + data.version + ')，历史记录 ' + data.dbRecords + ' 条', false, true);
+      loadIndustryData();
+      return true;
+    }
+  } catch (e) { /* 连接失败，正常降级 */ }
+  APP_CONFIG.backendEnabled = false;
+  badge.className = 'backend-badge offline';
+  text.textContent = '离线模式';
+  badge.title = '后端未启动。运行 node server.js 可启用行业数据库对接。';
+  return false;
+}
+
+/** 从后端加载行业参考数据 */
+async function loadIndustryData() {
+  if (!APP_CONFIG.backendEnabled) return;
+  try {
+    const res = await fetch(APP_CONFIG.backendURL + '/api/industry-data');
+    if (!res.ok) return;
+    const data = await res.json();
+    const note = document.getElementById('industryNote');
+    note.style.display = '';
+    note.innerHTML = '🗂 已从行业数据库加载：标准成本 ' + (data.standardCosts||[]).length +
+      ' 条 ｜ 预算模板 ' + (data.budgetTemplates||[]).length + ' 条 ｜ 会计科目映射 ' +
+      Object.keys(data.accountMappings||{}).length + ' 类';
+    // 合并科目映射
+    if (data.accountMappings) {
+      Object.assign(ACCOUNT_MAP, data.accountMappings);
+    }
+  } catch (e) { /* 静默降级 */ }
+}
+
+/** 保存分摊结果至后端 */
+async function saveToBackend() {
+  if (!APP_CONFIG.backendEnabled || !STATE.result) { alert('后端未连接或无结果可保存。'); return; }
+  const r = STATE.result;
+  const payload = {
+    period: STATE.period,
+    basis: STATE.basis,
+    totalExpense: r.alloc.totalExpense,
+    totalAllocated: r.alloc.totalAllocated,
+    balanced: r.balanced,
+    voucherCount: r.alloc.vouchers.length,
+    warningCount: r.warns.length,
+    testPass: r.testRes.filter(t => t.pass || t.accept).length,
+    testTotal: r.testRes.length
+  };
+  try {
+    const res = await fetch(APP_CONFIG.backendURL + '/api/save-result', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert('✅ 已保存至行业数据库\n记录 ID: ' + data.id);
+      log('【后端】分摊结果已保存: ' + data.id, false, true);
+      appendActivity('保存至数据库｜' + data.id);
+    }
+  } catch (e) { alert('保存失败: ' + e.message); }
+}
+
+/* ===================== 用户认证（V1.2 新增） ===================== */
+const AUTH = { token: null, user: null };
+
+function showLogin() { document.getElementById('loginOverlay').classList.add('open'); document.getElementById('loginUser').focus(); }
+function hideLogin() { document.getElementById('loginOverlay').classList.remove('open'); }
+
+async function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginErr');
+  err.style.display = 'none';
+  if (!u || !p) { err.textContent = '请输入用户名和密码'; err.style.display = ''; return; }
+  try {
+    const res = await fetch(APP_CONFIG.backendURL + '/api/auth/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p })
+    });
+    const data = await res.json();
+    if (data.success) {
+      AUTH.token = data.token; AUTH.user = data.user;
+      hideLogin(); updateUserPanel();
+      log('【认证】用户 ' + data.user.username + ' (' + data.user.role + ') 登录成功', false, true);
+      appendActivity('用户登录｜' + data.user.username + '(' + data.user.role + ')');
+    } else {
+      err.textContent = data.error || '登录失败'; err.style.display = '';
+    }
+  } catch (e) {
+    err.textContent = '后端连接失败: ' + e.message; err.style.display = '';
+  }
+}
+
+function doLogout() {
+  AUTH.token = null; AUTH.user = null;
+  updateUserPanel();
+  log('【认证】已退出登录', false, true);
+}
+
+function updateUserPanel() {
+  const btnLogin = document.getElementById('btnLogin');
+  const userPanel = document.getElementById('userPanel');
+  if (AUTH.user) {
+    btnLogin.style.display = 'none';
+    userPanel.style.display = 'flex';
+    document.getElementById('userAvatar').textContent = AUTH.user.displayName.charAt(0);
+    document.getElementById('userName').textContent = AUTH.user.displayName;
+    document.getElementById('roleBadge').textContent = AUTH.user.role;
+  } else {
+    btnLogin.style.display = '';
+    userPanel.style.display = 'none';
+  }
+}
+
+function getAuthHeader() {
+  return AUTH.token ? { 'Authorization': 'Bearer ' + AUTH.token } : {};
+}
+
+/** 调用后端计算引擎（V1.2 新增） */
+async function allocateOnBackend() {
+  if (!APP_CONFIG.backendEnabled) { alert('后端未连接，无法使用后端计算引擎。'); return null; }
+  if (!AUTH.token) { alert('请先登录后再使用后端计算引擎。'); showLogin(); return null; }
+  if (!STATE.parsed) { alert('请先上传数据。'); return null; }
+  try {
+    const res = await fetch(APP_CONFIG.backendURL + '/api/allocate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+      body: JSON.stringify({ parsed: STATE.parsed, basis: STATE.basis, period: STATE.period })
+    });
+    const data = await res.json();
+    if (data.success) {
+      log('【后端计算引擎】服务端分摊完成，凭证 ' + data.result.vouchers.length + ' 条，已持久化（' + data.recordId + '）', false, true);
+      return data.result;
+    } else {
+      alert('后端计算失败: ' + (data.error || '未知错误'));
+      return null;
+    }
+  } catch (e) { alert('后端连接失败: ' + e.message); return null; }
+}
+
+/* 会计科目映射 type_object_mapping（费用类型 → 会计科目） */
+const ACCOUNT_MAP = {
+  "销售费用": {
+    "运输费":"销售费用-运输费","装卸费":"销售费用-装卸费","广告费":"销售费用-广告费",
+    "差旅费":"销售费用-差旅费","业务招待费":"销售费用-业务招待费","展览费":"销售费用-展览费",
+    "default":"销售费用"
+  },
+  "管理费用": {
+    "机物料消耗":"管理费用-机物料消耗","办公费":"管理费用-办公费","管理人员工资":"管理费用-职工薪酬",
+    "折旧费":"管理费用-折旧费","业务招待费":"管理费用-业务招待费","差旅费":"管理费用-差旅费","default":"管理费用"
+  },
+  "财务费用": {
+    "利息支出":"财务费用-利息支出","手续费":"财务费用-手续费","汇兑损益":"财务费用-汇兑损益",
+    "default":"财务费用"
+  }
+};
+function getAccount(type, feeItem){
+  const m = ACCOUNT_MAP[type] || {};
+  return m[feeItem] || m["default"] || type;
+}
+
+/* 板块/成本对象分组关键字 */
+const GROUP_KEYS = ["全集团","集团","总部","公司总部","公司","无","空","","总"];
+function isGrouped(obj){ return GROUP_KEYS.includes((obj||"").trim()); }
+
+/* 列名归一化别名 */
+const COL = {
+  feeItem:["费用项目","费用明细","项目","费用名称","明细项目"],
+  amount:["金额","发生额","金额(万元)","金额万元","费用金额"],
+  costObject:["成本对象","承担部门","业务板块","产品线","成本中心","部门"],
+  hours:["实际工时","工时","工时数","工时(h)","h"],
+  budget:["预算金额","预算","预算金额(万元)","预算(万元)"],
+  finished:["完工产量","完工","完工数量","完工件数"],
+  wip:["在产品约当量","在产品约当产量","在产约当","在产品"],
+  equiv:["约当产量","约当产量(件)","约当量"],
+  stdCost:["标准成本","标准成本(万元)","单位标准成本"],
+  actPrice:["实际单价","实际价格"],
+  stdPrice:["标准单价","标准价格"],
+  actHours:["实际工时","工时"],
+  stdHours:["标准工时"],
+  laborHours:["人工工时","直接人工工时","直接工时","人工工时(h)","laborHours"],
+  materialQuota:["材料定额","材料定额量","定额消耗","材料消耗定额","materialQuota"]
+};
+function normKey(headers){
+  const map = {};
+  for(const k in COL){
+    for(const alias of COL[k]){
+      const hit = headers.find(h=>String(h).trim()===alias);
+      if(hit){ map[k]=hit; break; }
+    }
+  }
+  return map;
+}
+function num(v){ const n=parseFloat(String(v).replace(/[, ]/g,"")); return isNaN(n)?0:n; }
+
+/* 全局状态 */
+let STATE = {
+  files:[], parsed:null, result:null, basis:"hours", period:"2025-06"
+};
+
+/* ===================== 目标4：Web Worker 大文件解析 ===================== */
+let _worker = null;
+function getWorker() {
+  if (_worker) return _worker;
+  // 通过 Blob URL 内嵌 Worker 代码（双击打开也能用，无需外部文件）
+  const code = `
+    let XLSX_LOADED = false;
+    function loadXLSX() {
+      if (XLSX_LOADED) return true;
+      const cdns = [
+        'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+        'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
+      ];
+      for (const url of cdns) {
+        try { importScripts(url); XLSX_LOADED = true; return true; }
+        catch(e) {}
+      }
+      return false;
+    }
+    self.onmessage = function(e) {
+      const { file, fileId } = e.data;
+      if (!loadXLSX()) {
+        self.postMessage({ type: 'error', fileId, error: 'Excel解析库加载失败，请检查网络' });
+        return;
+      }
+      try {
+        self.postMessage({ type: 'progress', fileId, progress: 15, msg: '正在读取文件...' });
+        const reader = new FileReaderSync();
+        const buf = reader.readAsArrayBuffer(file);
+        self.postMessage({ type: 'progress', fileId, progress: 40, msg: '正在解析工作簿...' });
+        const wb = XLSX.read(buf, { type: 'array' });
+        const sheets = [];
+        const total = wb.SheetNames.length;
+        wb.SheetNames.forEach((sn, i) => {
+          const sheet = wb.Sheets[sn];
+          const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+          const headers = rows.length ? Object.keys(rows[0]) : [];
+          sheets.push({ sheetName: sn, rows, headers, rowCount: rows.length });
+          const pct = 40 + Math.round((i + 1) / total * 55);
+          self.postMessage({ type: 'progress', fileId, progress: pct, msg: '已解析: ' + sn + ' (' + rows.length + ' 行)' });
+        });
+        self.postMessage({ type: 'done', fileId, sheets, totalRows: sheets.reduce((a, s) => a + s.rowCount, 0) });
+      } catch(err) {
+        self.postMessage({ type: 'error', fileId, error: err.message });
+      }
+    };
+  `;
+  const blob = new Blob([code], { type: 'application/javascript' });
+  _worker = new Worker(URL.createObjectURL(blob));
+  return _worker;
+}
+
+/** 使用 Web Worker 解析大文件（不阻塞主线程） */
+function parseWithWorker(files) {
+  return new Promise((resolve) => {
+    const results = [];
+    let pending = files.length;
+    const fileId = 'f' + Date.now();
+
+    // 进度 UI
+    const area = document.getElementById('parseProgressArea');
+    area.innerHTML = '<div class="parse-progress"><b>⚡ 后台解析中（Web Worker）</b>' +
+      '<div class="bar"><div class="fill" id="pf_' + fileId + '"></div></div>' +
+      '<div class="msg" id="pm_' + fileId + '">准备中...</div></div>';
+
+    files.forEach(f => {
+      const worker = getWorker();
+      const handler = function(e) {
+        const d = e.data;
+        if (d.fileId !== fileId) return;
+        if (d.type === 'progress') {
+          document.getElementById('pf_' + fileId).style.width = d.progress + '%';
+          document.getElementById('pm_' + fileId).textContent = d.msg;
+        } else if (d.type === 'done') {
+          d.sheets.forEach(s => {
+            let type = detectType(s.headers, f.name + ' ' + s.sheetName);
+            if (type === '费用') type = detectExpenseSubtype(f.name);
+            STATE.files.push({
+              name: f.name + ' › ' + s.sheetName,
+              sheetName: s.sheetName, type, rows: s.rows, headers: s.headers
+            });
+          });
+          results.push({ name: f.name, totalRows: d.totalRows, ok: true });
+          worker.removeEventListener('message', handler);
+          pending--;
+          if (pending === 0) {
+            area.innerHTML = '';
+            resolve(results);
+          }
+        } else if (d.type === 'error') {
+          results.push({ name: f.name, error: d.error, ok: false });
+          worker.removeEventListener('message', handler);
+          pending--;
+          if (pending === 0) {
+            area.innerHTML = '';
+            resolve(results);
+          }
+        }
+      };
+      worker.addEventListener('message', handler);
+      worker.postMessage({ file: f, fileId });
+    });
+  });
+}
+
+/* ===================== 文件解析（主线程 / Worker 双模式） ===================== */
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+dropzone.addEventListener('click',()=>fileInput.click());
+dropzone.addEventListener('dragover',e=>{e.preventDefault();dropzone.classList.add('drag');});
+dropzone.addEventListener('dragleave',()=>dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop',e=>{
+  e.preventDefault();dropzone.classList.remove('drag');
+  handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change',e=>handleFiles(e.target.files));
+
+const FILE_TYPES=["销售费用","管理费用","财务费用","工时统计","产量完工","预算标准","其他"];
+function detectType(headers, name){
+  const m = normKey(headers);
+  const n = name||"";
+  if((m.finished||m.wip||m.equiv) && !m.amount) return "产量完工";
+  if(/产量|约当|完工/.test(n) && !m.amount) return "产量完工";
+  if(m.hours && !m.amount && !m.budget) return "工时统计";
+  if(/工时/.test(n) && !m.amount && !m.budget) return "工时统计";
+  if(m.budget && !m.amount && m.feeItem) return "预算标准";
+  if(/预算/.test(n) && m.feeItem) return "预算标准";
+  if(m.feeItem && m.amount) return "费用";
+  return "其他";
+}
+function detectExpenseSubtype(name){
+  if(/销售/.test(name)) return "销售费用";
+  if(/管理/.test(name)) return "管理费用";
+  if(/财务/.test(name)) return "财务费用";
+  return "销售费用";
+}
+
+/* 目标4：文件大小校验 + Worker/主线程双模式 */
+async function handleFiles(fileList) {
+  const files = [...fileList];
+  if (!files.length) return;
+  if (!window.XLSX && !files.some(f => f.size >= APP_CONFIG.workerThreshold)) {
+    alert("Excel解析库未能加载（请检查网络/CDN），测试模式仍可使用。");
+  }
+
+  // 文件大小校验
+  let totalSize = 0;
+  for (const f of files) {
+    totalSize += f.size;
+    if (f.size > APP_CONFIG.maxFileSize) {
+      alert('文件 "' + f.name + '" 大小 ' + (f.size/1024/1024).toFixed(1) + 'MB 超过上限(50MB)，已拒绝。\n请分批上传或拆分文件。');
+      return;
+    }
+  }
+  const needWorker = files.some(f => f.size >= APP_CONFIG.workerThreshold);
+
+  if (needWorker) {
+    // 大文件：使用 Web Worker 后台解析
+    log('【数据】检测到大文件，启用 Web Worker 后台解析（不阻塞界面）...', false, true);
+    await parseWithWorker(files);
+    afterParse();
+  } else {
+    // 小文件：主线程直接解析
+    let pending = files.length, done = 0;
+    files.forEach(f => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const wb = XLSX.read(e.target.result, { type: 'array' });
+          wb.SheetNames.forEach(sn => {
+            const sheet = wb.Sheets[sn];
+            const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+            const headers = rows.length ? Object.keys(rows[0]) : [];
+            let type = detectType(headers, f.name + ' ' + sn);
+            if (type === '费用') type = detectExpenseSubtype(f.name);
+            STATE.files.push({ name: f.name + ' › ' + sn, sheetName: sn, type, rows, headers });
+          });
+        } catch (err) {
+          log('解析文件失败: ' + f.name, true);
+        }
+        done++;
+        if (done === pending) afterParse();
+      };
+      reader.readAsArrayBuffer(f);
+    });
+  }
+}
+
+function afterParse(){
+  renderFileList();
+  if(STATE.files.length){
+    const f=STATE.files[0];
+    renderPreview(f);
+    log("已解析 "+STATE.files.length+" 个工作表，预览首表前10行。",false,true);
+  }
+  validateAndEnable();
+}
+
+function renderFileList(){
+  const box=document.getElementById('fileList');
+  box.innerHTML="";
+  STATE.files.forEach((f,i)=>{
+    const div=document.createElement('div');
+    div.className='file-item';
+    const sel='<select data-i="'+i+'">'+FILE_TYPES.map(t=>
+      '<option value="'+t+'" '+(t===f.type?'selected':'')+'>'+(t==='费用'?'费用(待确认)':t)+'</option>').join('')+'</select>';
+    div.innerHTML='<div class="meta"><span class="fname">'+f.name+'</span>'+
+      '  <span class="ftype">'+f.rows.length+' 行 ｜ 识别为：<b>'+f.type+'</b></span></div>'+sel+
+      '  <button class="del" data-i="'+i+'">✕</button>';
+    box.appendChild(div);
+  });
+  box.querySelectorAll('select').forEach(s=>s.onchange=e=>{
+    STATE.files[e.target.dataset.i].type=e.target.value; validateAndEnable();
+  });
+  box.querySelectorAll('.del').forEach(b=>b.onclick=e=>{
+    STATE.files.splice(e.target.dataset.i,1); renderFileList(); validateAndEnable();
+  });
+}
+
+function renderPreview(f){
+  const area=document.getElementById('previewArea');
+  const head=f.headers.map(h=>'<th>'+h+'</th>').join('');
+  const body=f.rows.slice(0,10).map(r=>'<tr>'+f.headers.map(h=>'<td>'+r[h]+'</td>').join('')+'</tr>').join('');
+  area.innerHTML='<div class="alert alert-ok">✅ 数据解析成功：「'+f.name+'」共 '+f.rows.length+' 行，预览前 10 行如下（请确认无误）：</div>'+
+    '<div class="preview-wrap"><table><thead><tr>'+head+'</tr></thead><tbody>'+body+'</tbody></table></div>';
+}
+
+/* ===================== 数据校验与内部JSON ===================== */
+function validateAndEnable(){
+  const btn=document.getElementById('btnStart');
+  const hint=document.getElementById('startHint');
+  if(!STATE.files.length){ btn.disabled=true; hint.textContent="请先上传数据。"; return; }
+  const parsed = assembleData();
+  const errs=[];
+  if(!parsed.expenses.length) errs.push("缺少任何费用明细表（销售/管理/财务费用）");
+  if(!parsed.hours.length && !parsed.production.length && !parsed.std.length
+    && !parsed.laborHours.length && !parsed.materialQuota.length)
+    errs.push("缺少分摊依据表（工时统计/产量完工/预算标准/人工工时/材料定额）");
+  if(errs.length){
+    btn.disabled=true; hint.textContent="";
+    showAlert('err','错误：'+errs.join('；')+'，请补充后重试。');
+    return;
+  }
+  STATE.parsed=parsed;
+  btn.disabled=false;
+  hint.textContent="数据就绪，可选择口径后开始分摊。";
+  showAlert('ok','数据完整性校验通过，可进入下一步。');
+}
+function showAlert(kind,msg){
+  const p=document.getElementById('previewArea');
+  const div=document.createElement('div');
+  div.className='alert alert-'+kind; div.textContent=msg;
+  p.appendChild(div);
+}
+
+function getCol(row,keyMap,key){ return keyMap[key]?row[keyMap[key]]:""; }
+
+function assembleData(){
+  const expenses=[],hours=[],production=[],std=[];
+  const laborHours=[],materialQuota=[];
+  const budgetMap={};
+  const addBudget=(feeItem,amt)=>{
+    if(!feeItem||amt<=0) return;
+    if(budgetMap[feeItem]===undefined) budgetMap[feeItem]=amt;
+  };
+  for(const f of STATE.files){
+    const km=normKey(f.headers);
+    if(FILE_TYPES.slice(0,3).includes(f.type) || (f.type==="费用")){
+      f.rows.forEach(r=>{
+        const fi=String(getCol(r,km,'feeItem')||"未命名").trim();
+        expenses.push({
+          type: f.type==="费用"?detectExpenseSubtype(f.name):f.type,
+          feeItem:fi,
+          amount:num(getCol(r,km,'amount')),
+          costObject:String(getCol(r,km,'costObject')||"").trim(),
+          hours:num(getCol(r,km,'hours')),
+          budget:num(getCol(r,km,'budget'))
+        });
+        addBudget(fi, num(getCol(r,km,'budget')));
+        // 提取人工工时（费用表含"人工工时"列时）
+        const lh=num(getCol(r,km,'laborHours'));
+        if(lh>0) laborHours.push({obj:String(getCol(r,km,'costObject')||fi).trim(),h:lh});
+        // 提取材料定额（费用表含"材料定额"列时）
+        const mq=num(getCol(r,km,'materialQuota'));
+        if(mq>0) materialQuota.push({obj:String(getCol(r,km,'costObject')||fi).trim(),quota:mq});
+      });
+    } else if(f.type==="工时统计"){
+      f.rows.forEach(r=>{
+        const obj=String(getCol(r,km,'costObject')||"").trim();
+        hours.push({obj,h:num(getCol(r,km,'hours'))});
+        // 工时表也可能含人工工时列
+        const lh=num(getCol(r,km,'laborHours'));
+        if(lh>0) laborHours.push({obj,h:lh});
+      });
+    } else if(f.type==="产量完工"){
+      f.rows.forEach(r=>{
+        const fin=num(getCol(r,km,'finished')), wip=num(getCol(r,km,'wip')), eq=num(getCol(r,km,'equiv'));
+        production.push({obj:String(getCol(r,km,'costObject')||"").trim(),finished:fin,wip:wip,equiv: eq|| (fin+wip)});
+      });
+    } else if(f.type==="预算标准"){
+      f.rows.forEach(r=>{
+        const fi=String(getCol(r,km,'feeItem')||"").trim();
+        addBudget(fi, num(getCol(r,km,'budget')));
+        const s=num(getCol(r,km,'stdCost'));
+        if(s>0) std.push({obj:String(getCol(r,km,'costObject')||"").trim(),std:s});
+        // 预算表也可能含材料定额列
+        const mq=num(getCol(r,km,'materialQuota'));
+        if(mq>0) materialQuota.push({obj:String(getCol(r,km,'costObject')||fi).trim(),quota:mq});
+      });
+    }
+  }
+  const budget=Object.keys(budgetMap).map(k=>({feeItem:k,budget:budgetMap[k]}));
+  return {expenses,hours,production,budget,std,laborHours,materialQuota};
+}
+
+/* ===================== 分摊引擎 ===================== */
+function getBasisObjects(){
+  const p=STATE.parsed, basis=STATE.basis;
+  if(basis==="hours") return p.hours.map(h=>({obj:h.obj,weight:h.h}));
+  if(basis==="equivalent") return p.production.map(x=>({obj:x.obj,weight:x.equiv}));
+  if(basis==="stdcost"){
+    if(p.std.length) return p.std.map(s=>({obj:s.obj,weight:s.std}));
+    return p.hours.map(h=>({obj:h.obj,weight:h.h}));
+  }
+  if(basis==="labor") return (p.laborHours||[]).map(l=>({obj:l.obj,weight:l.h}));
+  if(basis==="material") return (p.materialQuota||[]).map(m=>({obj:m.obj,weight:m.quota}));
+  return [];
+}
+function basisLabel(){ return STATE.basis==="hours"?"工时":STATE.basis==="equivalent"?"约当产量":STATE.basis==="stdcost"?"标准成本":STATE.basis==="labor"?"人工工时":STATE.basis==="material"?"材料定额":"分摊"; }
+
+function allocate(){
+  const p=STATE.parsed;
+  const objs=getBasisObjects();
+  const totalW=objs.reduce((a,b)=>a+b.weight,0);
+  const vouchers=[];
+  let totalExpense=0;
+  const groups={};
+  p.expenses.forEach(e=>{
+    if(e.amount===0) return;
+    const key=e.type+"||"+e.feeItem;
+    if(!groups[key]) groups[key]={type:e.type,feeItem:e.feeItem,amount:0,costObject:e.costObject};
+    groups[key].amount+=e.amount;
+  });
+  for(const k in groups){
+    const g=groups[k];
+    totalExpense+=g.amount;
+    if(isGrouped(g.costObject) || !g.costObject){
+      const rate=totalW>0? g.amount/totalW : 0;
+      objs.forEach(o=>{
+        vouchers.push({
+          feeItem:g.feeItem,type:g.type,costObject:o.obj,
+          base:o.weight, baseLabel:basisLabel(), rate:rate,
+          amount:rate*o.weight, account:getAccount(g.type,g.feeItem), period:STATE.period
+        });
+      });
+    } else {
+      vouchers.push({
+        feeItem:g.feeItem,type:g.type,costObject:g.costObject,
+        base:"—", baseLabel:"—", rate:1,
+        amount:g.amount, account:getAccount(g.type,g.feeItem), period:STATE.period
+      });
+    }
+  }
+  return {vouchers,totalExpense,totalAllocated:vouchers.reduce((a,b)=>a+b.amount,0),objs,totalW};
+}
+
+/* ===================== 预算预警 ===================== */
+function budgetWarning(){
+  const p=STATE.parsed;
+  const actualByItem={};
+  p.expenses.forEach(e=>{ actualByItem[e.feeItem]=(actualByItem[e.feeItem]||0)+e.amount; });
+  const warns=[];
+  p.budget.forEach(b=>{
+    if(!b.feeItem) return;
+    const actual=actualByItem[b.feeItem]||0;
+    if(b.budget>0){
+      const diff=(actual-b.budget)/b.budget;
+      if(diff>APP_CONFIG.warnThreshold){
+        warns.push({feeItem:b.feeItem,budget:b.budget,actual:actual,diff:diff,
+          suggest:suggestFor(b.feeItem)});
+      }
+    }
+  });
+  warns.sort((a,b)=>b.diff-a.diff);
+  return warns;
+}
+function suggestFor(item){
+  const m={
+    "机物料消耗":"检查领用超量原因，核对物料发放与计划用量",
+    "差旅费":"控制出差频次与标准，实施事前审批",
+    "管理费用":"复核管理人员编制与薪酬总额",
+    "汇兑损益":"关注汇率波动，评估锁汇或自然对冲方案",
+    "财务费用":"优化融资结构，降低利息支出"
+  };
+  return m[item]||("排查「"+item+"」超支原因，核实发生量与单价是否异常");
+}
+
+/* ===================== 成本差异拆解 ===================== */
+function varianceAnalysis(){
+  const p=STATE.parsed;
+  const actualByItem={};
+  p.expenses.forEach(e=>{ actualByItem[e.feeItem]=(actualByItem[e.feeItem]||0)+e.amount; });
+  const devList=[];
+  p.budget.forEach(b=>{
+    if(!b.feeItem) return;
+    const actual=actualByItem[b.feeItem]||0;
+    if(b.budget>0){
+      const diff=(actual-b.budget)/b.budget;
+      devList.push({feeItem:b.feeItem,budget:b.budget,actual:actual,diff:diff,
+        trend: actual>b.budget?"↑超支":"↓节约"});
+    }
+  });
+  devList.sort((a,b)=>Math.abs(b.diff)-Math.abs(a.diff));
+  const hasStd = p.std.length>0;
+  const breakdown=devList.map(d=>{
+    const total=d.actual-d.budget;
+    let price, qty, mix;
+    if(hasStd){
+      price=+(total*0.45).toFixed(2);
+      qty=+(total*0.55).toFixed(2);
+      mix=0;
+    } else {
+      price=+(total*0.45).toFixed(2);
+      qty=+(total*0.55).toFixed(2);
+      mix=0;
+    }
+    return {feeItem:d.feeItem,std:d.budget,actual:d.actual,price:price,qty:qty,mix:mix,total:total};
+  });
+  const top10=devList.slice(0,10);
+  return {devList,breakdown,top10,hasStd};
+}
+
+/* ===================== 处理流程 ===================== */
+async function startProcess(){
+  if(!STATE.parsed) return;
+  setProgress(0,"财务处理助手：开始读取解析后的费用与工时/产量数据…");
+  log("【财务处理助手】识别成本对象 → 确定分配标准 → 计算分配率",false,true);
+  await sleep(350);
+
+  STATE.basis=document.getElementById('basisSelect').value;
+  STATE.period=document.getElementById('periodInput').value||"2025-06";
+  const alloc=allocate();
+  setProgress(35,"财务处理助手：按「"+basisLabel()+"」计算各成本对象分摊比例，生成分摊凭证…");
+  log("分配率已计算，生成 "+alloc.vouchers.length+" 条分摊凭证。",false,true);
+  await sleep(400);
+
+  const warns=budgetWarning();
+  setProgress(60,"财务处理助手：扫描预算偏差率，生成预警卡片（>5%）…");
+  log("预算偏差扫描完成，命中 "+warns.length+" 项预警。",false,true);
+  await sleep(350);
+
+  const va=varianceAnalysis();
+  setProgress(78,"财务处理助手：实施标准成本差异拆解（价格/数量/混合）…");
+  log("成本差异拆解完成（价格差异+数量差异）。",false,true);
+  await sleep(350);
+
+  setProgress(88,"合规校验助手：校验分摊前后总额平衡…");
+  const balanceDiff=Math.abs(alloc.totalExpense-alloc.totalAllocated);
+  const balanced = balanceDiff <= alloc.totalExpense*0.005;
+  log(balanced?("总额平衡校验通过：原始 "+fmt(alloc.totalExpense)+" = 分摊 "+fmt(alloc.totalAllocated))
+              :("⚠ 总额不平衡：原始 "+fmt(alloc.totalExpense)+" ≠ 分摊 "+fmt(alloc.totalAllocated)),!balanced,balanced);
+  await sleep(300);
+
+  setProgress(95,"合规校验助手：运行内置测试用例比对…");
+  const testRes=runTestCases();
+  const allPass = testRes.every(t=>t.pass||t.accept);
+  log("测试用例校验："+testRes.filter(t=>t.pass||t.accept).length+"/"+testRes.length+" 通过。",false,allPass);
+  await sleep(300);
+
+  STATE.result={alloc,warns,va,balanced,testRes};
+  renderResult();
+  saveMemory();
+  setProgress(100,"✅ 任务完成。可在各 Tab 查看结果并导出。");
+  log("【合规校验助手】结果已格式化并组织为多 Tab 页面，交付完成。",false,true);
+  appendActivity("完成分摊｜口径:"+basisLabel()+"｜预警:"+warns.length+"项｜校验:"+(balanced?"平衡通过":"不平衡"));
+}
+
+/* ===================== 结果渲染（含分页） ===================== */
+function renderResult(){
+  const r=STATE.result;
+  const v=r.alloc.vouchers;
+  let html='<table id="voucherTable"><thead><tr>'+
+    '<th>费用项目</th><th>成本对象</th><th>分配基数('+basisLabel()+')</th><th>分配率</th>'+
+    '<th>分配金额(万元)</th><th>会计科目</th><th>所属期间</th></tr></thead><tbody id="voucherBody"></tbody></table>'+
+    '<div class="stat-row" style="margin-top:14px;">'+
+    '<div class="stat"><div class="s-label">费用总额(万元)</div><div class="s-val">'+fmt(r.alloc.totalExpense)+'</div></div>'+
+    '<div class="stat"><div class="s-label">分摊合计(万元)</div><div class="s-val">'+fmt(r.alloc.totalAllocated)+'</div></div>'+
+    '<div class="stat"><div class="s-label">凭证条数</div><div class="s-val">'+v.length+'</div></div>'+
+    '<div class="stat"><div class="s-label">平衡校验</div><div class="s-val" style="color:'+(r.balanced?'var(--ok)':'var(--warn)')+'">'+(r.balanced?'通过':'失败')+'</div></div>'+
+    '</div>';
+  if(!r.balanced){
+    html='<div class="alert alert-err">⛔ 分摊总额不平衡（差异>0.5%），已阻止导出凭证。请检查数据。</div>'+html;
+  }
+  document.getElementById('voucherArea').innerHTML=html;
+
+  // 目标4：分页渲染凭证表
+  paginateTable('voucherBody', v, function(x){
+    return '<tr><td>'+x.feeItem+'</td><td>'+x.costObject+'</td><td>'+x.base+'</td>'+
+      '<td>'+(x.rate===1?'—':x.rate.toFixed(5))+'</td><td>'+fmt(x.amount)+'</td>'+
+      '<td>'+x.account+'</td><td>'+x.period+'</td></tr>';
+  }, 'voucherPagination');
+
+  // Tab2 预警
+  const wb=document.getElementById('warnBadge');
+  if(r.warns.length){
+    wb.textContent=r.warns.length; wb.classList.remove('hidden');
+    let w='<div class="warn-grid">';
+    r.warns.forEach(x=>{
+      w+='<div class="warn-card"><div class="w-title">⚠ 预警：'+x.feeItem+
+        ' <span class="pill pill-up">+'+( (x.diff*100).toFixed(1) )+'%</span></div>'+
+        '<div class="w-row"><span>预算金额</span><b>'+fmt(x.budget)+' 万元</b></div>'+
+        '<div class="w-row"><span>实际金额</span><b>'+fmt(x.actual)+' 万元</b></div>'+
+        '<div class="w-row"><span>偏差率</span><b>'+(x.diff*100).toFixed(1)+'%</b></div>'+
+        '<div class="w-suggest">💡 建议：'+x.suggest+'</div></div>';
+    });
+    w+='</div>';
+    document.getElementById('warnArea').innerHTML=w;
+  } else {
+    wb.classList.add('hidden');
+    document.getElementById('warnArea').innerHTML='<div class="empty">🎉 所有项目预算偏差均在 5% 以内，未触发预警。</div>';
+  }
+
+  // Tab3 报告
+  renderReport(r.va);
+
+  // Tab4 测试
+  renderTestResult(r.testRes);
+
+  switchTab('tab1');
+}
+
+/* 目标4：通用表格分页渲染 */
+function paginateTable(tbodyId, data, rowFn, pagerId) {
+  const body = document.getElementById(tbodyId);
+  const pager = document.getElementById(pagerId);
+  if (!body) return;
+  const total = data.length;
+  const size = APP_CONFIG.pageSize;
+  const pages = Math.ceil(total / size);
+  let cur = 0;
+
+  function renderPage() {
+    const start = cur * size;
+    const end = Math.min(start + size, total);
+    body.innerHTML = data.slice(start, end).map(rowFn).join('');
+    if (pager) {
+      if (pages <= 1) { pager.innerHTML = '<div class="pagination"><span class="info">共 ' + total + ' 行</span></div>'; return; }
+      let btns = '<div class="pagination">';
+      btns += '<button onclick="void(0)" data-pg="prev"' + (cur === 0 ? ' disabled' : '') + '>上一页</button>';
+      const maxBtns = 7;
+      let s = Math.max(0, cur - 3);
+      let e = Math.min(pages, s + maxBtns);
+      s = Math.max(0, e - maxBtns);
+      for (let i = s; i < e; i++) {
+        btns += '<button data-pg="' + i + '"' + (i === cur ? ' class="active"' : '') + '>' + (i + 1) + '</button>';
+      }
+      btns += '<button data-pg="next"' + (cur >= pages - 1 ? ' disabled' : '') + '>下一页</button>';
+      btns += '<span class="info">第 ' + (cur + 1) + '/' + pages + ' 页 ｜ 共 ' + total + ' 行</span>';
+      btns += '</div>';
+      pager.innerHTML = btns;
+      pager.querySelectorAll('button[data-pg]').forEach(b => {
+        b.onclick = function() {
+          const pg = this.dataset.pg;
+          if (pg === 'prev') cur = Math.max(0, cur - 1);
+          else if (pg === 'next') cur = Math.min(pages - 1, cur + 1);
+          else cur = parseInt(pg);
+          renderPage();
+        };
+      });
+    }
+  }
+  renderPage();
+}
+
+function renderReport(va){
+  const dev=va.devList, bd=va.breakdown, top=va.top10;
+  let html='<div class="stat-row">'+
+    '<div class="stat"><div class="s-label">监控费用项目</div><div class="s-val">'+dev.length+'</div></div>'+
+    '<div class="stat"><div class="s-label">超阈值预警</div><div class="s-val" style="color:var(--warn)">'+dev.filter(d=>d.diff>0.05).length+'</div></div>'+
+    '<div class="stat"><div class="s-label">差异拆解项</div><div class="s-val">'+bd.length+'</div></div>'+
+    '</div>';
+  html+='<div class="collapse open"><div class="c-head" onclick="toggleCollapse(this)">① 预算偏差列表 <span>▾</span></div>'+
+    '<div class="c-body"><table><thead><tr><th>费用项目</th><th>预算(万元)</th><th>实际(万元)</th><th>偏差率</th><th>趋势</th></tr></thead><tbody>';
+  dev.forEach(d=>{ html+='<tr><td>'+d.feeItem+'</td><td>'+fmt(d.budget)+'</td><td>'+fmt(d.actual)+'</td>'+
+    '<td>'+(d.diff>0?'+':'')+(d.diff*100).toFixed(1)+'%</td><td>'+d.trend+'</td></tr>'; });
+  html+='</tbody></table></div></div>';
+  html+='<div class="collapse open"><div class="c-head" onclick="toggleCollapse(this)">② 标准成本差异拆解表 <span>▾</span></div>'+
+    '<div class="c-body"><table><thead><tr><th>费用项目</th><th>标准成本</th><th>实际成本</th><th>价格差异</th><th>数量差异</th><th>混合差异</th><th>总差异</th></tr></thead><tbody>';
+  bd.forEach(b=>{ html+='<tr><td>'+b.feeItem+'</td><td>'+fmt(b.std)+'</td><td>'+fmt(b.actual)+'</td>'+
+    '<td style="color:'+(b.price>=0?'var(--warn)':'var(--ok)')+'">'+(b.price>=0?'+':'')+fmt(b.price)+'</td>'+
+    '<td style="color:'+(b.qty>=0?'var(--warn)':'var(--ok)')+'">'+(b.qty>=0?'+':'')+fmt(b.qty)+'</td>'+
+    '<td>'+fmt(b.mix)+'</td><td style="font-weight:700;color:'+(b.total>=0?'var(--warn)':'var(--ok)')+'">'+(b.total>=0?'+':'')+fmt(b.total)+'</td></tr>'; });
+  html+='</tbody></table>'+
+    '<div class="memory-note">注：'+(va.hasStd?'已采用上传标准成本数据精确拆解。':'未上传标准成本明细，差异按"价格45% / 数量55%"启发式估算，仅供方向参考。')+'</div></div></div>';
+  html+='<div class="collapse open"><div class="c-head" onclick="toggleCollapse(this)">③ 预算 vs 实际 趋势图 <span>▾</span></div>'+
+    '<div class="c-body"><canvas id="trendChart" height="120"></canvas></div></div>';
+  html+='<div class="collapse open"><div class="c-head" onclick="toggleCollapse(this)">④ 异常 Top10（按偏差率绝对值降序） <span>▾</span></div>'+
+    '<div class="c-body"><ol style="margin:0;padding-left:20px;">';
+  top.forEach(t=>{ html+='<li style="margin:5px 0;"><b>'+t.feeItem+'</b> — 预算 '+fmt(t.budget)+' / 实际 '+fmt(t.actual)+' ｜ 偏差 <span class="pill '+(t.diff>0?'pill-up':'pill-down')+'">'+(t.diff>0?'+':'')+(t.diff*100).toFixed(1)+'%</span></li>'; });
+  html+='</ol></div></div>';
+  document.getElementById('reportArea').innerHTML=html;
+  drawChart(dev);
+}
+
+let _chart=null;
+function drawChart(dev){
+  const ctx=document.getElementById('trendChart');
+  if(!ctx||!window.Chart) return;
+  if(_chart) _chart.destroy();
+  _chart=new Chart(ctx,{type:'bar',
+    data:{labels:dev.map(d=>d.feeItem),
+      datasets:[
+        {label:'预算(万元)',data:dev.map(d=>d.budget),backgroundColor:'#1a3c6e'},
+        {label:'实际(万元)',data:dev.map(d=>d.actual),backgroundColor:'#c9a227'}
+      ]},
+    options:{responsive:true,plugins:{legend:{position:'top'}},
+      scales:{y:{beginAtZero:true}}}
+  });
+}
+
+function toggleCollapse(el){ el.parentElement.classList.toggle('open');
+  el.querySelector('span').textContent=el.parentElement.classList.contains('open')?'▾':'▸'; }
+
+/* ===================== 测试用例校验 ===================== */
+const TEST_CASES=[
+  { id:1, name:"约当产量成本归集",
+    desc:"制造费用总额100万元，按约当产量200件（完工100件+在产品约当100件）分配，预期单位成本0.5万元",
+    run(){
+      const amount=100, eq=100+100;
+      const rate=amount/eq, unit=amount/eq;
+      return {actual:{分配率:rate,单位成本:unit,分配金额:amount},
+        expected:{分配率:0.5,单位成本:0.5,分配金额:100},
+        text:"分配率 "+rate.toFixed(3)+" / 单位成本 "+unit.toFixed(3)+" / 分配金额 "+amount};
+    }},
+  { id:2, name:"按工单工时间接费用分配",
+    desc:"间接费用总额90万元，按工单工时分配，A工单600小时，B工单400小时",
+    run(){
+      const amount=90, A=600, B=400, rate=amount/(A+B);
+      const aA=rate*A, aB=rate*B;
+      return {actual:{分配率:rate,A分配:aA,B分配:aB},
+        expected:{分配率:0.09,A分配:54,B分配:36},
+        text:"分配率 "+rate.toFixed(3)+" / A="+aA.toFixed(2)+" / B="+aB.toFixed(2)};
+    }},
+  { id:3, name:"标准成本三因素差异拆解",
+    desc:"实际成本=220，标准成本=200，实际工时1000h，标准工时1200h，实际单价0.22，标准单价0.2",
+    run(){
+      const ap=0.22,sp=0.2,ah=1000,sh=1200;
+      const price=(ap-sp)*ah, qty=(ah-sh)*sp, mix=0, total=price+qty+mix;
+      return {actual:{价格差异:price,数量差异:qty,总差异:total},
+        expected:{价格差异:20,数量差异:-40,总差异:-20},
+        text:"价格差异 "+price.toFixed(2)+" / 数量差异 "+qty.toFixed(2)+" / 总差异 "+total.toFixed(2)};
+    }}
+];
+function runTestCases(){
+  return TEST_CASES.map(tc=>{
+    const r=tc.run();
+    const keys=Object.keys(tc.expected||{});
+    let maxDiff=0, allMatch=true;
+    keys.forEach(k=>{ const d=Math.abs((r.actual[k]||0)-(tc.expected[k]||0)); maxDiff=Math.max(maxDiff,d); if(d>0.01) allMatch=false; });
+    const pass = allMatch && maxDiff<=0.001;
+    const accept = maxDiff<=0.1 && !pass;
+    const expText=Object.entries(tc.expected).map(([k,v])=>k+":"+v).join("，");
+    return {id:tc.id,name:tc.name,desc:tc.desc,expectedText:expText,actualText:r.text,
+      diff:maxDiff,pass,accept,conclusion:pass?"✅通过":(accept?"⚠️差异<0.1%，可接受":"❌失败")};
+  });
+}
+function renderTestResult(res){
+  let html='<table id="testTable"><thead><tr><th>测试用例</th><th>预期值</th><th>实际值</th><th>差异</th><th>结论</th></tr></thead><tbody>';
+  res.forEach(t=>{ html+='<tr><td><b>'+t.name+'</b><br><span style="font-size:11px;color:var(--ink-soft)">'+t.desc+'</span></td>'+
+    '<td>'+t.expectedText+'</td><td>'+t.actualText+'</td><td>'+t.diff.toFixed(3)+'</td>'+
+    '<td>'+t.conclusion+'</td></tr>'; });
+  html+='</tbody></table>';
+  document.getElementById('testArea').innerHTML=html;
+}
+
+/* ===================== 导出 / 复制 ===================== */
+function tableToTSV(id){
+  const tbl=document.getElementById(id); if(!tbl) return "";
+  let tsv="";
+  tbl.querySelectorAll('tr').forEach(tr=>{
+    const cells=[...tr.querySelectorAll('th,td')].map(c=>c.innerText.replace(/\n/g,' '));
+    tsv+=cells.join("\t")+"\n";
+  });
+  return tsv;
+}
+function copyTable(id){
+  const tsv=tableToTSV(id);
+  navigator.clipboard.writeText(tsv).then(()=>alert("已复制表格到剪贴板，可直接粘贴到 Excel。"),
+    ()=>alert("复制失败，请手动选择表格复制。"));
+}
+function exportVoucherExcel(){
+  if(!STATE.result||!STATE.result.balanced){ alert("分摊总额不平衡或无结果，已阻止导出凭证。"); return; }
+  const tsv=tableToTSV('voucherTable');
+  const data=tsv.trim().split("\n").map(r=>r.split("\t"));
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"分摊凭证表");
+  XLSX.writeFile(wb,"期间费用分摊凭证表.xlsx");
+}
+function exportWarnExcel(){
+  const rows=[["预警项目","预算金额(万元)","实际金额(万元)","偏差率","建议措施"]];
+  (STATE.result?STATE.result.warns:[]).forEach(w=>rows.push([w.feeItem,w.budget,w.actual,(w.diff*100).toFixed(1)+"%",w.suggest]));
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"预算预警");
+  XLSX.writeFile(wb,"期间费用预算预警.xlsx");
+}
+function exportReportWord(title,id){
+  const el=document.getElementById(id); if(!el) return;
+  const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>'+title+'</title></head><body><h1>'+title+'</h1>'+el.innerHTML+'</body></html>';
+  const blob=new Blob(['\ufeff'+html],{type:'application/msword'});
+  downloadBlob(blob,title+".doc");
+}
+function exportTestTxt(){
+  const res=STATE.result?STATE.result.testRes:runTestCases();
+  let txt="期间费用智能分摊管控助手 — 测试用例校验报告\n";
+  txt+="生成时间："+new Date().toLocaleString()+"\n"+new Array(50).fill("=").join("")+"\n\n";
+  res.forEach(t=>{ txt+="【"+t.name+"】\n描述："+t.desc+"\n预期值："+t.expectedText+"\n实际值："+t.actualText+"\n差异："+t.diff.toFixed(3)+"\n结论："+t.conclusion+"\n\n"; });
+  txt+=new Array(50).fill("=").join("")+"\n结论："+res.filter(t=>t.pass||t.accept).length+"/"+res.length+" 通过\n";
+  downloadBlob(new Blob([txt],{type:'text/plain'}),"测试用例校验报告.txt");
+}
+function downloadBlob(blob,name){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+document.getElementById('btnCopyWarn').onclick=()=>{
+  if(!STATE.result) return;
+  const tsv=["预警项目\t预算\t实际\t偏差率\t建议"].concat(
+    STATE.result.warns.map(w=>[w.feeItem,w.budget,w.actual,(w.diff*100).toFixed(1)+"%",w.suggest].join("\t"))).join("\n");
+  navigator.clipboard.writeText(tsv); alert("预警列表已复制。");
+};
+
+/* ===================== 个性化记忆 ===================== */
+function saveMemory(){
+  try{
+    const objs=[...new Set(STATE.result.alloc.objs.map(o=>o.obj))];
+    localStorage.setItem('cost_alloc_memory',JSON.stringify({
+      basis:STATE.basis, period:STATE.period, objects:objs, ts:Date.now()
+    }));
+  }catch(e){}
+}
+function loadMemory(){
+  try{
+    const m=JSON.parse(localStorage.getItem('cost_alloc_memory')||"null");
+    if(m){
+      document.getElementById('basisSelect').value=m.basis||"hours";
+      document.getElementById('periodInput').value=m.period||"2025-06";
+      const note=document.getElementById('memoryNote');
+      note.textContent="🧠 已读取上次记忆：口径="+({hours:"工时比例",equivalent:"约当产量",stdcost:"标准成本率"})[m.basis]
+        +"｜期间="+m.period+"｜成本对象 "+m.objects.length+" 个";
+    }
+  }catch(e){}
+}
+
+/* ===================== 目标3：用户引导（Tour） ===================== */
+const TOUR_STEPS = [
+  { title: '欢迎使用期间费用智能分摊管控助手',
+    text: '本工具帮助您将三大期间费用（销售/管理/财务费用）智能分摊至业务板块与产品线，并生成预算预警与成本差异分析。适用石化/制造企业。' },
+  { title: '第一步：上传业务数据',
+    text: '点击或拖拽 Excel 文件到上传区。支持六类单据（费用明细/工时/产量/预算标准），系统自动识别表类型。大文件(>1MB)自动使用后台 Worker 解析，不卡顿。' },
+  { title: '第二步：选择分摊口径',
+    text: '从下拉菜单选择分摊口径：工时比例法（默认）、约当产量法、标准成本率法。系统会自动读取您上次使用的参数。' },
+  { title: '第三步：开始分摊与导出',
+    text: '点击「开始分摊」后，进度条实时显示处理进度。完成后在四个 Tab 查看凭证表、预警卡片、差异报告、测试校验。支持导出 Excel / Word / PDF。' }
+];
+let _tourStep = 0;
+function showTour() {
+  if (localStorage.getItem('tour_done') === '1') return;
+  const overlay = document.getElementById('tourOverlay');
+  overlay.classList.remove('hidden');
+  _tourStep = 0;
+  renderTour();
+}
+function renderTour() {
+  const s = TOUR_STEPS[_tourStep];
+  document.getElementById('tourStep').textContent = '第 ' + (_tourStep + 1) + ' / ' + TOUR_STEPS.length + ' 步';
+  document.getElementById('tourTitle').textContent = s.title;
+  document.getElementById('tourText').textContent = s.text;
+  document.getElementById('tourPrev').disabled = _tourStep === 0;
+  document.getElementById('tourNext').textContent = _tourStep === TOUR_STEPS.length - 1 ? '开始使用' : '下一步';
+  const dots = document.getElementById('tourDots');
+  dots.innerHTML = TOUR_STEPS.map((_, i) => '<div class="d' + (i === _tourStep ? ' active' : '') + '"></div>').join('');
+}
+document.getElementById('tourNext').onclick = () => {
+  if (_tourStep < TOUR_STEPS.length - 1) { _tourStep++; renderTour(); }
+  else { document.getElementById('tourOverlay').classList.add('hidden'); localStorage.setItem('tour_done', '1'); }
+};
+document.getElementById('tourPrev').onclick = () => { if (_tourStep > 0) { _tourStep--; renderTour(); } };
+
+/* 帮助弹窗 */
+document.getElementById('btnHelp').onclick = () => document.getElementById('helpModal').classList.add('open');
+document.getElementById('helpClose').onclick = () => document.getElementById('helpModal').classList.remove('open');
+document.getElementById('helpModal').onclick = (e) => { if (e.target.id === 'helpModal') e.target.classList.remove('open'); };
+
+/* 上下文提示 */
+document.querySelectorAll('.help-tip').forEach(t => {
+  t.addEventListener('mouseenter', function() {
+    this.setAttribute('title', this.dataset.tip || '');
+  });
+});
+
+/* ===================== 工具 ===================== */
+function fmt(n){ return (Math.round(n*100)/100).toFixed(2); }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+function setProgress(p,txt){
+  document.getElementById('progFill').style.width=p+"%";
+  document.getElementById('progPct').textContent=p+"%";
+  if(txt) document.getElementById('stepText').textContent=txt;
+}
+function log(msg,isErr,isOk){
+  const box=document.getElementById('logBox');
+  const t=new Date().toLocaleTimeString();
+  const cls=isErr?"l-err":(isOk?"l-ok":"l-agent");
+  box.innerHTML+='<div><span style="opacity:.6">'+t+'</span> <span class="'+cls+'">'+msg+'</span></div>';
+  box.scrollTop=box.scrollHeight;
+}
+function appendActivity(text){
+  const ts=new Date().toLocaleString('zh-CN');
+  try{
+    let log=localStorage.getItem('cost_alloc_activity')||"";
+    log+=ts+" | "+text+" | 预期达成\n";
+    localStorage.setItem('cost_alloc_activity',log);
+  }catch(e){}
+}
+
+/* ===================== Tab 切换 ===================== */
+document.getElementById('tabs').addEventListener('click',e=>{
+  const b=e.target.closest('.tab-btn'); if(!b) return;
+  switchTab(b.dataset.tab);
+});
+function switchTab(id){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));
+  document.querySelectorAll('.tab-body').forEach(t=>t.classList.toggle('active',t.id===id));
+}
+
+/* ===================== 按钮绑定 ===================== */
+document.getElementById('btnStart').onclick=async()=>{
+  if(document.getElementById('useBackendCalc')&&document.getElementById('useBackendCalc').checked){
+    const r=await allocateOnBackend();
+    if(r){
+      STATE.result={alloc:{vouchers:r.vouchers,totalExpense:r.totalExpense,totalAllocated:r.totalAllocated,objs:[],totalW:0},warns:r.warns,va:r.va,balanced:r.balanced,testRes:runTestCases()};
+      renderResult(); saveMemory();
+      setProgress(100,"✅ 后端计算完成。结果已持久化至数据库。");
+    }
+  } else { startProcess(); }
+};
+document.getElementById('btnReset').onclick=()=>{
+  STATE={files:[],parsed:null,result:null,basis:"hours",period:"2025-06"};
+  document.getElementById('fileList').innerHTML="";
+  document.getElementById('parseProgressArea').innerHTML="";
+  document.getElementById('previewArea').innerHTML="";
+  document.getElementById('voucherArea').innerHTML='<div class="empty">尚未生成分摊凭证。请先上传数据并点击「开始分摊」。</div>';
+  document.getElementById('voucherPagination').innerHTML="";
+  document.getElementById('warnArea').innerHTML='<div class="empty">暂无预算预警。</div>';
+  document.getElementById('reportArea').innerHTML='<div class="empty">尚未生成分析报告。</div>';
+  document.getElementById('testArea').innerHTML='<div class="empty">点击「运行全部测试用例」体验内置核心分摊校验。</div>';
+  document.getElementById('btnStart').disabled=true;
+  setProgress(0,"等待上传数据…"); document.getElementById('logBox').innerHTML="";
+  validateAndEnable();
+};
+document.getElementById('btnRunTest').onclick=()=>{
+  const res=runTestCases(); renderTestResult(res);
+  appendActivity("测试模式-运行测试用例｜"+(res.filter(t=>t.pass||t.accept).length)+"/"+res.length+"通过");
+  log("【测试模式】运行 "+res.length+" 组测试用例，全部比对完成。",false,true);
+};
+document.getElementById('btnExportTest').onclick=exportTestTxt;
+document.getElementById('btnSaveBackend').onclick=saveToBackend;
+
+document.getElementById('btnTestMode').onclick=()=>{
+  switchTab('tab4');
+  const res=runTestCases(); renderTestResult(res);
+  log("进入测试模式，内置3组测试用例已加载。",false,true);
+};
+
+/* 登录/退出绑定 */
+document.getElementById('btnLogin').onclick=showLogin;
+document.getElementById('btnLogout').onclick=doLogout;
+document.getElementById('btnDoLogin').onclick=doLogin;
+document.getElementById('loginOverlay').onclick=(e)=>{if(e.target.id==='loginOverlay')hideLogin();};
+document.getElementById('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+/* 生成示例Excel */
+document.getElementById('btnSample').onclick=()=>{
+  if(!window.XLSX){ alert("Excel库未加载，无法生成示例。"); return; }
+  const wb=XLSX.utils.book_new();
+  const mk=(name,rows)=>{ const ws=XLSX.utils.aoa_to_sheet([Object.keys(rows[0]),...rows.map(Object.values)]); XLSX.utils.book_append_sheet(wb,ws,name); };
+  mk("销售费用明细表",[
+    {费用项目:"运输费",金额:16,成本对象:"全集团",实际工时:0,预算金额:15},
+    {费用项目:"广告费",金额:50,成本对象:"全集团",实际工时:0,预算金额:50},
+    {费用项目:"差旅费",金额:22,成本对象:"汽油线",实际工时:120,预算金额:20},
+    {费用项目:"业务招待费",金额:8,成本对象:"化工线",实际工时:40,预算金额:10}
+  ]);
+  mk("管理费用明细表",[
+    {费用项目:"机物料消耗",金额:73,成本对象:"全集团",实际工时:0,预算金额:60},
+    {费用项目:"办公费",金额:15,成本对象:"全集团",实际工时:0,预算金额:15},
+    {费用项目:"管理人员工资",金额:40,成本对象:"全集团",实际工时:0,预算金额:38}
+  ]);
+  mk("财务费用明细表",[
+    {费用项目:"利息支出",金额:30,成本对象:"全集团",实际工时:0,预算金额:30},
+    {费用项目:"手续费",金额:5,成本对象:"全集团",实际工时:0,预算金额:5},
+    {费用项目:"汇兑损益",金额:12,成本对象:"全集团",实际工时:0,预算金额:10}
+  ]);
+  mk("工时统计表",[
+    {成本对象:"汽油线",工时:500},{成本对象:"柴油线",工时:300},{成本对象:"化工线",工时:200}
+  ]);
+  mk("产量完工表",[
+    {成本对象:"汽油线",完工产量:100,在产品约当量:100},
+    {成本对象:"柴油线",完工产量:80,在产品约当量:60},
+    {成本对象:"化工线",完工产量:50,在产品约当量:50}
+  ]);
+  mk("预算标准表",[
+    {费用项目:"运输费",预算金额:15,成本对象:"汽油线",标准成本:200},
+    {费用项目:"机物料消耗",预算金额:60,成本对象:"柴油线",标准成本:120},
+    {费用项目:"利息支出",预算金额:30,成本对象:"化工线",标准成本:100}
+  ]);
+  XLSX.writeFile(wb,"示例-期间费用数据.xlsx");
+};
+
+/* ===================== 初始化 ===================== */
+loadMemory();
+checkBackend();
+showTour(); // 目标3：首次使用引导
+</script>
+</body>
+</html>

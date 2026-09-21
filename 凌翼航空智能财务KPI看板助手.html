@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>凌翼航空‑智能财务KPI看板监控助手</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --navy:#1A237E; --navy2:#283593; --orange:#FF6F00; --orange2:#FF9100;
+    --bg:#F5F6FA; --card:#FFFFFF; --line:#E3E6F0; --txt:#1f2333; --muted:#7a8194;
+    --green:#1B9E5A; --red:#D83434; --warn:#E8A33D;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--txt);font-size:13px;}
+  /* 顶部导航 */
+  .topbar{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(90deg,var(--navy),var(--navy2));color:#fff;padding:10px 20px;box-shadow:0 2px 8px rgba(26,35,126,.25);position:sticky;top:0;z-index:50;}
+  .topbar .brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:17px;letter-spacing:.5px;}
+  .topbar .brand .logo{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,var(--orange),var(--orange2));display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;}
+  .topbar .sub{font-size:11px;opacity:.75;font-weight:400;margin-top:2px;}
+  .btns{display:flex;gap:10px;}
+  .btn{background:#fff;color:var(--navy);border:none;padding:8px 14px;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px;transition:.15s;}
+  .btn:hover{background:var(--orange);color:#fff;}
+  .btn.primary{background:var(--orange);color:#fff;}
+  .btn.primary:hover{background:var(--orange2);}
+  /* 警告条 */
+  #warnbar{display:none;background:#FDECEC;border-left:4px solid var(--red);color:#a32424;padding:8px 18px;font-size:12px;}
+  /* 主体网格 */
+  .grid{display:grid;grid-template-columns:280px 1fr 1fr 300px;gap:14px;padding:14px;align-items:start;}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;box-shadow:0 1px 3px rgba(20,30,80,.04);}
+  .panel h3{font-size:13px;color:var(--navy);margin-bottom:10px;display:flex;align-items:center;gap:6px;border-bottom:2px solid var(--orange);padding-bottom:6px;}
+  .panel h3 .dot{width:8px;height:8px;border-radius:50%;background:var(--orange);}
+  /* KPI 卡片 */
+  .kpi-card{border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:10px;cursor:pointer;transition:.15s;position:relative;overflow:hidden;}
+  .kpi-card:hover{border-color:var(--navy);box-shadow:0 3px 10px rgba(26,35,126,.12);transform:translateY(-1px);}
+  .kpi-card .kname{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;}
+  .kpi-card .kname .tag{font-size:10px;padding:1px 6px;border-radius:10px;background:#EEF0FB;color:var(--navy);}
+  .kpi-card .kval{font-size:21px;font-weight:800;color:var(--navy);margin:4px 0 2px;}
+  .kpi-card .kval small{font-size:11px;font-weight:600;color:var(--muted);margin-left:3px;}
+  .kpi-card .kchg{font-size:11px;display:flex;gap:12px;}
+  .up{color:var(--green);} .down{color:var(--red);} .flat{color:var(--muted);}
+  .kpi-card.alert{border-color:var(--red);background:#FFF6F6;}
+  .kpi-card.warn{border-color:var(--warn);}
+  .dim-group{font-size:11px;color:var(--orange);font-weight:700;margin:6px 0 6px;text-transform:uppercase;letter-spacing:.5px;}
+  /* 趋势 */
+  .row-controls{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;}
+  select,input[type=date]{font-size:12px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--txt);}
+  .chart-box{position:relative;height:240px;margin-top:6px;}
+  .chart-box.sm{height:210px;}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;}
+  .seg button{border:none;background:#fff;padding:5px 10px;cursor:pointer;font-size:11px;color:var(--muted);}
+  .seg button.active{background:var(--navy);color:#fff;}
+  /* 预警 */
+  .alert-item{border-left:4px solid var(--warn);background:#FFFDF7;padding:8px 10px;border-radius:0 6px 6px 0;margin-bottom:8px;cursor:pointer;}
+  .alert-item.alert{border-left-color:var(--red);background:#FFF6F6;}
+  .alert-item .at{font-size:12px;font-weight:700;color:var(--navy);}
+  .alert-item .am{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.5;}
+  .alert-item .badge{font-size:10px;padding:1px 6px;border-radius:8px;background:var(--orange);color:#fff;margin-left:6px;}
+  .alert-item .badge.red{background:var(--red);}
+  .alert-empty{color:var(--muted);font-size:12px;text-align:center;padding:20px 0;}
+  /* 报告 */
+  .report{margin:0 14px 18px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;}
+  .report h2{font-size:15px;color:var(--navy);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+  .report .summary{background:linear-gradient(90deg,#EEF1FB,#F7F8FC);border-left:4px solid var(--navy);padding:10px 14px;border-radius:6px;line-height:1.7;margin-bottom:14px;}
+  .report h4{color:var(--orange);font-size:13px;margin:12px 0 6px;}
+  .report ul{margin-left:18px;}
+  .report li{margin-bottom:6px;line-height:1.6;}
+  .report li b{color:var(--navy);}
+  .collapse-btn{cursor:pointer;font-size:12px;color:var(--navy);background:#EEF0FB;border:none;padding:5px 12px;border-radius:6px;}
+  /* 弹窗 */
+  .modal{display:none;position:fixed;inset:0;background:rgba(20,28,60,.5);z-index:100;align-items:center;justify-content:center;}
+  .modal.show{display:flex;}
+  .modal-box{background:#fff;border-radius:12px;width:min(720px,92vw);max-height:86vh;overflow:auto;padding:20px 24px;box-shadow:0 10px 40px rgba(0,0,0,.3);}
+  .modal-box h3{color:var(--navy);margin-bottom:12px;}
+  .case{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:12px;}
+  .case.pass{border-left:4px solid var(--green);}
+  .case .ct{font-weight:700;margin-bottom:6px;}
+  .case pre{background:#F7F8FC;padding:10px;border-radius:6px;font-size:11px;overflow:auto;line-height:1.6;}
+  .close{float:right;cursor:pointer;font-size:20px;color:var(--muted);}
+  .legend-inline{font-size:11px;color:var(--muted);margin-top:4px;}
+  @media (max-width:1400px){.grid{grid-template-columns:240px 1fr 1fr 260px;}}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">翼</div>
+      <div>凌翼航空‑智能财务KPI看板监控助手
+        <div class="sub">财务模型模式 V1.0 ｜ 数据模型-业绩评价模型 ｜ 日度实时监控</div>
+      </div>
+    </div>
+    <div class="btns">
+      <button class="btn" id="btnRefresh">🔄 刷新数据</button>
+      <button class="btn" id="btnReport">📄 导出报告</button>
+      <button class="btn primary" id="btnTest">🧪 测试示例</button>
+    </div>
+  </div>
+  <div id="warnbar"></div>
+
+  <div class="grid">
+    <!-- 左：KPI 总览 -->
+    <div class="panel" id="kpiPanel">
+      <h3><span class="dot"></span>KPI 总览（日度）</h3>
+      <div id="kpiList"></div>
+    </div>
+
+    <!-- 中左：趋势 -->
+    <div class="panel">
+      <h3><span class="dot"></span>趋势分析</h3>
+      <div class="row-controls">
+        <select id="kpiSelect"></select>
+        <div class="seg" id="rangeSeg">
+          <button data-r="14">近14日</button>
+          <button data-r="30" class="active">近30日</button>
+          <button data-r="60">全量</button>
+        </div>
+      </div>
+      <div class="chart-box"><canvas id="trendChart"></canvas></div>
+      <div class="legend-inline">实线=实际值，虚线=移动平均(MA3/MA7)，悬停查看数据标签</div>
+    </div>
+
+    <!-- 中右：结构 -->
+    <div class="panel">
+      <h3><span class="dot"></span>结构分析</h3>
+      <div class="chart-box sm"><canvas id="routeChart"></canvas></div>
+      <div class="chart-box sm"><canvas id="aircraftChart"></canvas></div>
+      <div class="chart-box sm"><canvas id="costChart"></canvas></div>
+    </div>
+
+    <!-- 右：预警 -->
+    <div class="panel">
+      <h3><span class="dot"></span>口径预警 / 异常监控</h3>
+      <div id="alertList"></div>
+    </div>
+  </div>
+
+  <!-- 底部：报告 -->
+  <div class="report" id="reportBox">
+    <h2>📊 经营洞察报告 <span><button class="collapse-btn" id="reportToggle">折叠 / 展开</button></button></h2>
+    <div id="reportBody"></div>
+  </div>
+
+  <!-- 测试弹窗 -->
+  <div class="modal" id="testModal">
+    <div class="modal-box">
+      <span class="close" id="testClose">×</span>
+      <h3>🧪 测试示例模块</h3>
+      <div id="testBody"></div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

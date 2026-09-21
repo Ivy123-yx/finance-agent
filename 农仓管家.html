@@ -1,0 +1,2408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>农仓管家 - 北原农垦集团粮食销售业务自动化核算</title>
+    <!-- SheetJS 库：支持离线使用（本地文件），若需在线使用可改为CDN地址 -->
+    <script src="xlsx.full.min.js"></script>
+    <!-- CDN备用（需联网）：<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script> -->
+    <style>
+        /* ==================== CSS Variables & Reset ==================== */
+        :root {
+            --primary-dark: #0d1b2a;
+            --primary-mid: #1b3a5c;
+            --primary-light: #2d5f8a;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --accent-light: #60a5fa;
+            --bg: #f0f4f8;
+            --card-bg: #ffffff;
+            --text-dark: #1e293b;
+            --text-mid: #475569;
+            --text-light: #94a3b8;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --info: #06b6d4;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", sans-serif;
+            background: var(--bg);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ==================== Navigation Bar ==================== */
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-mid));
+            color: #fff;
+            padding: 0 32px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-md);
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .navbar-brand .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .navbar-brand h1 {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .navbar-brand .subtitle {
+            font-size: 12px;
+            color: var(--accent-light);
+            letter-spacing: 1px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-accent {
+            background: var(--accent);
+            color: #fff;
+        }
+        .btn-accent:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+        }
+        .btn-success:hover { background: #059669; transform: translateY(-1px); }
+
+        .btn-warning {
+            background: var(--warning);
+            color: #fff;
+        }
+        .btn-warning:hover { background: #d97706; }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--accent);
+            color: var(--accent);
+        }
+        .btn-outline:hover { background: var(--accent); color: #fff; }
+
+        .btn-lg { padding: 14px 28px; font-size: 16px; }
+
+        .btn-disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* ==================== Main Layout ==================== */
+        .main-container {
+            display: flex;
+            flex: 1;
+            padding: 24px;
+            gap: 24px;
+            max-width: 1920px;
+            margin: 0 auto;
+        }
+
+        /* ==================== Sidebar ==================== */
+        .sidebar {
+            width: 280px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .sidebar-card h3 {
+            font-size: 15px;
+            color: var(--text-mid);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .progress-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .progress-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: #f8fafc;
+            transition: all 0.3s;
+        }
+
+        .progress-step.active {
+            background: #eff6ff;
+            border: 1px solid var(--accent-light);
+        }
+
+        .progress-step.completed {
+            background: #f0fdf4;
+            border: 1px solid var(--success);
+        }
+
+        .progress-step.error {
+            background: #fef2f2;
+            border: 1px solid var(--error);
+        }
+
+        .step-indicator {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            background: var(--border);
+            color: var(--text-light);
+        }
+
+        .progress-step.active .step-indicator {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .progress-step.completed .step-indicator {
+            background: var(--success);
+            color: #fff;
+        }
+
+        .progress-step.error .step-indicator {
+            background: var(--error);
+            color: #fff;
+        }
+
+        .step-text {
+            font-size: 13px;
+            color: var(--text-mid);
+        }
+
+        .progress-step.completed .step-text { color: var(--success); }
+        .progress-step.error .step-text { color: var(--error); }
+
+        .status-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+        }
+
+        .status-label { color: var(--text-light); }
+        .status-value { color: var(--text-dark); font-weight: 600; }
+
+        /* ==================== Content Area ==================== */
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 0;
+        }
+
+        /* ==================== Upload Section ==================== */
+        .upload-section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            padding: 24px;
+        }
+
+        .upload-section h2 {
+            font-size: 18px;
+            color: var(--text-dark);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .upload-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8fafc;
+            position: relative;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--accent);
+            background: #eff6ff;
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--accent);
+            background: #dbeafe;
+            transform: scale(1.02);
+        }
+
+        .upload-zone.has-file {
+            border-color: var(--success);
+            background: #f0fdf4;
+            border-style: solid;
+        }
+
+        .upload-zone-icon {
+            font-size: 36px;
+            color: var(--accent-light);
+            margin-bottom: 12px;
+        }
+
+        .upload-zone.has-file .upload-zone-icon { color: var(--success); }
+
+        .upload-zone-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .upload-zone-desc {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        .upload-zone-filename {
+            font-size: 13px;
+            color: var(--success);
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .upload-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* ==================== Parsed Data Preview ==================== */
+        .parsed-preview {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            padding: 24px;
+            display: none;
+        }
+
+        .parsed-preview.visible { display: block; }
+
+        .parsed-preview h2 {
+            font-size: 18px;
+            color: var(--text-dark);
+            margin-bottom: 16px;
+        }
+
+        .parsed-summary {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .parsed-stat {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .parsed-stat-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .parsed-stat-icon.contract { background: #dbeafe; color: var(--accent); }
+        .parsed-stat-icon.invoice { background: #fce7f3; color: #ec4899; }
+        .parsed-stat-icon.receipt { background: #d1fae5; color: var(--success); }
+
+        .parsed-stat-text {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .parsed-stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .parsed-data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .parsed-data-table th {
+            background: var(--primary-dark);
+            color: #fff;
+            padding: 10px 12px;
+            font-weight: 600;
+            text-align: left;
+        }
+
+        .parsed-data-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-mid);
+        }
+
+        .parsed-data-table tr:nth-child(even) td { background: #f8fafc; }
+
+        /* ==================== Results Section ==================== */
+        .results-section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            padding: 24px;
+            display: none;
+        }
+
+        .results-section.visible { display: block; }
+
+        .results-section h2 {
+            font-size: 18px;
+            color: var(--text-dark);
+            margin-bottom: 16px;
+        }
+
+        .tab-nav {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 10px;
+        }
+
+        .tab-btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: transparent;
+            color: var(--text-mid);
+        }
+
+        .tab-btn:hover { color: var(--text-dark); background: #e2e8f0; }
+
+        .tab-btn.active {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ==================== Data Tables ==================== */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .data-table thead th {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-mid));
+            color: #fff;
+            padding: 12px 14px;
+            font-weight: 600;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .data-table tbody td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-mid);
+        }
+
+        .data-table tbody tr:nth-child(even) td { background: #f8fafc; }
+        .data-table tbody tr:hover td { background: #eff6ff; }
+
+        .amount-cell {
+            text-align: right;
+            font-weight: 600;
+            font-family: "Segoe UI", monospace;
+        }
+
+        .amount-cell.red { color: #dc2626; }
+        .amount-cell.green { color: #059669; }
+
+        .tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .tag-success { background: #d1fae5; color: #065f46; }
+        .tag-warning { background: #fef3c7; color: #92400e; }
+        .tag-error { background: #fee2e2; color: #991b1b; }
+        .tag-info { background: #dbeafe; color: #1e40af; }
+
+        /* ==================== Anomaly Section ==================== */
+        .anomaly-summary {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .anomaly-stat {
+            flex: 1;
+            padding: 16px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .anomaly-stat.total { background: #fee2e2; }
+        .anomaly-stat.resolved { background: #d1fae5; }
+        .anomaly-stat.pending { background: #fef3c7; }
+
+        .anomaly-stat-value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .anomaly-stat.total .anomaly-stat-value { color: var(--error); }
+        .anomaly-stat.resolved .anomaly-stat-value { color: var(--success); }
+        .anomaly-stat.pending .anomaly-stat-value { color: var(--warning); }
+
+        .anomaly-stat-label {
+            font-size: 13px;
+            color: var(--text-mid);
+        }
+
+        /* ==================== Voucher Card ==================== */
+        .voucher-card {
+            background: #fffef5;
+            border: 2px solid #fbbf24;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .voucher-card::before {
+            content: "记";
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--warning);
+            border: 2px solid var(--warning);
+            border-radius: 4px;
+            padding: 2px 8px;
+        }
+
+        .voucher-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .voucher-header span { color: var(--text-mid); }
+        .voucher-header .voucher-id { font-weight: 700; color: var(--text-dark); }
+
+        .voucher-summary {
+            font-size: 13px;
+            color: var(--text-mid);
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px dashed var(--border);
+        }
+
+        .voucher-entries {
+            display: flex;
+            gap: 24px;
+        }
+
+        .voucher-side {
+            flex: 1;
+        }
+
+        .voucher-side h4 {
+            font-size: 13px;
+            color: var(--text-light);
+            margin-bottom: 8px;
+        }
+
+        .voucher-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 14px;
+        }
+
+        .voucher-entry .account { color: var(--text-dark); font-weight: 500; }
+        .voucher-entry .amount { font-weight: 700; font-family: monospace; }
+
+        .debit-entry .amount { color: #dc2626; }
+        .credit-entry .amount { color: #059669; }
+
+        .voucher-total {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 2px solid var(--text-light);
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        /* ==================== Bottom Action Bar ==================== */
+        .action-bar {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .action-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .action-bar-right {
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-status {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        /* ==================== Modal ==================== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        .modal-overlay.visible { display: flex; }
+
+        .modal {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal h3 {
+            font-size: 20px;
+            color: var(--text-dark);
+            margin-bottom: 16px;
+        }
+
+        .modal p {
+            font-size: 14px;
+            color: var(--text-mid);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        /* ==================== Export Options ==================== */
+        .export-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .export-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .export-option:hover {
+            border-color: var(--accent);
+            background: #eff6ff;
+        }
+
+        .export-option input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent);
+        }
+
+        .export-option-label {
+            font-size: 14px;
+            color: var(--text-dark);
+        }
+
+        /* ==================== Notification ==================== */
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 24px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px 24px;
+            box-shadow: var(--shadow-lg);
+            display: none;
+            z-index: 150;
+            max-width: 400px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification.visible { display: block; }
+
+        .notification.success { border-left: 4px solid var(--success); }
+        .notification.warning { border-left: 4px solid var(--warning); }
+        .notification.error { border-left: 4px solid var(--error); }
+        .notification.info { border-left: 4px solid var(--info); }
+
+        .notification-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .notification.success .notification-title { color: var(--success); }
+        .notification.warning .notification-title { color: var(--warning); }
+        .notification.error .notification-title { color: var(--error); }
+        .notification.info .notification-title { color: var(--info); }
+
+        .notification-body {
+            font-size: 13px;
+            color: var(--text-mid);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* ==================== Responsive ==================== */
+        @media (max-width: 1200px) {
+            .sidebar { width: 220px; }
+            .upload-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 900px) {
+            .main-container { flex-direction: column; }
+            .sidebar { width: 100%; }
+            .upload-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ==================== Print Styles ==================== */
+        @media print {
+            .navbar, .sidebar, .action-bar, .upload-section, .btn { display: none !important; }
+            .main-container { padding: 0; }
+            .results-section { display: block !important; box-shadow: none; }
+            .voucher-card { border-color: #000; }
+        }
+
+        /* ==================== Animations ==================== */
+        .fade-in {
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ==================== Additional Utility ==================== */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-light);
+        }
+
+        .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+        .empty-state-text { font-size: 15px; }
+
+        .highlight-row { background: #fef3c7 !important; }
+        .error-row { background: #fee2e2 !important; }
+    </style>
+</head>
+<body>
+    <!-- ==================== Navigation Bar ==================== -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <div class="logo-icon">粮</div>
+            <div>
+                <h1>农仓管家</h1>
+                <div class="subtitle">北原农垦集团 · 粮食销售业务自动化核算</div>
+            </div>
+        </div>
+        <button class="btn btn-warning" onclick="runQuickTest()" id="quickTestBtn">
+            ⚡ 快速体验测试
+        </button>
+    </nav>
+
+    <!-- ==================== Notification ==================== -->
+    <div class="notification" id="notification">
+        <div class="notification-title" id="notifTitle"></div>
+        <div class="notification-body" id="notifBody"></div>
+    </div>
+
+    <!-- ==================== Main Layout ==================== -->
+    <div class="main-container">
+        <!-- ==================== Sidebar ==================== -->
+        <aside class="sidebar">
+            <div class="sidebar-card">
+                <h3>📋 处理进度</h3>
+                <div class="progress-steps" id="progressSteps">
+                    <div class="progress-step" data-step="1">
+                        <div class="step-indicator">1</div>
+                        <div class="step-text">单据导入与解析</div>
+                    </div>
+                    <div class="progress-step" data-step="2">
+                        <div class="step-indicator">2</div>
+                        <div class="step-text">三单匹配校验</div>
+                    </div>
+                    <div class="progress-step" data-step="3">
+                        <div class="step-indicator">3</div>
+                        <div class="step-text">异常差异识别</div>
+                    </div>
+                    <div class="progress-step" data-step="4">
+                        <div class="step-indicator">4</div>
+                        <div class="step-text">收入确认核算</div>
+                    </div>
+                    <div class="progress-step" data-step="5">
+                        <div class="step-indicator">5</div>
+                        <div class="step-text">凭证生成输出</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-card">
+                <h3>📊 当前状态</h3>
+                <div class="status-info" id="statusInfo">
+                    <div class="status-row">
+                        <span class="status-label">销售合同</span>
+                        <span class="status-value" id="statContracts">0 份</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">增值税发票</span>
+                        <span class="status-value" id="statInvoices">0 份</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">银行回款单</span>
+                        <span class="status-value" id="statReceipts">0 份</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">异常差异</span>
+                        <span class="status-value" id="statAnomalies">0 条</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">会计凭证</span>
+                        <span class="status-value" id="statVouchers">0 条</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ==================== Content Area ==================== -->
+        <div class="content-area">
+            <!-- ==================== Upload Section ==================== -->
+            <section class="upload-section" id="uploadSection">
+                <h2>📁 单据上传与导入</h2>
+                <div class="upload-grid">
+                    <div class="upload-zone" id="zoneContract" data-type="contract">
+                        <div class="upload-zone-icon">📄</div>
+                        <div class="upload-zone-title">销售合同</div>
+                        <div class="upload-zone-desc">拖拽或点击上传 Excel 文件</div>
+                        <div class="upload-zone-filename" id="zoneContractFile"></div>
+                        <input type="file" accept=".xlsx,.xls,.csv" onchange="handleUpload(this, 'contract')">
+                    </div>
+                    <div class="upload-zone" id="zoneInvoice" data-type="invoice">
+                        <div class="upload-zone-icon">🧾</div>
+                        <div class="upload-zone-title">增值税发票</div>
+                        <div class="upload-zone-desc">拖拽或点击上传 Excel 文件</div>
+                        <div class="upload-zone-filename" id="zoneInvoiceFile"></div>
+                        <input type="file" accept=".xlsx,.xls,.csv" onchange="handleUpload(this, 'invoice')">
+                    </div>
+                    <div class="upload-zone" id="zoneReceipt" data-type="receipt">
+                        <div class="upload-zone-icon">💰</div>
+                        <div class="upload-zone-title">银行回款单据</div>
+                        <div class="upload-zone-desc">拖拽或点击上传 Excel 文件</div>
+                        <div class="upload-zone-filename" id="zoneReceiptFile"></div>
+                        <input type="file" accept=".xlsx,.xls,.csv" onchange="handleUpload(this, 'receipt')">
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== Parsed Data Preview ==================== -->
+            <section class="parsed-preview" id="parsedPreview">
+                <h2>📝 单据解析结果</h2>
+                <div class="parsed-summary" id="parsedSummary"></div>
+                <div id="parsedTables"></div>
+            </section>
+
+            <!-- ==================== Results Section ==================== -->
+            <section class="results-section" id="resultsSection">
+                <h2>✅ 业务处理结果</h2>
+                <div class="tab-nav" id="tabNav">
+                    <button class="tab-btn active" onclick="switchTab('matchResult')">三单匹配结果</button>
+                    <button class="tab-btn" onclick="switchTab('anomalyList')">异常差异清单</button>
+                    <button class="tab-btn" onclick="switchTab('incomeDetail')">收入确认明细</button>
+                    <button class="tab-btn" onclick="switchTab('taxWorksheet')">销项税计算底稿</button>
+                    <button class="tab-btn" onclick="switchTab('voucherList')">会计凭证</button>
+                </div>
+
+                <!-- Tab: 三单匹配结果 -->
+                <div class="tab-content active" id="tab-matchResult">
+                    <div id="matchResultContent">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🔍</div>
+                            <div class="empty-state-text">请上传单据并执行全流程后查看匹配结果</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: 异常差异清单 -->
+                <div class="tab-content" id="tab-anomalyList">
+                    <div id="anomalySummary" style="display:none;" class="anomaly-summary"></div>
+                    <div id="anomalyListContent">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">⚠️</div>
+                            <div class="empty-state-text">暂无异常差异，请先执行全流程</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: 收入确认明细 -->
+                <div class="tab-content" id="tab-incomeDetail">
+                    <div id="incomeDetailContent">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <div class="empty-state-text">请先执行全流程以查看收入确认明细</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: 销项税计算底稿 -->
+                <div class="tab-content" id="tab-taxWorksheet">
+                    <div id="taxWorksheetContent">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🧮</div>
+                            <div class="empty-state-text">请先执行全流程以查看销项税计算底稿</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: 会计凭证 -->
+                <div class="tab-content" id="tab-voucherList">
+                    <div id="voucherListContent">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📒</div>
+                            <div class="empty-state-text">请先执行全流程以生成会计凭证</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== Bottom Action Bar ==================== -->
+            <div class="action-bar">
+                <div class="action-bar-left">
+                    <span class="action-status" id="actionStatus">等待单据上传...</span>
+                </div>
+                <div class="action-bar-right">
+                    <button class="btn btn-accent btn-lg" id="executeBtn" onclick="executeFullProcess()" disabled>
+                        ⚙️ 一键执行全流程
+                    </button>
+                    <button class="btn btn-outline btn-lg" id="exportBtn" onclick="showExportModal()" disabled>
+                        📥 导出报表
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== Export Modal ==================== -->
+    <div class="modal-overlay" id="exportModal">
+        <div class="modal">
+            <h3>📥 导出报表选项</h3>
+            <p>选择需要导出的报表类型和格式：</p>
+            <div class="export-options">
+                <div class="export-option">
+                    <input type="checkbox" id="exportMatch" checked>
+                    <span class="export-option-label">三单匹配结果表</span>
+                </div>
+                <div class="export-option">
+                    <input type="checkbox" id="exportAnomaly" checked>
+                    <span class="export-option-label">异常差异清单</span>
+                </div>
+                <div class="export-option">
+                    <input type="checkbox" id="exportIncome" checked>
+                    <span class="export-option-label">收入确认明细表</span>
+                </div>
+                <div class="export-option">
+                    <input type="checkbox" id="exportTax" checked>
+                    <span class="export-option-label">销项税计算底稿</span>
+                </div>
+                <div class="export-option">
+                    <input type="checkbox" id="exportVoucher" checked>
+                    <span class="export-option-label">标准会计凭证</span>
+                </div>
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 12px; justify-content: flex-end;">
+                <button class="btn btn-accent" onclick="exportAllToExcel()">导出为 Excel</button>
+                <button class="btn btn-outline" onclick="printReport()">打印 / PDF</button>
+                <button class="btn btn-outline" onclick="hideExportModal()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== Confirm Modal ==================== -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal">
+            <h3 id="confirmTitle">确认操作</h3>
+            <p id="confirmBody"></p>
+            <div class="modal-actions">
+                <button class="btn btn-accent" id="confirmYes">确认</button>
+                <button class="btn btn-outline" onclick="hideConfirmModal()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== JavaScript ==================== -->
+    <script>
+    /* ================================================================
+     *  农仓管家 - 北原农垦集团粮食销售业务自动化核算
+     *  全部逻辑内联，双击 index.html 即可在浏览器运行
+     * ================================================================ */
+
+    // ==================== 1. 常量与主数据（模拟企业后端数据库） ====================
+    const TAX_RATE = 0.13; // 粮食销售增值税税率 13%
+
+    const DB = {
+        // 会计科目表
+        subjects: [
+            { code: '1001', name: '库存现金', level: 1, parent: '' },
+            { code: '1002', name: '银行存款', level: 1, parent: '' },
+            { code: '1131', name: '应收账款', level: 1, parent: '' },
+            { code: '1131.01', name: '应收账款-粮食销售', level: 2, parent: '1131' },
+            { code: '6001', name: '主营业务收入', level: 1, parent: '' },
+            { code: '6001.01', name: '主营业务收入-粮食销售', level: 2, parent: '6001' },
+            { code: '2221', name: '应交税费', level: 1, parent: '' },
+            { code: '2221.01', name: '应交增值税', level: 2, parent: '2221' },
+            { code: '2221.01.01', name: '销项税额', level: 3, parent: '2221.01' },
+            { code: '6401', name: '主营业务成本', level: 1, parent: '' },
+            { code: '1401', name: '库存商品', level: 1, parent: '' },
+        ],
+        // 客户档案
+        customers: [
+            { code: 'C001', name: '北原米业', taxId: '91110108MA01K8X7X5', creditLevel: 'A' },
+            { code: 'C002', name: '龙江粮贸', taxId: '91230100MA02F6K3L9', creditLevel: 'B' },
+            { code: 'C003', name: '绿野食品集团', taxId: '91310115MA03H4J2D7', creditLevel: 'A' },
+            { code: 'C004', name: '东北粮油贸易', taxId: '91440106MA04G5K1B3', creditLevel: 'C' },
+        ],
+        // 产品/物料
+        products: [
+            { code: 'P001', name: '水稻', category: '粮食', basePrice: 2600, taxRate: 0.13 },
+            { code: 'P002', name: '小麦', category: '粮食', basePrice: 2400, taxRate: 0.13 },
+            { code: 'P003', name: '玉米', category: '粮食', basePrice: 2200, taxRate: 0.13 },
+            { code: 'P004', name: '大豆', category: '粮食', basePrice: 4800, taxRate: 0.13 },
+        ],
+        // 税率字典
+        taxRates: [
+            { code: 'VAT13', rate: 0.13, scenario: '粮食销售增值税' },
+        ],
+        // 银行账户
+        bankAccounts: [
+            { code: 'B001', bankName: '中国农业银行北原支行', accountNo: '6228481234567890', accountType: '基本户' },
+            { code: 'B002', bankName: '中国工商银行北原支行', accountNo: '6222021234567890', accountType: '一般户' },
+        ]
+    };
+
+    // ==================== 2. 应用状态 ====================
+    let appState = {
+        contracts: [],
+        invoices: [],
+        receipts: [],
+        matchResults: [],
+        anomalies: [],
+        incomeDetails: [],
+        taxWorksheets: [],
+        vouchers: [],
+        currentStep: 0,
+        processCompleted: false,
+    };
+
+    // ==================== 3. 工具函数 ====================
+
+    // 价税分离：含税金额 ÷ (1 + 税率) = 不含税收入
+    function splitTaxInclusive(amount, rate = TAX_RATE) {
+        const revenue = parseFloat((amount / (1 + rate)).toFixed(2));
+        const tax = parseFloat((amount - revenue).toFixed(2));
+        return { revenue, tax, total: amount };
+    }
+
+    // 格式化金额（人民币）
+    function formatCurrency(amount) {
+        if (amount === null || amount === undefined) return '-';
+        return '¥' + Number(amount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // 格式化纯数字金额
+    function formatAmount(amount) {
+        if (amount === null || amount === undefined) return '-';
+        return Number(amount).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // 格式化日期
+    function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    // 生成凭证编号
+    function generateVoucherId() {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const idx = appState.vouchers.length + 1;
+        return 'GL' + y + m + String(idx).padStart(3, '0');
+    }
+
+    // 查找客户
+    function findCustomer(name) {
+        return DB.customers.find(c => c.name === name || c.name.includes(name));
+    }
+
+    // 查找产品
+    function findProduct(name) {
+        return DB.products.find(p => p.name === name || p.name.includes(name));
+    }
+
+    // ==================== 4. Excel 文件处理 ====================
+
+    function handleUpload(input, type) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const parsed = parseExcel(workbook, type, file.name);
+
+                if (parsed.length === 0) {
+                    showNotification('warning', '解析失败', '未找到有效数据，请检查文件格式');
+                    return;
+                }
+
+                // 存储解析数据
+                if (type === 'contract') appState.contracts = parsed;
+                else if (type === 'invoice') appState.invoices = parsed;
+                else if (type === 'receipt') appState.receipts = parsed;
+
+                // 更新UI
+                const zoneId = type === 'contract' ? 'zoneContract' : type === 'invoice' ? 'zoneInvoice' : 'zoneReceipt';
+                const fileId = type === 'contract' ? 'zoneContractFile' : type === 'invoice' ? 'zoneInvoiceFile' : 'zoneReceiptFile';
+                document.getElementById(zoneId).classList.add('has-file');
+                document.getElementById(fileId).textContent = '✓ ' + file.name + ' (' + parsed.length + '条记录)';
+
+                updateParsedPreview();
+                updateStatusBar();
+                checkCanExecute();
+
+                showNotification('success', '解析成功', `成功解析 ${parsed.length} 条${type === 'contract' ? '合同' : type === 'invoice' ? '发票' : '回款'}记录`);
+                logActivity('上传文件', `上传${file.name}`, `解析${parsed.length}条记录`, true);
+            } catch (err) {
+                showNotification('error', '解析错误', '文件格式不正确: ' + err.message);
+                logActivity('上传文件', `上传${file.name}`, '解析失败: ' + err.message, false);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function parseExcel(workbook, type, filename) {
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rawData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+        if (rawData.length === 0) return [];
+
+        // 根据单据类型提取不同字段
+        if (type === 'contract') {
+            return rawData.map(row => ({
+                contractId: row['合同编号'] || row['合同号'] || row['contractId'] || '',
+                customerName: row['客户名称'] || row['客户'] || row['customerName'] || '',
+                productName: row['粮食品类'] || row['品类'] || row['产品'] || row['productName'] || '',
+                quantity: parseFloat(row['数量'] || row['quantity'] || 0),
+                unit: row['单位'] || row['unit'] || '吨',
+                taxInclusiveAmount: parseFloat(row['含税金额'] || row['价税合计'] || row['合同金额'] || row['taxInclusiveAmount'] || row['amount'] || 0),
+                deliveryMethod: row['交付方式'] || row['deliveryMethod'] || '点交付',
+                deliveryDate: row['交付日期'] || row['deliveryDate'] || '',
+                installments: parseInt(row['分期期数'] || row['installments'] || 1),
+                contractDate: row['签订日期'] || row['合同日期'] || row['contractDate'] || '',
+                status: row['状态'] || '有效',
+            })).filter(r => r.contractId && r.taxInclusiveAmount > 0);
+        } else if (type === 'invoice') {
+            return rawData.map(row => ({
+                invoiceId: row['发票编号'] || row['发票号'] || row['invoiceId'] || '',
+                contractId: row['关联合同编号'] || row['关联合同'] || row['contractId'] || '',
+                customerName: row['客户名称'] || row['购方名称'] || row['customerName'] || '',
+                taxInclusiveAmount: parseFloat(row['含税金额'] || row['价税合计'] || row['发票金额'] || row['taxInclusiveAmount'] || row['amount'] || 0),
+                taxAmount: parseFloat(row['税额'] || row['税'] || row['taxAmount'] || 0),
+                invoiceDate: row['开票日期'] || row['invoiceDate'] || '',
+                productName: row['粮食品类'] || row['品名'] || row['productName'] || '',
+                status: row['状态'] || '已开具',
+            })).filter(r => r.invoiceId && r.taxInclusiveAmount > 0);
+        } else if (type === 'receipt') {
+            return rawData.map(row => ({
+                receiptId: row['回款编号'] || row['流水编号'] || row['receiptId'] || '',
+                contractId: row['关联合同编号'] || row['关联合同'] || row['contractId'] || '',
+                customerName: row['付款方'] || row['客户名称'] || row['customerName'] || '',
+                receiptAmount: parseFloat(row['回款金额'] || row['金额'] || row['receiptAmount'] || row['amount'] || 0),
+                receiptDate: row['回款日期'] || row['交易日期'] || row['receiptDate'] || '',
+                bankName: row['银行'] || row['bankName'] || '',
+                receiptType: row['回款类型'] || row['receiptType'] || '电汇',
+                status: row['状态'] || '已到账',
+            })).filter(r => r.receiptId && r.receiptAmount > 0);
+        }
+        return [];
+    }
+
+    // ==================== 5. 更新界面 ====================
+
+    function updateParsedPreview() {
+        const preview = document.getElementById('parsedPreview');
+        const hasData = appState.contracts.length > 0 || appState.invoices.length > 0 || appState.receipts.length > 0;
+
+        if (!hasData) {
+            preview.classList.remove('visible');
+            return;
+        }
+
+        preview.classList.add('visible');
+
+        // 汇总统计
+        const summary = document.getElementById('parsedSummary');
+        summary.innerHTML = `
+            <div class="parsed-stat">
+                <div class="parsed-stat-icon contract">📄</div>
+                <div>
+                    <div class="parsed-stat-value">${appState.contracts.length}</div>
+                    <div class="parsed-stat-text">销售合同</div>
+                </div>
+            </div>
+            <div class="parsed-stat">
+                <div class="parsed-stat-icon invoice">🧾</div>
+                <div>
+                    <div class="parsed-stat-value">${appState.invoices.length}</div>
+                    <div class="parsed-stat-text">增值税发票</div>
+                </div>
+            </div>
+            <div class="parsed-stat">
+                <div class="parsed-stat-icon receipt">💰</div>
+                <div>
+                    <div class="parsed-stat-value">${appState.receipts.length}</div>
+                    <div class="parsed-stat-text">银行回款</div>
+                </div>
+            </div>
+        `;
+
+        // 详细数据表格
+        const tablesDiv = document.getElementById('parsedTables');
+        let html = '';
+
+        if (appState.contracts.length > 0) {
+            html += `<h3 style="margin:16px 0 8px;color:var(--text-dark);">销售合同明细</h3>`;
+            html += buildContractTable(appState.contracts);
+        }
+
+        if (appState.invoices.length > 0) {
+            html += `<h3 style="margin:16px 0 8px;color:var(--text-dark);">增值税发票明细</h3>`;
+            html += buildInvoiceTable(appState.invoices);
+        }
+
+        if (appState.receipts.length > 0) {
+            html += `<h3 style="margin:16px 0 8px;color:var(--text-dark);">银行回款明细</h3>`;
+            html += buildReceiptTable(appState.receipts);
+        }
+
+        tablesDiv.innerHTML = html;
+    }
+
+    function buildContractTable(data) {
+        let html = '<table class="data-table"><thead><tr>';
+        html += '<th>合同编号</th><th>客户名称</th><th>粮食品类</th><th>数量</th><th>含税金额</th><th>交付方式</th><th>分期期数</th><th>交付日期</th>';
+        html += '</tr></thead><tbody>';
+        data.forEach(r => {
+            html += `<tr>
+                <td><strong>${r.contractId}</strong></td>
+                <td>${r.customerName}</td>
+                <td>${r.productName}</td>
+                <td>${formatAmount(r.quantity)} ${r.unit}</td>
+                <td class="amount-cell">${formatAmount(r.taxInclusiveAmount)}</td>
+                <td><span class="tag ${r.deliveryMethod === '点交付' ? 'tag-info' : 'tag-warning'}">${r.deliveryMethod}</span></td>
+                <td>${r.installments}</td>
+                <td>${formatDate(r.deliveryDate)}</td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        return html;
+    }
+
+    function buildInvoiceTable(data) {
+        let html = '<table class="data-table"><thead><tr>';
+        html += '<th>发票编号</th><th>关联合同</th><th>客户名称</th><th>含税金额</th><th>税额</th><th>开票日期</th>';
+        html += '</tr></thead><tbody>';
+        data.forEach(r => {
+            html += `<tr>
+                <td><strong>${r.invoiceId}</strong></td>
+                <td>${r.contractId}</td>
+                <td>${r.customerName}</td>
+                <td class="amount-cell">${formatAmount(r.taxInclusiveAmount)}</td>
+                <td class="amount-cell">${formatAmount(r.taxAmount)}</td>
+                <td>${formatDate(r.invoiceDate)}</td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        return html;
+    }
+
+    function buildReceiptTable(data) {
+        let html = '<table class="data-table"><thead><tr>';
+        html += '<th>回款编号</th><th>关联合同</th><th>付款方</th><th>回款金额</th><th>回款日期</th><th>银行</th>';
+        html += '</tr></thead><tbody>';
+        data.forEach(r => {
+            html += `<tr>
+                <td><strong>${r.receiptId}</strong></td>
+                <td>${r.contractId}</td>
+                <td>${r.customerName}</td>
+                <td class="amount-cell">${formatAmount(r.receiptAmount)}</td>
+                <td>${formatDate(r.receiptDate)}</td>
+                <td>${r.bankName}</td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        return html;
+    }
+
+    function updateStatusBar() {
+        document.getElementById('statContracts').textContent = appState.contracts.length + ' 份';
+        document.getElementById('statInvoices').textContent = appState.invoices.length + ' 份';
+        document.getElementById('statReceipts').textContent = appState.receipts.length + ' 份';
+        document.getElementById('statAnomalies').textContent = appState.anomalies.length + ' 条';
+        document.getElementById('statVouchers').textContent = appState.vouchers.length + ' 条';
+    }
+
+    function checkCanExecute() {
+        const hasData = appState.contracts.length > 0;
+        const btn = document.getElementById('executeBtn');
+        if (hasData) {
+            btn.disabled = false;
+            btn.classList.remove('btn-disabled');
+            document.getElementById('actionStatus').textContent = '数据已就绪，可执行全流程处理';
+        } else {
+            btn.disabled = true;
+            btn.classList.add('btn-disabled');
+            document.getElementById('actionStatus').textContent = '等待单据上传...';
+        }
+    }
+
+    // ==================== 6. 进度管理 ====================
+
+    function setProgressStep(step, status) {
+        const steps = document.querySelectorAll('.progress-step');
+        steps.forEach(s => {
+            const sNum = parseInt(s.dataset.step);
+            s.classList.remove('active', 'completed', 'error');
+            if (sNum < step) s.classList.add('completed');
+            else if (sNum === step && status === 'active') s.classList.add('active');
+            else if (sNum === step && status === 'completed') s.classList.add('completed');
+            else if (sNum === step && status === 'error') s.classList.add('error');
+        });
+    }
+
+    // ==================== 7. 通知 ====================
+
+    function showNotification(type, title, body) {
+        const notif = document.getElementById('notification');
+        notif.className = 'notification visible ' + type;
+        document.getElementById('notifTitle').textContent = title;
+        document.getElementById('notifBody').textContent = body;
+        setTimeout(() => { notif.classList.remove('visible'); }, 4000);
+    }
+
+    // ==================== 8. 核心业务逻辑 ====================
+
+    // 三单匹配：合同 → 发票 → 回款
+    function performThreeWayMatching() {
+        const results = [];
+        const unmatchedContracts = [];
+        const unmatchedInvoices = [];
+        const unmatchedReceipts = [];
+
+        // 以合同为基准进行匹配
+        appState.contracts.forEach(contract => {
+            const matchedInvoices = appState.invoices.filter(inv => inv.contractId === contract.contractId);
+            const matchedReceipts = appState.receipts.filter(rcpt => rcpt.contractId === contract.contractId);
+
+            const totalInvoiceAmount = matchedInvoices.reduce((sum, inv) => sum + inv.taxInclusiveAmount, 0);
+            const totalReceiptAmount = matchedReceipts.reduce((sum, rcpt) => sum + rcpt.receiptAmount, 0);
+
+            results.push({
+                contractId: contract.contractId,
+                customerName: contract.customerName,
+                productName: contract.productName,
+                contractAmount: contract.taxInclusiveAmount,
+                deliveryMethod: contract.deliveryMethod,
+                installments: contract.installments,
+                invoiceIds: matchedInvoices.map(inv => inv.invoiceId),
+                invoiceAmount: totalInvoiceAmount,
+                receiptIds: matchedReceipts.map(r => r.receiptId),
+                receiptAmount: totalReceiptAmount,
+                contractInvoiceDiff: contract.taxInclusiveAmount - totalInvoiceAmount,
+                invoiceReceiptDiff: totalInvoiceAmount - totalReceiptAmount,
+                contractReceiptDiff: contract.taxInclusiveAmount - totalReceiptAmount,
+            });
+        });
+
+        // 检查未匹配的发票（有发票无合同）
+        appState.invoices.forEach(inv => {
+            const matched = appState.contracts.find(c => c.contractId === inv.contractId);
+            if (!matched) {
+                unmatchedInvoices.push(inv);
+            }
+        });
+
+        // 检查未匹配的回款
+        appState.receipts.forEach(rcpt => {
+            const matched = appState.contracts.find(c => c.contractId === rcpt.contractId);
+            if (!matched) {
+                unmatchedReceipts.push(rcpt);
+            }
+        });
+
+        appState.matchResults = results;
+        return { results, unmatchedInvoices, unmatchedReceipts };
+    }
+
+    // 异常差异识别
+    function detectAnomalies(matchData) {
+        const anomalies = [];
+
+        matchData.results.forEach(match => {
+            // 合同与发票金额差异
+            if (match.contractInvoiceDiff !== 0) {
+                if (match.invoiceIds.length === 0) {
+                    anomalies.push({
+                        type: '有合同无发票',
+                        contractId: match.contractId,
+                        invoiceId: '-',
+                        receiptId: '-',
+                        contractAmount: match.contractAmount,
+                        invoiceAmount: 0,
+                        receiptAmount: match.receiptAmount,
+                        diffAmount: match.contractInvoiceDiff,
+                        suggestion: '联系客户开具发票',
+                        severity: 'high',
+                    });
+                } else if (match.contractInvoiceDiff > 0) {
+                    anomalies.push({
+                        type: '发票金额不足',
+                        contractId: match.contractId,
+                        invoiceId: match.invoiceIds.join(','),
+                        receiptId: '-',
+                        contractAmount: match.contractAmount,
+                        invoiceAmount: match.invoiceAmount,
+                        receiptAmount: match.receiptAmount,
+                        diffAmount: match.contractInvoiceDiff,
+                        suggestion: '补开差额发票',
+                        severity: 'medium',
+                    });
+                } else {
+                    anomalies.push({
+                        type: '发票超额开票',
+                        contractId: match.contractId,
+                        invoiceId: match.invoiceIds.join(','),
+                        receiptId: '-',
+                        contractAmount: match.contractAmount,
+                        invoiceAmount: match.invoiceAmount,
+                        receiptAmount: match.receiptAmount,
+                        diffAmount: Math.abs(match.contractInvoiceDiff),
+                        suggestion: '核实发票金额，确认是否需红冲',
+                        severity: 'medium',
+                    });
+                }
+            }
+
+            // 发票与回款金额差异
+            if (match.invoiceReceiptDiff !== 0 && match.invoiceIds.length > 0) {
+                if (match.receiptIds.length === 0) {
+                    anomalies.push({
+                        type: '有发票无回款',
+                        contractId: match.contractId,
+                        invoiceId: match.invoiceIds.join(','),
+                        receiptId: '-',
+                        contractAmount: match.contractAmount,
+                        invoiceAmount: match.invoiceAmount,
+                        receiptAmount: 0,
+                        diffAmount: match.invoiceReceiptDiff,
+                        suggestion: '催收全额款项',
+                        severity: 'high',
+                    });
+                } else if (match.invoiceReceiptDiff > 0) {
+                    anomalies.push({
+                        type: '发票与回款差异',
+                        contractId: match.contractId,
+                        invoiceId: match.invoiceIds.join(','),
+                        receiptId: match.receiptIds.join(','),
+                        contractAmount: match.contractAmount,
+                        invoiceAmount: match.invoiceAmount,
+                        receiptAmount: match.receiptAmount,
+                        diffAmount: match.invoiceReceiptDiff,
+                        suggestion: '催收尾款',
+                        severity: 'medium',
+                    });
+                } else {
+                    anomalies.push({
+                        type: '回款超额',
+                        contractId: match.contractId,
+                        invoiceId: match.invoiceIds.join(','),
+                        receiptId: match.receiptIds.join(','),
+                        contractAmount: match.contractAmount,
+                        invoiceAmount: match.invoiceAmount,
+                        receiptAmount: match.receiptAmount,
+                        diffAmount: Math.abs(match.invoiceReceiptDiff),
+                        suggestion: '核实回款金额，确认是否为预收款',
+                        severity: 'low',
+                    });
+                }
+            }
+
+            // 回款进度与合同不符（分期收款场景）
+            if (match.deliveryMethod === '分期收款' && match.receiptAmount < match.contractAmount) {
+                const paidRatio = (match.receiptAmount / match.contractAmount * 100).toFixed(1);
+                anomalies.push({
+                    type: '回款进度滞后',
+                    contractId: match.contractId,
+                    invoiceId: match.invoiceIds.join(',') || '-',
+                    receiptId: match.receiptIds.join(',') || '-',
+                    contractAmount: match.contractAmount,
+                    invoiceAmount: match.invoiceAmount,
+                    receiptAmount: match.receiptAmount,
+                    diffAmount: match.contractAmount - match.receiptAmount,
+                    suggestion: `分期收款进度${paidRatio}%，关注回款节奏`,
+                    severity: 'low',
+                });
+            }
+        });
+
+        // 有发票无合同
+        matchData.unmatchedInvoices.forEach(inv => {
+            anomalies.push({
+                type: '有发票无合同',
+                contractId: '-',
+                invoiceId: inv.invoiceId,
+                receiptId: '-',
+                contractAmount: 0,
+                invoiceAmount: inv.taxInclusiveAmount,
+                receiptAmount: 0,
+                diffAmount: inv.taxInclusiveAmount,
+                suggestion: '核实发票来源，确认关联合同',
+                severity: 'medium',
+            });
+        });
+
+        // 有回款无合同
+        matchData.unmatchedReceipts.forEach(rcpt => {
+            anomalies.push({
+                type: '有回款无合同',
+                contractId: '-',
+                invoiceId: '-',
+                receiptId: rcpt.receiptId,
+                contractAmount: 0,
+                invoiceAmount: 0,
+                receiptAmount: rcpt.receiptAmount,
+                diffAmount: rcpt.receiptAmount,
+                suggestion: '核实回款来源，确认关联合同',
+                severity: 'medium',
+            });
+        });
+
+        appState.anomalies = anomalies;
+        return anomalies;
+    }
+
+    // 收入确认核算
+    function recognizeIncome() {
+        const details = [];
+
+        appState.matchResults.forEach(match => {
+            const { contractId, customerName, productName, contractAmount, deliveryMethod, installments } = match;
+
+            if (deliveryMethod === '点交付') {
+                // 点交付：一次性确认全部收入
+                const taxSplit = splitTaxInclusive(contractAmount);
+                details.push({
+                    contractId,
+                    customerName,
+                    productName,
+                    deliveryMethod,
+                    installmentNo: '一次性',
+                    totalAmount: contractAmount,
+                    revenueAmount: taxSplit.revenue,
+                    taxAmount: taxSplit.tax,
+                    recognitionDate: formatDate(new Date().toISOString()),
+                    recognitionType: '一次性确认',
+                    accountDebit: '应收账款',
+                    accountCreditRevenue: '主营业务收入-粮食销售',
+                    accountCreditTax: '应交税费-应交增值税(销项税额)',
+                });
+            } else if (deliveryMethod === '分期收款') {
+                // 分期收款：按期确认收入
+                const perInstallment = contractAmount / installments;
+                for (let i = 1; i <= installments; i++) {
+                    const taxSplit = splitTaxInclusive(perInstallment);
+                    details.push({
+                        contractId,
+                        customerName,
+                        productName,
+                        deliveryMethod,
+                        installmentNo: `第${i}期`,
+                        totalAmount: parseFloat(perInstallment.toFixed(2)),
+                        revenueAmount: taxSplit.revenue,
+                        taxAmount: taxSplit.tax,
+                        recognitionDate: formatDate(new Date().toISOString()),
+                        recognitionType: `分期确认-第${i}期`,
+                        accountDebit: '应收账款',
+                        accountCreditRevenue: '主营业务收入-粮食销售',
+                        accountCreditTax: '应交税费-应交增值税(销项税额)',
+                    });
+                }
+            }
+        });
+
+        appState.incomeDetails = details;
+        return details;
+    }
+
+    // 销项税计算底稿
+    function buildTaxWorksheet() {
+        const worksheets = [];
+
+        appState.matchResults.forEach(match => {
+            const taxSplit = splitTaxInclusive(match.contractAmount);
+            worksheets.push({
+                contractId: match.contractId,
+                customerName: match.customerName,
+                productName: match.productName,
+                taxInclusiveAmount: match.contractAmount,
+                taxRate: TAX_RATE,
+                revenueAmount: taxSplit.revenue,
+                outputTax: taxSplit.tax,
+                invoiceTaxAmount: match.invoiceIds.length > 0 ?
+                    appState.invoices.find(inv => inv.contractId === match.contractId)?.taxAmount || taxSplit.tax
+                    : taxSplit.tax,
+                taxDiff: match.invoiceIds.length > 0 ?
+                    parseFloat((taxSplit.tax - (appState.invoices.find(inv => inv.contractId === match.contractId)?.taxAmount || 0)).toFixed(2))
+                    : 0,
+                verification: match.contractAmount === taxSplit.revenue + taxSplit.tax ? '✓ 通过' : '✗ 不通过',
+            });
+        });
+
+        appState.taxWorksheets = worksheets;
+        return worksheets;
+    }
+
+    // 生成会计凭证
+    function generateVouchers() {
+        const vouchers = [];
+
+        appState.incomeDetails.forEach(detail => {
+            vouchers.push({
+                voucherId: generateVoucherId(),
+                voucherType: '记',
+                date: detail.recognitionDate,
+                summary: `确认粮食销售收入（合同${detail.contractId}，${detail.installmentNo}）`,
+                debitEntries: [
+                    { accountCode: '1131', accountName: detail.accountDebit, amount: detail.totalAmount },
+                ],
+                creditEntries: [
+                    { accountCode: '6001.01', accountName: detail.accountCreditRevenue, amount: detail.revenueAmount },
+                    { accountCode: '2221.01.01', accountName: detail.accountCreditTax, amount: detail.taxAmount },
+                ],
+                debitTotal: detail.totalAmount,
+                creditTotal: detail.revenueAmount + detail.taxAmount,
+                maker: '农仓管家',
+            });
+        });
+
+        // 如果有回款，生成回款凭证
+        appState.receipts.forEach(rcpt => {
+            const relatedContract = appState.contracts.find(c => c.contractId === rcpt.contractId);
+            if (relatedContract) {
+                vouchers.push({
+                    voucherId: generateVoucherId(),
+                    voucherType: '记',
+                    date: formatDate(rcpt.receiptDate),
+                    summary: `收到${rcpt.customerName}回款（合同${rcpt.contractId}）`,
+                    debitEntries: [
+                        { accountCode: '1002', accountName: '银行存款', amount: rcpt.receiptAmount },
+                    ],
+                    creditEntries: [
+                        { accountCode: '1131', accountName: '应收账款', amount: rcpt.receiptAmount },
+                    ],
+                    debitTotal: rcpt.receiptAmount,
+                    creditTotal: rcpt.receiptAmount,
+                    maker: '农仓管家',
+                });
+            }
+        });
+
+        appState.vouchers = vouchers;
+        return vouchers;
+    }
+
+    // ==================== 9. 一键执行全流程 ====================
+
+    async function executeFullProcess() {
+        if (appState.contracts.length === 0) {
+            showNotification('warning', '无法执行', '请先上传销售合同数据');
+            return;
+        }
+
+        const btn = document.getElementById('executeBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> 处理中...';
+        document.getElementById('actionStatus').textContent = '正在执行全流程处理...';
+
+        try {
+            // 步骤1：单据解析（已完成，标记为已完成）
+            setProgressStep(1, 'completed');
+
+            // 步骤2：三单匹配
+            setProgressStep(2, 'active');
+            await delay(300);
+            const matchData = performThreeWayMatching();
+            setProgressStep(2, 'completed');
+
+            // 步骤3：异常识别
+            setProgressStep(3, 'active');
+            await delay(300);
+            detectAnomalies(matchData);
+            setProgressStep(3, 'completed');
+
+            // 步骤4：收入确认
+            setProgressStep(4, 'active');
+            await delay(300);
+            recognizeIncome();
+            setProgressStep(4, 'completed');
+
+            // 步骤5：凭证生成
+            setProgressStep(5, 'active');
+            await delay(300);
+            generateVouchers();
+            buildTaxWorksheet();
+            setProgressStep(5, 'completed');
+
+            // 更新所有界面
+            renderAllResults();
+            updateStatusBar();
+
+            appState.processCompleted = true;
+            document.getElementById('executeBtn').disabled = false;
+            document.getElementById('executeBtn').innerHTML = '⚙️ 一键执行全流程';
+            document.getElementById('exportBtn').disabled = false;
+            document.getElementById('exportBtn').classList.remove('btn-disabled');
+            document.getElementById('actionStatus').textContent = '全流程处理完成 ✓';
+
+            showNotification('success', '处理完成', `已生成 ${appState.vouchers.length} 条凭证，发现 ${appState.anomalies.length} 条异常`);
+            logActivity('一键执行全流程', `${appState.contracts.length}份合同`, `生成${appState.vouchers.length}条凭证，${appState.anomalies.length}条异常`, true);
+
+        } catch (err) {
+            setProgressStep(appState.currentStep, 'error');
+            document.getElementById('executeBtn').disabled = false;
+            document.getElementById('executeBtn').innerHTML = '⚙️ 一键执行全流程';
+            document.getElementById('actionStatus').textContent = '处理失败: ' + err.message;
+            showNotification('error', '处理失败', err.message);
+            logActivity('一键执行全流程', '', '失败: ' + err.message, false);
+        }
+    }
+
+    function delay(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+    // ==================== 10. 渲染结果 ====================
+
+    function renderAllResults() {
+        const section = document.getElementById('resultsSection');
+        section.classList.add('visible');
+        section.classList.add('fade-in');
+
+        renderMatchResults();
+        renderAnomalies();
+        renderIncomeDetails();
+        renderTaxWorksheet();
+        renderVouchers();
+    }
+
+    function renderMatchResults() {
+        const container = document.getElementById('matchResultContent');
+        if (appState.matchResults.length === 0) return;
+
+        let html = '<table class="data-table"><thead><tr>';
+        html += '<th>合同编号</th><th>客户名称</th><th>粮食品类</th><th>合同金额</th><th>发票编号</th><th>发票金额</th><th>回款编号</th><th>回款金额</th><th>合同-发票差异</th><th>发票-回款差异</th><th>交付方式</th><th>匹配状态</th>';
+        html += '</tr></thead><tbody>';
+
+        appState.matchResults.forEach(m => {
+            const hasAnomaly = m.contractInvoiceDiff !== 0 || m.invoiceReceiptDiff !== 0;
+            const rowClass = hasAnomaly ? 'highlight-row' : '';
+            const statusTag = hasAnomaly ? '<span class="tag tag-warning">有差异</span>' : '<span class="tag tag-success">匹配正常</span>';
+
+            html += `<tr class="${rowClass}">
+                <td><strong>${m.contractId}</strong></td>
+                <td>${m.customerName}</td>
+                <td>${m.productName}</td>
+                <td class="amount-cell">${formatAmount(m.contractAmount)}</td>
+                <td>${m.invoiceIds.length > 0 ? m.invoiceIds.join(', ') : '<span style="color:var(--error)">无</span>'}</td>
+                <td class="amount-cell">${m.invoiceAmount > 0 ? formatAmount(m.invoiceAmount) : '<span style="color:var(--error)">-</span>'}</td>
+                <td>${m.receiptIds.length > 0 ? m.receiptIds.join(', ') : '<span style="color:var(--warning)">无</span>'}</td>
+                <td class="amount-cell">${m.receiptAmount > 0 ? formatAmount(m.receiptAmount) : '<span style="color:var(--warning)">-</span>'}</td>
+                <td class="amount-cell ${m.contractInvoiceDiff !== 0 ? 'red' : ''}">${m.contractInvoiceDiff !== 0 ? formatAmount(m.contractInvoiceDiff) : '0.00'}</td>
+                <td class="amount-cell ${m.invoiceReceiptDiff !== 0 ? 'red' : ''}">${m.invoiceReceiptDiff !== 0 ? formatAmount(m.invoiceReceiptDiff) : '0.00'}</td>
+                <td><span class="tag ${m.deliveryMethod === '点交付' ? 'tag-info' : 'tag-warning'}">${m.deliveryMethod}</span></td>
+                <td>${statusTag}</td>
+            </tr>`;
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    function renderAnomalies() {
+        if (appState.anomalies.length === 0) {
+            document.getElementById('anomalySummary').style.display = 'none';
+            document.getElementById('anomalyListContent').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">✅</div>
+                    <div class="empty-state-text">恭喜！未发现任何异常差异</div>
+                </div>`;
+            return;
+        }
+
+        // 汇总统计
+        const high = appState.anomalies.filter(a => a.severity === 'high').length;
+        const medium = appState.anomalies.filter(a => a.severity === 'medium').length;
+        const low = appState.anomalies.filter(a => a.severity === 'low').length;
+
+        document.getElementById('anomalySummary').style.display = 'flex';
+        document.getElementById('anomalySummary').innerHTML = `
+            <div class="anomaly-stat total">
+                <div class="anomaly-stat-value">${appState.anomalies.length}</div>
+                <div class="anomaly-stat-label">异常总数</div>
+            </div>
+            <div class="anomaly-stat" style="background:#fee2e2;">
+                <div class="anomaly-stat-value" style="color:var(--error)">${high}</div>
+                <div class="anomaly-stat-label">高风险</div>
+            </div>
+            <div class="anomaly-stat" style="background:#fef3c7;">
+                <div class="anomaly-stat-value" style="color:var(--warning)">${medium}</div>
+                <div class="anomaly-stat-label">中风险</div>
+            </div>
+            <div class="anomaly-stat" style="background:#dbeafe;">
+                <div class="anomaly-stat-value" style="color:var(--info)">${low}</div>
+                <div class="anomaly-stat-label">低风险</div>
+            </div>
+        `;
+
+        // 详细表格
+        let html = '<table class="data-table"><thead><tr>';
+        html += '<th>差异类型</th><th>合同编号</th><th>发票编号</th><th>回款编号</th><th>合同金额</th><th>发票金额</th><th>回款金额</th><th>差异金额</th><th>风险等级</th><th>建议处理方式</th>';
+        html += '</tr></thead><tbody>';
+
+        appState.anomalies.forEach(a => {
+            const severityTag = a.severity === 'high' ? 'tag-error' : a.severity === 'medium' ? 'tag-warning' : 'tag-info';
+            const severityLabel = a.severity === 'high' ? '高风险' : a.severity === 'medium' ? '中风险' : '低风险';
+            const rowClass = a.severity === 'high' ? 'error-row' : '';
+
+            html += `<tr class="${rowClass}">
+                <td><strong>${a.type}</strong></td>
+                <td>${a.contractId}</td>
+                <td>${a.invoiceId}</td>
+                <td>${a.receiptId}</td>
+                <td class="amount-cell">${formatAmount(a.contractAmount)}</td>
+                <td class="amount-cell">${formatAmount(a.invoiceAmount)}</td>
+                <td class="amount-cell">${formatAmount(a.receiptAmount)}</td>
+                <td class="amount-cell red">${formatAmount(a.diffAmount)}</td>
+                <td><span class="tag ${severityTag}">${severityLabel}</span></td>
+                <td>${a.suggestion}</td>
+            </tr>`;
+        });
+
+        html += '</tbody></table>';
+        document.getElementById('anomalyListContent').innerHTML = html;
+    }
+
+    function renderIncomeDetails() {
+        const container = document.getElementById('incomeDetailContent');
+        if (appState.incomeDetails.length === 0) return;
+
+        let html = '<table class="data-table"><thead><tr>';
+        html += '<th>合同编号</th><th>客户名称</th><th>粮食品类</th><th>交付方式</th><th>确认期次</th><th>含税金额</th><th>不含税收入</th><th>销项税额</th><th>确认日期</th><th>确认类型</th>';
+        html += '</tr></thead><tbody>';
+
+        appState.incomeDetails.forEach(d => {
+            html += `<tr>
+                <td><strong>${d.contractId}</strong></td>
+                <td>${d.customerName}</td>
+                <td>${d.productName}</td>
+                <td><span class="tag ${d.deliveryMethod === '点交付' ? 'tag-info' : 'tag-warning'}">${d.deliveryMethod}</span></td>
+                <td>${d.installmentNo}</td>
+                <td class="amount-cell">${formatAmount(d.totalAmount)}</td>
+                <td class="amount-cell green">${formatAmount(d.revenueAmount)}</td>
+                <td class="amount-cell">${formatAmount(d.taxAmount)}</td>
+                <td>${d.recognitionDate}</td>
+                <td>${d.recognitionType}</td>
+            </tr>`;
+        });
+
+        html += '</tbody></table>';
+
+        // 汇总
+        const totalRevenue = appState.incomeDetails.reduce((sum, d) => sum + d.revenueAmount, 0);
+        const totalTax = appState.incomeDetails.reduce((sum, d) => sum + d.taxAmount, 0);
+        const totalAmount = appState.incomeDetails.reduce((sum, d) => sum + d.totalAmount, 0);
+
+        html += `<div style="margin-top:16px;padding:16px;background:#f0fdf4;border-radius:8px;border:1px solid var(--success);">
+            <strong>收入确认汇总：</strong>
+            含税总额 <span class="amount-cell" style="color:var(--text-dark);font-weight:700">${formatAmount(totalAmount)}</span> |
+            不含税收入 <span style="color:#059669;font-weight:700">${formatAmount(totalRevenue)}</span> |
+            销项税额合计 <span style="color:var(--text-dark);font-weight:700">${formatAmount(totalTax)}</span>
+        </div>`;
+
+        container.innerHTML = html;
+    }
+
+    function renderTaxWorksheet() {
+        const container = document.getElementById('taxWorksheetContent');
+        if (appState.taxWorksheets.length === 0) return;
+
+        let html = '<table class="data-table"><thead><tr>';
+        html += '<th>合同编号</th><th>客户名称</th><th>粮食品类</th><th>含税金额(A)</th><th>税率</th><th>不含税收入(B=A÷1.13)</th><th>销项税额(C=B×13%)</th><th>发票税额</th><th>税额差异</th><th>验算(A=B+C)</th>';
+        html += '</tr></thead><tbody>';
+
+        appState.taxWorksheets.forEach(w => {
+            const verTag = w.verification.includes('通过') ? 'tag-success' : 'tag-error';
+            html += `<tr>
+                <td><strong>${w.contractId}</strong></td>
+                <td>${w.customerName}</td>
+                <td>${w.productName}</td>
+                <td class="amount-cell">${formatAmount(w.taxInclusiveAmount)}</td>
+                <td>${(w.taxRate * 100).toFixed(0)}%</td>
+                <td class="amount-cell green">${formatAmount(w.revenueAmount)}</td>
+                <td class="amount-cell">${formatAmount(w.outputTax)}</td>
+                <td class="amount-cell">${formatAmount(w.invoiceTaxAmount)}</td>
+                <td class="amount-cell ${w.taxDiff !== 0 ? 'red' : ''}">${formatAmount(w.taxDiff)}</td>
+                <td><span class="tag ${verTag}">${w.verification}</span></td>
+            </tr>`;
+        });
+
+        html += '</tbody></table>';
+
+        // 计算公式说明
+        html += `<div style="margin-top:16px;padding:16px;background:#eff6ff;border-radius:8px;border:1px solid var(--accent-light);">
+            <strong>🧮 销项税计算规则：</strong><br>
+            <span style="color:var(--text-mid);line-height:1.8">
+            不含税收入 = 含税金额 ÷ (1 + 13%) = 含税金额 ÷ 1.13<br>
+            销项税额 = 不含税收入 × 13%<br>
+            验算：含税金额 = 不含税收入 + 销项税额<br>
+            粮食销售增值税税率固定为 13%（依据财税政策）</span>
+        </div>`;
+
+        container.innerHTML = html;
+    }
+
+    function renderVouchers() {
+        const container = document.getElementById('voucherListContent');
+        if (appState.vouchers.length === 0) return;
+
+        let html = '';
+        appState.vouchers.forEach(v => {
+            html += `<div class="voucher-card fade-in">
+                <div class="voucher-header">
+                    <span>凭证编号：<span class="voucher-id">${v.voucherId}</span></span>
+                    <span>日期：${v.date}</span>
+                    <span>制单人：${v.maker}</span>
+                </div>
+                <div class="voucher-summary">${v.summary}</div>
+                <div class="voucher-entries">
+                    <div class="voucher-side">
+                        <h4>借方</h4>
+                        ${v.debitEntries.map(e => `<div class="voucher-entry debit-entry">
+                            <span class="account">${e.accountCode} ${e.accountName}</span>
+                            <span class="amount">${formatAmount(e.amount)}</span>
+                        </div>`).join('')}
+                    </div>
+                    <div class="voucher-side">
+                        <h4>贷方</h4>
+                        ${v.creditEntries.map(e => `<div class="voucher-entry credit-entry">
+                            <span class="account">${e.accountCode} ${e.accountName}</span>
+                            <span class="amount">${formatAmount(e.amount)}</span>
+                        </div>`).join('')}
+                    </div>
+                </div>
+                <div class="voucher-total">
+                    <span>借方合计：${formatAmount(v.debitTotal)}</span>
+                    <span>贷方合计：${formatAmount(v.creditTotal)}</span>
+                </div>
+            </div>`;
+        });
+
+        container.innerHTML = html;
+    }
+
+    // ==================== 11. Tab切换 ====================
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+        event.target.classList.add('active');
+        document.getElementById('tab-' + tabId).classList.add('active');
+    }
+
+    // ==================== 12. 快速体验测试 ====================
+
+    function runQuickTest() {
+        // 嵌入测试数据
+        appState.contracts = [
+            {
+                contractId: 'HT202408001',
+                customerName: '北原米业',
+                productName: '水稻',
+                quantity: 500,
+                unit: '吨',
+                taxInclusiveAmount: 1130000,
+                deliveryMethod: '点交付',
+                deliveryDate: '2024-08-15',
+                installments: 1,
+                contractDate: '2024-08-01',
+                status: '有效',
+            },
+            {
+                contractId: 'HT202408002',
+                customerName: '龙江粮贸',
+                productName: '小麦',
+                quantity: 300,
+                unit: '吨',
+                taxInclusiveAmount: 565000,
+                deliveryMethod: '点交付',
+                deliveryDate: '2024-08-20',
+                installments: 1,
+                contractDate: '2024-08-03',
+                status: '有效',
+            },
+            {
+                contractId: 'HT202408003',
+                customerName: '绿野食品集团',
+                productName: '玉米',
+                quantity: 800,
+                unit: '吨',
+                taxInclusiveAmount: 1696000,
+                deliveryMethod: '分期收款',
+                deliveryDate: '2024-08-25',
+                installments: 2,
+                contractDate: '2024-08-05',
+                status: '有效',
+            },
+        ];
+
+        appState.invoices = [
+            {
+                invoiceId: 'INV202408001',
+                contractId: 'HT202408001',
+                customerName: '北原米业',
+                taxInclusiveAmount: 1130000,
+                taxAmount: 130000,
+                invoiceDate: '2024-08-16',
+                productName: '水稻',
+                status: '已开具',
+            },
+            {
+                invoiceId: 'INV202408002',
+                contractId: 'HT202408003',
+                customerName: '绿野食品集团',
+                taxInclusiveAmount: 848000,
+                taxAmount: 98000,
+                invoiceDate: '2024-08-26',
+                productName: '玉米',
+                status: '已开具',
+            },
+        ];
+
+        appState.receipts = [
+            {
+                receiptId: 'PAY202408001',
+                contractId: 'HT202408001',
+                customerName: '北原米业',
+                receiptAmount: 1000000,
+                receiptDate: '2024-08-20',
+                bankName: '中国农业银行北原支行',
+                receiptType: '电汇',
+                status: '已到账',
+            },
+            {
+                receiptId: 'PAY202408002',
+                contractId: 'HT202408003',
+                customerName: '绿野食品集团',
+                receiptAmount: 848000,
+                receiptDate: '2024-08-28',
+                bankName: '中国工商银行北原支行',
+                receiptType: '电汇',
+                status: '已到账',
+            },
+        ];
+
+        // 更新上传区UI
+        document.getElementById('zoneContract').classList.add('has-file');
+        document.getElementById('zoneContractFile').textContent = '✓ 内嵌测试数据 (3条合同)';
+        document.getElementById('zoneInvoice').classList.add('has-file');
+        document.getElementById('zoneInvoiceFile').textContent = '✓ 内嵌测试数据 (2条发票)';
+        document.getElementById('zoneReceipt').classList.add('has-file');
+        document.getElementById('zoneReceiptFile').textContent = '✓ 内嵌测试数据 (2条回款)';
+
+        // 重置步骤
+        setProgressStep(1, 'completed');
+
+        updateParsedPreview();
+        updateStatusBar();
+        checkCanExecute();
+
+        showNotification('info', '测试数据已加载', '已加载3份合同、2份发票、2份回款，点击"一键执行全流程"开始处理');
+        logActivity('快速体验测试', '点击快速体验测试按钮', '加载内嵌测试数据', true);
+
+        // 自动执行全流程
+        setTimeout(() => {
+            executeFullProcess();
+        }, 500);
+    }
+
+    // ==================== 13. 导出功能 ====================
+
+    function showExportModal() {
+        document.getElementById('exportModal').classList.add('visible');
+    }
+
+    function hideExportModal() {
+        document.getElementById('exportModal').classList.remove('visible');
+    }
+
+    function exportAllToExcel() {
+        hideExportModal();
+
+        const wb = XLSX.utils.book_new();
+
+        // Sheet 1: 三单匹配结果
+        if (document.getElementById('exportMatch').checked && appState.matchResults.length > 0) {
+            const matchData = appState.matchResults.map(m => ({
+                '合同编号': m.contractId,
+                '客户名称': m.customerName,
+                '粮食品类': m.productName,
+                '合同金额': m.contractAmount,
+                '发票编号': m.invoiceIds.join(', ') || '无',
+                '发票金额': m.invoiceAmount || 0,
+                '回款编号': m.receiptIds.join(', ') || '无',
+                '回款金额': m.receiptAmount || 0,
+                '合同-发票差异': m.contractInvoiceDiff,
+                '发票-回款差异': m.invoiceReceiptDiff,
+                '交付方式': m.deliveryMethod,
+            }));
+            const ws1 = XLSX.utils.json_to_sheet(matchData);
+            XLSX.utils.book_append_sheet(wb, ws1, '三单匹配结果');
+        }
+
+        // Sheet 2: 异常差异清单
+        if (document.getElementById('exportAnomaly').checked && appState.anomalies.length > 0) {
+            const anomalyData = appState.anomalies.map(a => ({
+                '差异类型': a.type,
+                '合同编号': a.contractId,
+                '发票编号': a.invoiceId,
+                '回款编号': a.receiptId,
+                '合同金额': a.contractAmount,
+                '发票金额': a.invoiceAmount,
+                '回款金额': a.receiptAmount,
+                '差异金额': a.diffAmount,
+                '风险等级': a.severity === 'high' ? '高风险' : a.severity === 'medium' ? '中风险' : '低风险',
+                '建议处理方式': a.suggestion,
+            }));
+            const ws2 = XLSX.utils.json_to_sheet(anomalyData);
+            XLSX.utils.book_append_sheet(wb, ws2, '异常差异清单');
+        }
+
+        // Sheet 3: 收入确认明细
+        if (document.getElementById('exportIncome').checked && appState.incomeDetails.length > 0) {
+            const incomeData = appState.incomeDetails.map(d => ({
+                '合同编号': d.contractId,
+                '客户名称': d.customerName,
+                '粮食品类': d.productName,
+                '交付方式': d.deliveryMethod,
+                '确认期次': d.installmentNo,
+                '含税金额': d.totalAmount,
+                '不含税收入': d.revenueAmount,
+                '销项税额': d.taxAmount,
+                '确认日期': d.recognitionDate,
+                '确认类型': d.recognitionType,
+            }));
+            const ws3 = XLSX.utils.json_to_sheet(incomeData);
+            XLSX.utils.book_append_sheet(wb, ws3, '收入确认明细');
+        }
+
+        // Sheet 4: 销项税计算底稿
+        if (document.getElementById('exportTax').checked && appState.taxWorksheets.length > 0) {
+            const taxData = appState.taxWorksheets.map(w => ({
+                '合同编号': w.contractId,
+                '客户名称': w.customerName,
+                '粮食品类': w.productName,
+                '含税金额(A)': w.taxInclusiveAmount,
+                '税率': (w.taxRate * 100).toFixed(0) + '%',
+                '不含税收入(B=A÷1.13)': w.revenueAmount,
+                '销项税额(C=B×13%)': w.outputTax,
+                '发票税额': w.invoiceTaxAmount,
+                '税额差异': w.taxDiff,
+                '验算(A=B+C)': w.verification,
+            }));
+            const ws4 = XLSX.utils.json_to_sheet(taxData);
+            XLSX.utils.book_append_sheet(wb, ws4, '销项税计算底稿');
+        }
+
+        // Sheet 5: 会计凭证
+        if (document.getElementById('exportVoucher').checked && appState.vouchers.length > 0) {
+            const voucherData = [];
+            appState.vouchers.forEach(v => {
+                v.debitEntries.forEach(e => {
+                    voucherData.push({
+                        '凭证编号': v.voucherId,
+                        '日期': v.date,
+                        '摘要': v.summary,
+                        '科目编码': e.accountCode,
+                        '科目名称': e.accountName,
+                        '借贷方向': '借',
+                        '金额': e.amount,
+                    });
+                });
+                v.creditEntries.forEach(e => {
+                    voucherData.push({
+                        '凭证编号': v.voucherId,
+                        '日期': v.date,
+                        '摘要': v.summary,
+                        '科目编码': e.accountCode,
+                        '科目名称': e.accountName,
+                        '借贷方向': '贷',
+                        '金额': e.amount,
+                    });
+                });
+            });
+            const ws5 = XLSX.utils.json_to_sheet(voucherData);
+            XLSX.utils.book_append_sheet(wb, ws5, '会计凭证');
+        }
+
+        if (wb.SheetNames.length === 0) {
+            showNotification('warning', '无可导出数据', '请先执行全流程生成结果');
+            return;
+        }
+
+        const now = new Date();
+        const filename = `农仓管家_报表_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.xlsx`;
+        XLSX.writeFile(wb, filename);
+
+        showNotification('success', '导出成功', `已导出 ${wb.SheetNames.length} 个工作表至 ${filename}`);
+        logActivity('导出报表', `导出Excel: ${filename}`, `包含${wb.SheetNames.length}个工作表`, true);
+    }
+
+    function printReport() {
+        hideExportModal();
+        window.print();
+        logActivity('导出报表', '打印/PDF', '触发浏览器打印', true);
+    }
+
+    // ==================== 14. 日志 ====================
+
+    function logActivity(action, inputSummary, outputSummary, success) {
+        const now = new Date();
+        const timestamp = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') +
+            ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0');
+
+        const logEntry = `[${timestamp}] 操作: ${action} | 输入: ${inputSummary} | 输出: ${outputSummary} | 结果: ${success ? '成功' : '失败'}\n`;
+
+        // 存储到localStorage
+        const logs = JSON.parse(localStorage.getItem('ncg_logs') || '[]');
+        logs.push({ timestamp, action, inputSummary, outputSummary, success });
+        localStorage.setItem('ncg_logs', JSON.stringify(logs));
+    }
+
+    // ==================== 15. 确认对话框 ====================
+
+    function showConfirm(title, body, onConfirm) {
+        document.getElementById('confirmTitle').textContent = title;
+        document.getElementById('confirmBody').textContent = body;
+        document.getElementById('confirmModal').classList.add('visible');
+        document.getElementById('confirmYes').onclick = function() {
+            hideConfirmModal();
+            onConfirm();
+        };
+    }
+
+    function hideConfirmModal() {
+        document.getElementById('confirmModal').classList.remove('visible');
+    }
+
+    // ==================== 16. 拖拽上传支持 ====================
+
+    function setupDragDrop() {
+        const zones = document.querySelectorAll('.upload-zone');
+        zones.forEach(zone => {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('dragover');
+            });
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('dragover');
+            });
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('dragover');
+                const type = zone.dataset.type;
+                const file = e.dataTransfer.files[0];
+                if (file) {
+                    const input = zone.querySelector('input[type="file"]');
+                    // Create a new DataTransfer to set the file
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    input.files = dt.files;
+                    handleUpload(input, type);
+                }
+            });
+        });
+    }
+
+    // ==================== 17. 初始化 ====================
+
+    function initApp() {
+        setupDragDrop();
+        setProgressStep(0, '');
+        updateStatusBar();
+        logActivity('系统初始化', '打开农仓管家', '页面加载完成', true);
+    }
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>

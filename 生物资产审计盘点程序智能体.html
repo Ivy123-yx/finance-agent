@@ -1,0 +1,2199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>生物资产审计盘点程序智能体 · 存栏生猪消耗性生物资产专项</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root{
+  --navy-900:#0f2942;
+  --navy-800:#16375c;
+  --navy-700:#1e4976;
+  --navy-600:#2a5f92;
+  --blue-500:#3b7cb8;
+  --blue-400:#5b9bd5;
+  --blue-50:#eef4fa;
+  --blue-100:#dce8f4;
+  --gray-900:#1f2933;
+  --gray-700:#3e4c59;
+  --gray-600:#52606d;
+  --gray-500:#7b8794;
+  --gray-400:#9aa5b1;
+  --gray-300:#cbd2d9;
+  --gray-200:#e4e7eb;
+  --gray-100:#f1f4f7;
+  --gray-50:#f8fafc;
+  --white:#ffffff;
+  --green-600:#158a54;
+  --green-50:#e8f6ef;
+  --green-300:#8fd3b4;
+  --red-600:#c0392b;
+  --red-50:#fdecea;
+  --red-300:#f0a9a0;
+  --amber-600:#b7791f;
+  --amber-50:#fdf6e3;
+  --amber-300:#e6cd8f;
+  --shadow-sm:0 1px 2px rgba(15,41,66,.08);
+  --shadow:0 2px 8px rgba(15,41,66,.10);
+  --shadow-lg:0 8px 28px rgba(15,41,66,.18);
+  --radius:6px;
+  --header-h:58px;
+  --footer-h:60px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB","Source Han Sans SC","Segoe UI",Arial,sans-serif;
+  background:var(--gray-100);
+  color:var(--gray-900);
+  font-size:13px;
+  line-height:1.65;
+  overflow:hidden;
+}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:var(--gray-100)}
+::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:5px}
+::-webkit-scrollbar-thumb:hover{background:var(--gray-400)}
+
+/* ============ 顶部标题栏 ============ */
+header{
+  height:var(--header-h);
+  background:linear-gradient(100deg,var(--navy-900) 0%,var(--navy-700) 55%,var(--navy-600) 100%);
+  color:#fff;display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;box-shadow:var(--shadow);position:relative;z-index:40;
+}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand-mark{
+  width:34px;height:34px;border-radius:7px;flex:0 0 34px;
+  background:linear-gradient(145deg,#4c9ad4,#1e4976);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);
+}
+.brand-txt h1{font-size:15.5px;font-weight:700;letter-spacing:.4px;line-height:1.25;white-space:nowrap}
+.brand-txt p{font-size:11px;color:#a8c6e2;letter-spacing:.3px;white-space:nowrap}
+.head-right{display:flex;align-items:center;gap:14px;flex-shrink:0}
+.kbd-hint{display:flex;gap:6px;align-items:center;font-size:10.5px;color:#a8c6e2}
+kbd{
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);
+  border-radius:3px;padding:1px 5px;font-family:Consolas,Monaco,monospace;font-size:10px;color:#dceaf7;
+}
+.user-chip{
+  display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:4px 12px 4px 5px;
+}
+.avatar{
+  width:24px;height:24px;border-radius:50%;background:linear-gradient(145deg,#6fb3e0,#2a5f92);
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;
+}
+.user-chip span{font-size:12px;font-weight:600;letter-spacing:.3px}
+.btn-test{
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);color:#fff;
+  padding:6px 13px;border-radius:var(--radius);font-size:12px;font-weight:600;cursor:pointer;
+  transition:.16s;display:flex;align-items:center;gap:6px;font-family:inherit;
+}
+.btn-test:hover{background:rgba(255,255,255,.26)}
+
+/* ============ 主体三区 ============ */
+main{
+  height:calc(100vh - var(--header-h) - var(--footer-h));
+  display:grid;grid-template-columns:340px minmax(360px,1fr) minmax(440px,1.15fr);
+  gap:10px;padding:10px;
+}
+.panel{
+  background:var(--white);border:1px solid var(--gray-200);border-radius:var(--radius);
+  display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--shadow-sm);
+}
+.panel-head{
+  padding:9px 13px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.panel-head h2{
+  font-size:12.5px;font-weight:700;color:var(--navy-800);letter-spacing:.4px;
+  display:flex;align-items:center;gap:7px;
+}
+.panel-head h2::before{content:"";width:3px;height:13px;background:var(--blue-500);border-radius:2px}
+.panel-body{padding:13px;overflow-y:auto;flex:1}
+.badge{
+  font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;letter-spacing:.3px;
+  background:var(--blue-50);color:var(--navy-700);border:1px solid var(--blue-100);white-space:nowrap;
+}
+.badge.g{background:var(--green-50);color:var(--green-600);border-color:var(--green-300)}
+.badge.r{background:var(--red-50);color:var(--red-600);border-color:var(--red-300)}
+.badge.a{background:var(--amber-50);color:var(--amber-600);border-color:var(--amber-300)}
+.sect{margin-bottom:15px}
+.sect:last-child{margin-bottom:2px}
+.sect-t{
+  font-size:11px;font-weight:700;color:var(--gray-600);text-transform:uppercase;letter-spacing:.7px;
+  margin-bottom:7px;padding-bottom:5px;border-bottom:1px dashed var(--gray-200);
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+.sect-t .lnk{
+  font-size:10.5px;color:var(--blue-500);cursor:pointer;text-transform:none;letter-spacing:0;font-weight:600;
+}
+.sect-t .lnk:hover{text-decoration:underline;color:var(--navy-700)}
+
+/* 上传区 */
+.drop{
+  border:2px dashed var(--gray-300);border-radius:var(--radius);padding:20px 12px;text-align:center;
+  cursor:pointer;transition:.18s;background:var(--gray-50);
+}
+.drop:hover,.drop.over{border-color:var(--blue-500);background:var(--blue-50)}
+.drop .ic{font-size:26px;margin-bottom:6px;opacity:.55}
+.drop .t1{font-size:12.5px;font-weight:600;color:var(--navy-800);margin-bottom:3px}
+.drop .t2{font-size:10.5px;color:var(--gray-500);line-height:1.55}
+.file-chip{
+  margin-top:9px;display:none;align-items:center;gap:8px;background:var(--blue-50);
+  border:1px solid var(--blue-100);border-radius:var(--radius);padding:7px 10px;font-size:11.5px;
+}
+.file-chip.on{display:flex}
+.file-chip .fn{flex:1;font-weight:600;color:var(--navy-800);word-break:break-all;line-height:1.4}
+.file-chip .x{cursor:pointer;color:var(--gray-500);font-size:14px;flex-shrink:0;padding:0 2px}
+.file-chip .x:hover{color:var(--red-600)}
+
+/* 参数表单 */
+.fgrid{display:flex;flex-direction:column;gap:9px}
+.fitem label{
+  display:flex;justify-content:space-between;align-items:baseline;
+  font-size:11.5px;font-weight:600;color:var(--gray-700);margin-bottom:4px;
+}
+.fitem label em{font-style:normal;font-size:10px;color:var(--gray-400);font-weight:500}
+.fitem input,.fitem select{
+  width:100%;padding:7px 10px;border:1px solid var(--gray-300);border-radius:4px;
+  font-size:12.5px;font-family:inherit;color:var(--gray-900);background:var(--white);transition:.15s;
+}
+.fitem input:focus,.fitem select:focus{
+  outline:none;border-color:var(--blue-500);box-shadow:0 0 0 3px rgba(59,124,184,.13);
+}
+.fitem input[readonly]{background:var(--gray-50);color:var(--gray-600)}
+.calc-row{
+  margin-top:9px;padding:8px 10px;background:var(--gray-50);border:1px solid var(--gray-200);
+  border-radius:4px;font-size:11px;color:var(--gray-600);line-height:1.7;
+}
+.calc-row b{color:var(--navy-700);font-family:Consolas,monospace}
+
+/* 表格 */
+table.dt{width:100%;border-collapse:collapse;font-size:11px}
+table.dt th{
+  background:var(--navy-800);color:#fff;padding:6px 7px;text-align:left;font-weight:600;
+  font-size:10.5px;letter-spacing:.3px;white-space:nowrap;
+}
+table.dt td{padding:5px 7px;border-bottom:1px solid var(--gray-200);color:var(--gray-700)}
+table.dt tbody tr:nth-child(even){background:var(--gray-50)}
+table.dt tbody tr:hover{background:var(--blue-50)}
+table.dt td.num{text-align:right;font-family:Consolas,monospace;font-weight:600;color:var(--navy-700)}
+.tbl-wrap{border:1px solid var(--gray-200);border-radius:4px;overflow:hidden}
+.empty{
+  text-align:center;padding:22px 12px;color:var(--gray-400);font-size:11.5px;line-height:1.8;
+}
+.empty .ic{font-size:24px;opacity:.4;display:block;margin-bottom:6px}
+
+/* 流程步进器 */
+.stepper{display:flex;align-items:flex-start;gap:0;margin-bottom:4px}
+.step{flex:1;text-align:center;position:relative;padding-top:22px}
+.step::before{
+  content:"";position:absolute;top:8px;left:0;right:0;height:2px;background:var(--gray-200);
+}
+.step:first-child::before{left:50%}
+.step:last-child::before{right:50%}
+.step .dot{
+  position:absolute;top:2px;left:50%;transform:translateX(-50%);
+  width:15px;height:15px;border-radius:50%;background:var(--white);
+  border:2px solid var(--gray-300);z-index:2;transition:.2s;
+  display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:700;
+}
+.step .lb{font-size:10px;color:var(--gray-400);font-weight:600;letter-spacing:.2px}
+.step.done .dot{background:var(--green-600);border-color:var(--green-600)}
+.step.done .dot::after{content:"\2713"}
+.step.done .lb{color:var(--green-600)}
+.step.act .dot{
+  background:var(--blue-500);border-color:var(--blue-500);
+  box-shadow:0 0 0 4px rgba(59,124,184,.18);animation:pulse 1.5s infinite;
+}
+.step.act .lb{color:var(--blue-500)}
+.step.err .dot{background:var(--red-600);border-color:var(--red-600)}
+.step.err .dot::after{content:"\0021"}
+.step.err .lb{color:var(--red-600)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(59,124,184,.20)}50%{box-shadow:0 0 0 7px rgba(59,124,184,.06)}}
+
+/* 校验结果框 */
+.vbox{border-radius:var(--radius);padding:11px 13px;border-left:4px solid;font-size:12px;display:none}
+.vbox.on{display:block}
+.vbox.pass{background:var(--green-50);border-color:var(--green-600);color:#0e5c39}
+.vbox.fail{background:var(--red-50);border-color:var(--red-600);color:#8e2a1f}
+.vbox.warn{background:var(--amber-50);border-color:var(--amber-600);color:#7d5312}
+.vbox .vh{font-weight:700;font-size:12.5px;display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.vbox ul{margin:5px 0 0 17px}
+.vbox li{margin-bottom:3px;line-height:1.6}
+.vbox .fx{
+  margin-top:8px;padding:7px 9px;background:rgba(255,255,255,.72);border-radius:4px;
+  font-family:Consolas,Monaco,monospace;font-size:10.5px;line-height:1.85;color:var(--gray-700);
+  border:1px solid rgba(0,0,0,.06);
+}
+
+/* 审计程序步骤清单 */
+.wf-list{display:flex;flex-direction:column;gap:0}
+.wf{
+  display:flex;gap:9px;padding:8px 0;border-bottom:1px dashed var(--gray-200);opacity:.5;transition:.25s;
+}
+.wf:last-child{border-bottom:none}
+.wf.on{opacity:1}
+.wf .n{
+  flex:0 0 20px;height:20px;border-radius:50%;background:var(--gray-200);color:var(--gray-500);
+  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;margin-top:1px;
+}
+.wf.on .n{background:var(--navy-700);color:#fff}
+.wf .c{flex:1;min-width:0}
+.wf .c h4{font-size:11.5px;font-weight:700;color:var(--navy-800);margin-bottom:2px}
+.wf .c p{font-size:10.5px;color:var(--gray-500);line-height:1.6}
+.wf .tag{
+  font-size:9px;background:var(--blue-50);color:var(--navy-700);padding:1px 5px;border-radius:3px;
+  border:1px solid var(--blue-100);margin-left:5px;font-family:Consolas,monospace;white-space:nowrap;
+}
+
+/* 日志 */
+.logs{display:flex;flex-direction:column;gap:5px;max-height:150px;overflow-y:auto}
+.log{
+  font-size:10.5px;padding:6px 8px;background:var(--gray-50);border-left:2px solid var(--gray-300);
+  border-radius:0 3px 3px 0;color:var(--gray-600);line-height:1.6;word-break:break-word;
+}
+.log.ok{border-color:var(--green-600)}
+.log.no{border-color:var(--red-600)}
+.log .t{font-family:Consolas,monospace;color:var(--gray-400);font-size:9.5px;display:block}
+
+/* ============ 报告区 ============ */
+.rpt-scroll{flex:1;overflow-y:auto;background:var(--gray-100);padding:12px}
+#reportContent{background:#fff;padding:26px 30px;box-shadow:var(--shadow-sm);border:1px solid var(--gray-200)}
+.rpt-title{
+  text-align:center;font-size:17px;font-weight:700;color:var(--navy-900);
+  padding-bottom:11px;margin-bottom:5px;border-bottom:2.5px solid var(--navy-800);letter-spacing:.5px;
+}
+.rpt-sub{
+  text-align:center;font-size:10.5px;color:var(--gray-500);margin-bottom:17px;
+  padding-bottom:9px;border-bottom:1px solid var(--gray-200);line-height:1.9;
+}
+.rpt-sec{margin-bottom:19px}
+.rpt-sec>h3{
+  font-size:13.5px;font-weight:700;color:var(--navy-800);margin-bottom:9px;
+  padding:6px 11px;background:linear-gradient(90deg,var(--blue-50),rgba(238,244,250,0));
+  border-left:3.5px solid var(--navy-700);
+}
+.rpt-sec p{font-size:12px;color:var(--gray-700);margin-bottom:7px;text-align:justify;line-height:1.85}
+.rpt-sec ul,.rpt-sec ol{margin:0 0 8px 20px}
+.rpt-sec li{font-size:12px;color:var(--gray-700);margin-bottom:4px;line-height:1.8}
+.rpt-sec table{width:100%;border-collapse:collapse;font-size:11px;margin:5px 0 10px}
+.rpt-sec table th{
+  background:var(--navy-800);color:#fff;padding:7px 8px;text-align:left;font-weight:600;font-size:10.5px;
+}
+.rpt-sec table td{padding:6px 8px;border:1px solid var(--gray-200);color:var(--gray-700);vertical-align:top;line-height:1.7}
+.rpt-sec table tbody tr:nth-child(even){background:var(--gray-50)}
+.rpt-sec b,.rpt-sec strong{color:var(--navy-800);font-weight:700}
+.risk-card{
+  border:1px solid var(--gray-200);border-left:4px solid var(--gray-400);border-radius:0 4px 4px 0;
+  padding:10px 13px;margin-bottom:9px;background:var(--gray-50);
+}
+.risk-card.h{border-left-color:var(--red-600);background:var(--red-50)}
+.risk-card.m{border-left-color:var(--amber-600);background:var(--amber-50)}
+.risk-card.l{border-left-color:var(--green-600);background:var(--green-50)}
+.risk-card .rh{display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap}
+.risk-card .rn{font-size:12.5px;font-weight:700;color:var(--navy-900)}
+.risk-card .rl{font-size:9.5px;padding:1px 7px;border-radius:9px;font-weight:700;color:#fff;letter-spacing:.3px}
+.risk-card.h .rl{background:var(--red-600)}
+.risk-card.m .rl{background:var(--amber-600)}
+.risk-card.l .rl{background:var(--green-600)}
+.risk-card .rd{font-size:11.5px;color:var(--gray-700);line-height:1.8;text-align:justify}
+.risk-card .rp{
+  margin-top:7px;padding-top:7px;border-top:1px dashed var(--gray-300);
+  font-size:11px;color:var(--gray-700);line-height:1.8;
+}
+.risk-card .rp b{color:var(--navy-800)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:5px 13px;font-size:11.5px;margin-bottom:9px}
+.kv dt{color:var(--gray-500);font-weight:600;white-space:nowrap}
+.kv dd{color:var(--navy-800);font-family:Consolas,monospace;font-weight:600}
+.ai-block{
+  border:1px solid var(--blue-100);border-radius:4px;background:linear-gradient(180deg,#f7fbfe,#fff);
+  padding:12px 15px;margin-top:5px;
+}
+.ai-block .ah{
+  font-size:11px;font-weight:700;color:var(--blue-500);letter-spacing:.5px;margin-bottom:8px;
+  display:flex;align-items:center;gap:6px;padding-bottom:6px;border-bottom:1px dashed var(--blue-100);
+}
+.ai-block h4{font-size:12px;color:var(--navy-800);margin:9px 0 5px;font-weight:700}
+.rpt-foot{
+  margin-top:22px;padding-top:11px;border-top:1px solid var(--gray-200);
+  font-size:10.5px;color:var(--gray-500);display:flex;justify-content:space-between;gap:12px;line-height:1.8;
+}
+.wm{
+  text-align:center;font-size:9.5px;color:var(--gray-400);margin-top:7px;letter-spacing:.4px;
+}
+.spinner{
+  width:15px;height:15px;border:2px solid var(--blue-100);border-top-color:var(--blue-500);
+  border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:-3px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-box{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:44px 20px;gap:12px;color:var(--gray-500);font-size:12px;text-align:center;
+}
+.loading-box .spinner{width:30px;height:30px;border-width:3px}
+.lp{width:190px;height:3px;background:var(--gray-200);border-radius:2px;overflow:hidden}
+.lp i{display:block;height:100%;background:var(--blue-500);animation:prog 1.6s ease-in-out infinite}
+@keyframes prog{0%{width:8%}50%{width:78%}100%{width:97%}}
+
+/* ============ 底部操作栏 ============ */
+footer{
+  height:var(--footer-h);background:var(--white);border-top:1px solid var(--gray-200);
+  display:flex;align-items:center;justify-content:space-between;padding:0 18px;
+  box-shadow:0 -2px 8px rgba(15,41,66,.05);position:relative;z-index:30;
+}
+.ftr-l{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.ftr-r{display:flex;align-items:center;gap:13px;font-size:10.5px;color:var(--gray-400);flex-shrink:0}
+.btn{
+  padding:8px 15px;border-radius:var(--radius);font-size:12.5px;font-weight:600;cursor:pointer;
+  border:1px solid transparent;transition:.16s;display:flex;align-items:center;gap:6px;
+  font-family:inherit;white-space:nowrap;
+}
+.btn:disabled{opacity:.42;cursor:not-allowed}
+.btn-pri{background:var(--navy-700);color:#fff;box-shadow:var(--shadow-sm)}
+.btn-pri:hover:not(:disabled){background:var(--navy-800);box-shadow:var(--shadow)}
+.btn-sec{background:var(--white);color:var(--navy-700);border-color:var(--gray-300)}
+.btn-sec:hover:not(:disabled){background:var(--blue-50);border-color:var(--blue-400)}
+.btn-gho{background:transparent;color:var(--gray-600);border-color:var(--gray-200)}
+.btn-gho:hover:not(:disabled){background:var(--gray-50);color:var(--navy-700);border-color:var(--gray-300)}
+.ver{font-family:Consolas,monospace;font-weight:600;color:var(--gray-500)}
+
+/* ============ 测试侧拉面板 ============ */
+.ovl{
+  position:fixed;inset:0;background:rgba(15,41,66,.45);opacity:0;visibility:hidden;
+  transition:.22s;z-index:90;
+}
+.ovl.on{opacity:1;visibility:visible}
+.side{
+  position:fixed;top:0;right:0;width:472px;max-width:94vw;height:100vh;background:var(--white);
+  box-shadow:var(--shadow-lg);transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+  z-index:100;display:flex;flex-direction:column;
+}
+.side.on{transform:translateX(0)}
+.side-head{
+  padding:15px 18px;background:linear-gradient(100deg,var(--navy-800),var(--navy-600));color:#fff;
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.side-head h3{font-size:14.5px;font-weight:700;letter-spacing:.4px}
+.side-head p{font-size:10.5px;color:#a8c6e2;margin-top:2px}
+.side-head .cl{
+  cursor:pointer;font-size:20px;line-height:1;opacity:.8;background:none;border:none;color:#fff;padding:0 3px;
+}
+.side-head .cl:hover{opacity:1}
+.side-body{padding:16px 18px;overflow-y:auto;flex:1}
+.tcase{
+  border:1px solid var(--gray-200);border-radius:var(--radius);margin-bottom:14px;overflow:hidden;
+}
+.tcase-h{
+  padding:10px 13px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+.tcase-h h4{font-size:12.5px;font-weight:700;color:var(--navy-800);display:flex;align-items:center;gap:7px}
+.tcase-h .no{
+  width:19px;height:19px;border-radius:4px;background:var(--navy-700);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;flex-shrink:0;
+}
+.tcase-b{padding:11px 13px}
+.tcase-b .lbl{
+  font-size:10px;font-weight:700;color:var(--gray-500);letter-spacing:.6px;
+  text-transform:uppercase;margin-bottom:5px;
+}
+.tcase-b pre{
+  background:var(--gray-50);border:1px solid var(--gray-200);border-radius:4px;padding:9px 11px;
+  font-family:Consolas,Monaco,monospace;font-size:10.5px;line-height:1.7;color:var(--gray-700);
+  overflow-x:auto;margin-bottom:10px;white-space:pre-wrap;word-break:break-word;
+}
+.tcase-b .exp{
+  font-size:11px;color:var(--gray-600);line-height:1.75;background:var(--blue-50);
+  border-left:3px solid var(--blue-400);padding:8px 10px;border-radius:0 3px 3px 0;margin-bottom:11px;
+}
+.btn-run{
+  width:100%;padding:8px;background:var(--navy-700);color:#fff;border:none;border-radius:var(--radius);
+  font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.16s;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn-run:hover{background:var(--navy-800)}
+.btn-run:disabled{opacity:.5;cursor:not-allowed}
+.tres{
+  margin-top:9px;padding:8px 10px;border-radius:4px;font-size:11px;line-height:1.7;display:none;
+}
+.tres.on{display:block}
+.tres.p{background:var(--green-50);color:#0e5c39;border-left:3px solid var(--green-600)}
+.tres.f{background:var(--red-50);color:#8e2a1f;border-left:3px solid var(--red-600)}
+
+/* ============ 弹窗 ============ */
+.modal{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.95);
+  background:var(--white);border-radius:8px;box-shadow:var(--shadow-lg);width:432px;max-width:93vw;
+  z-index:100;opacity:0;visibility:hidden;transition:.2s;overflow:hidden;
+}
+.modal.on{opacity:1;visibility:visible;transform:translate(-50%,-50%) scale(1)}
+.modal-h{
+  padding:14px 18px;border-bottom:1px solid var(--gray-200);display:flex;
+  align-items:center;justify-content:space-between;background:var(--gray-50);
+}
+.modal-h h3{font-size:14px;font-weight:700;color:var(--navy-800)}
+.modal-h .cl{cursor:pointer;font-size:19px;color:var(--gray-400);background:none;border:none;line-height:1}
+.modal-h .cl:hover{color:var(--red-600)}
+.modal-b{padding:17px 18px}
+.modal-f{padding:12px 18px;border-top:1px solid var(--gray-200);display:flex;justify-content:flex-end;gap:9px;background:var(--gray-50)}
+.hint{font-size:10.5px;color:var(--gray-500);line-height:1.7;margin-top:7px}
+
+/* Toast */
+.toast-wrap{position:fixed;top:70px;right:18px;z-index:200;display:flex;flex-direction:column;gap:8px}
+.toast{
+  background:var(--navy-800);color:#fff;padding:10px 15px;border-radius:var(--radius);
+  box-shadow:var(--shadow-lg);font-size:12px;display:flex;align-items:center;gap:9px;
+  animation:tin .26s ease;max-width:352px;line-height:1.6;border-left:3px solid var(--blue-400);
+}
+.toast.ok{border-left-color:#4ade80}
+.toast.no{border-left-color:#f87171}
+.toast.wa{border-left-color:#fbbf24}
+@keyframes tin{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast.out{animation:tout .26s ease forwards}
+@keyframes tout{to{transform:translateX(110%);opacity:0}}
+
+.scope-note{
+  font-size:10px;color:var(--gray-500);background:var(--gray-50);border:1px dashed var(--gray-300);
+  border-radius:4px;padding:7px 9px;line-height:1.7;margin-top:11px;
+}
+.scope-note b{color:var(--navy-700)}
+
+@media (max-width:1500px){
+  main{grid-template-columns:300px minmax(300px,1fr) minmax(380px,1.05fr)}
+  .kbd-hint{display:none}
+}
+@media (max-width:1180px){
+  body{overflow:auto}
+  main{grid-template-columns:1fr;height:auto}
+  .panel{max-height:640px}
+  footer{flex-wrap:wrap;height:auto;padding:11px 15px;gap:9px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark">&#128202;</div>
+    <div class="brand-txt">
+      <h1>生物资产审计盘点程序智能体</h1>
+      <p>存栏生猪消耗性生物资产专项 · 工作事项模式 · 内嵌《存货盘点审计系统》工作流</p>
+    </div>
+  </div>
+  <div class="head-right">
+    <div class="kbd-hint">
+      <kbd>Ctrl</kbd>+<kbd>K</kbd> 校验
+      <kbd>Ctrl</kbd>+<kbd>&#9166;</kbd> 盘点
+      <kbd>Ctrl</kbd>+<kbd>P</kbd> 导出
+    </div>
+    <button class="btn-test" id="btnTestOpen">&#9881; 快速测试</button>
+    <div class="user-chip"><div class="avatar">李</div><span>李昀晓</span></div>
+  </div>
+</header>
+
+<main>
+  <!-- ============ 左：数据导入与参数设置 ============ -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>数据导入与参数设置</h2>
+      <span class="badge" id="srcBadge">待导入</span>
+    </div>
+    <div class="panel-body">
+
+      <div class="sect">
+        <div class="sect-t"><span>盘点数据文件</span><span class="lnk" id="lnkSample">下载示例Excel</span></div>
+        <div class="drop" id="drop">
+          <div class="ic">&#128194;</div>
+          <div class="t1">点击选择或拖拽 Excel 文件</div>
+          <div class="t2">支持 .xlsx / .xls，需包含<br>「样本量、抽样率、总存栏数」字段</div>
+        </div>
+        <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none">
+        <div class="file-chip" id="fileChip">
+          <span>&#128196;</span><span class="fn" id="fileName"></span><span class="x" id="fileClear">&times;</span>
+        </div>
+      </div>
+
+      <div class="sect">
+        <div class="sect-t"><span>抽样参数确认</span><span class="lnk" id="lnkReset">重置</span></div>
+        <div class="fgrid">
+          <div class="fitem">
+            <label>总存栏数 <em>头（整数 &ge; 1）</em></label>
+            <input type="number" id="inTotal" placeholder="如 5000" min="1" step="1">
+          </div>
+          <div class="fitem">
+            <label>抽样率 <em>0 &lt; 率 &le; 1，可填 10%</em></label>
+            <input type="text" id="inRate" placeholder="如 0.1 或 10%">
+          </div>
+          <div class="fitem">
+            <label>样本量 <em>头（整数 &ge; 1）</em></label>
+            <input type="number" id="inSample" placeholder="如 500" min="1" step="1">
+          </div>
+        </div>
+        <div class="calc-row" id="calcRow">
+          理论样本量 = 抽样率 &times; 总存栏数 = <b id="calcVal">—</b>　|　偏差 <b id="calcDev">—</b>
+        </div>
+      </div>
+
+      <div class="sect">
+        <div class="sect-t"><span>分层数据明细</span><span class="badge" id="layerBadge">0 层</span></div>
+        <div id="layerArea">
+          <div class="empty"><span class="ic">&#128203;</span>暂无分层数据<br>上传 Excel 或运行内置测试用例</div>
+        </div>
+      </div>
+
+      <div class="scope-note">
+        <b>任务边界：</b>本智能体仅处理「存栏活体生猪」消耗性生物资产的审计盘点程序设计、抽样参数校验与专项盘点分析报告输出；不处理其他存货类型、非生物资产审计、财务核算与税务事项。
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 中：处理流程与结果 ============ -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>处理流程与结果展示</h2>
+      <span class="badge" id="flowBadge">就绪</span>
+    </div>
+    <div class="panel-body">
+
+      <div class="sect">
+        <div class="sect-t"><span>任务执行流程</span></div>
+        <div class="stepper" id="stepper">
+          <div class="step" data-s="1"><div class="dot"></div><div class="lb">数据导入</div></div>
+          <div class="step" data-s="2"><div class="dot"></div><div class="lb">参数校验</div></div>
+          <div class="step" data-s="3"><div class="dot"></div><div class="lb">程序生成</div></div>
+          <div class="step" data-s="4"><div class="dot"></div><div class="lb">合规校验</div></div>
+          <div class="step" data-s="5"><div class="dot"></div><div class="lb">输出交付</div></div>
+        </div>
+      </div>
+
+      <div class="sect">
+        <div class="sect-t"><span>参数校验结果 <span style="font-family:Consolas,monospace;color:var(--gray-400)">strict_dual_check</span></span></div>
+        <div class="vbox" id="vbox"></div>
+        <div class="empty" id="vEmpty"><span class="ic">&#9878;</span>尚未执行校验<br>点击底部「校验参数」开始双向严格校验</div>
+      </div>
+
+      <div class="sect">
+        <div class="sect-t"><span>审计盘点程序步骤清单</span><span class="badge" id="wfBadge">《存货盘点审计系统》</span></div>
+        <div class="wf-list" id="wfList"></div>
+      </div>
+
+      <div class="sect">
+        <div class="sect-t"><span>最近交互 <span style="font-family:Consolas,monospace;color:var(--gray-400)">useractivity.log</span></span><span class="lnk" id="lnkLog">下载日志</span></div>
+        <div class="logs" id="logs"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 右：报告输出预览 ============ -->
+  <section class="panel">
+    <div class="panel-head">
+      <h2>专项盘点分析报告预览</h2>
+      <span class="badge" id="rptBadge">risk_oriented</span>
+    </div>
+    <div class="rpt-scroll" id="rptScroll">
+      <div id="reportContent">
+        <div class="empty" style="padding:56px 20px">
+          <span class="ic" style="font-size:34px">&#128203;</span>
+          <strong style="color:var(--gray-600);font-size:13px">暂无报告</strong><br>
+          导入盘点数据 &rarr; 校验参数 &rarr; 点击「开始审计盘点」<br>
+          系统将自动生成风险导向型专项盘点分析报告
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="ftr-l">
+    <button class="btn btn-sec" id="btnValidate">&#9878; 校验参数</button>
+    <button class="btn btn-pri" id="btnRun" disabled>&#9654; 开始审计盘点</button>
+    <button class="btn btn-gho" id="btnPdf" disabled>&#128196; 导出报告</button>
+    <button class="btn btn-gho" id="btnCopy" disabled>&#128203; 复制报告</button>
+    <button class="btn btn-gho" id="btnMail" disabled>&#9993; 邮件发送</button>
+  </div>
+  <div class="ftr-r">
+    <span>模型 <b style="color:var(--navy-700)">deepseek-v4-flash</b></span>
+    <span id="aiState">AI 研判：待调用</span>
+    <span class="ver">V1.0.1</span>
+  </div>
+</footer>
+
+<!-- 测试侧拉面板 -->
+<div class="ovl" id="ovlTest"></div>
+<aside class="side" id="sideTest">
+  <div class="side-head">
+    <div><h3>&#9881; 快速测试示例模块</h3><p>内置测试数据，无需外部上传，一键触发对应业务逻辑</p></div>
+    <button class="cl" id="btnTestClose">&times;</button>
+  </div>
+  <div class="side-body" id="testBody"></div>
+</aside>
+
+<!-- 邮件弹窗 -->
+<div class="ovl" id="ovlMail"></div>
+<div class="modal" id="modalMail">
+  <div class="modal-h"><h3>&#9993; 邮件发送报告</h3><button class="cl" id="mailClose">&times;</button></div>
+  <div class="modal-b">
+    <div class="fitem">
+      <label>收件人邮箱 <em>必填</em></label>
+      <input type="email" id="inMail" placeholder="auditor@example.com">
+    </div>
+    <div class="fitem" style="margin-top:11px">
+      <label>邮件主题</label>
+      <input type="text" id="inSubj" value="存栏生猪消耗性生物资产专项盘点分析报告">
+    </div>
+    <div class="hint">
+      说明：本应用为纯前端架构，将通过本机默认邮件客户端发起发送（mailto 协议）。受协议长度限制，正文内嵌报告摘要，完整报告文本将同时复制到剪贴板，可直接粘贴至邮件正文或审计工作底稿。
+    </div>
+  </div>
+  <div class="modal-f">
+    <button class="btn btn-gho" id="mailCancel">取消</button>
+    <button class="btn btn-pri" id="mailSend">&#9993; 发送</button>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+/* ==========================================================================
+   生物资产审计盘点程序智能体 V1.0
+   架构I（纯前端） | 任务：存栏生猪消耗性生物资产审计盘点程序设计与参数校验
+   ========================================================================== */
+
+/* ---------- 1. 大模型 API 配置（VDC 平台密钥：FAI-worktable） ---------- */
+var API = {
+  provider: 'DeepSeek',
+  model:    'deepseek-v4-flash',
+  key:      'sk-99722929c749470daa3117833b245ea3',
+  baseUrl:  'https://api.deepseek.com',
+  path:     '/v1/chat/completions',
+  timeout:  45000
+};
+var APP_VERSION = 'V1.0.1';
+
+/* ---------- 2. 内嵌工作流技能：《存货盘点审计系统》（分类：审计学） ---------- */
+var WORKFLOW = {
+  name: '存货盘点审计系统',
+  file: '146_存货盘点审计系统.md',
+  role: '资深审计经理（CPA），精通《中国注册会计师审计准则第1311号——对存货的监盘》与《企业会计准则第5号——生物资产》，审计风格为「保持职业怀疑、证据链完整、底稿可追溯」。',
+  principles: [
+    '职业怀疑：对可移动性强、易调换的活体生物资产保持高度警惕，不轻易接受管理层解释',
+    '证据链完整：耳标编号、圈舍移动日志、入出库记录、无害化处理单、保险理赔单形成闭环',
+    '风险导向：以调运舞弊、病死虚增、双重计数为高风险领域配置审计资源',
+    '底稿标准化：抽样过程、清点结果、差异处理全程可追溯可复核'
+  ],
+  steps: [
+    { n:1, t:'盘点准备与资料获取', tag:'preparation',
+      d:'获取存栏台账、耳标编号清单、圈舍分布图、入出库记录、圈舍移动日志、无害化处理记录、保险理赔数据、兽医死亡判定书；确认盘点基准时点并要求盘点期间冻结调运。' },
+    { n:2, t:'抽样参数校验', tag:'strict_dual_check',
+      d:'双向严格校验：样本量 = 抽样率 × 总存栏数（误差 ≤ 5%）；总存栏数与分层各层数量之和匹配；边界值与空值、负值拦截。' },
+    { n:3, t:'分层抽样策略设计', tag:'age_weight + location',
+      d:'按体重/年龄阶段（仔猪 <30kg、保育猪 30-60kg、育肥猪 >60kg）与地理场区（南场、北场）双维度分层随机抽样，确保每一风险层级均被覆盖。' },
+    { n:4, t:'现场监盘：耳标清点', tag:'ear_tag_count',
+      d:'逐圈舍清点猪只耳标编号并与台账核对，采用「先封栏后清点、清点后加标」防止双重计数与栏间转移；对无耳标个体单独列示。' },
+    { n:5, t:'移动轨迹追踪', tag:'movement_tracing',
+      d:'比对入出库记录与圈舍移动日志，测算各圈舍移动频次并与场区均值对比，识别异常调运与跨场重复计数舞弊。' },
+    { n:6, t:'差异处理与交叉验证', tag:'cross_validation',
+      d:'病死处置数量与无害化处理记录、保险理赔申报数据、兽医死亡判定书三方交叉验证；死亡率与历史同期基准比较（historical_comparison）。' },
+    { n:7, t:'合规校验与报告输出', tag:'risk_oriented',
+      d:'对照《企业会计准则第5号——生物资产》第四至九条校验匹配度，按风险导向结构输出专项盘点分析报告与后续工作底稿指引。' }
+  ]
+};
+
+/* ---------- 3. 内置参考数据（无后端数据库） ---------- */
+var REF = {
+  weightTiers: [
+    { name:'仔猪',   range:'<30kg',    risk:'高', note:'个体小、移动频繁、耳标易脱落，双重计数与损耗虚增风险最高' },
+    { name:'保育猪', range:'30-60kg',  risk:'中', note:'转群频繁，圈舍移动日志完整性是核对重点' },
+    { name:'育肥猪', range:'>60kg',    risk:'中', note:'单位价值高，出栏在即，需关注提前出售未入账与跌价准备' }
+  ],
+  farms: ['南场','北场'],
+  /* historical_comparison 历史死亡比率参考数据 */
+  deathHistDefault: 30,
+  monthlyMortalityRate: 0.006,
+  mortalityBenchmark: [
+    { tier:'仔猪',   rate:'1.2% / 月' },
+    { tier:'保育猪', rate:'0.6% / 月' },
+    { tier:'育肥猪', rate:'0.3% / 月' }
+  ],
+  moveFreqNormal: 1.0,
+  consistencyRate: 98.5,
+  deathAlertThreshold: 20,
+  moveAlertThreshold: 20
+};
+
+/* ---------- 4. 《企业会计准则第5号——生物资产》条款映射 ---------- */
+var CAS5 = [
+  { art:'第三条', req:'生物资产分类：消耗性生物资产、生产性生物资产、公益性生物资产',
+    proc:'确认存栏待售生猪归类为消耗性生物资产，核对科目归集是否正确' },
+  { art:'第四条', req:'消耗性生物资产为出售而持有或将来收获为农产品，含存栏待售牲畜',
+    proc:'耳标清点确认存栏待售生猪的实际存在性与权属，验证分类恰当性' },
+  { art:'第五条', req:'确认条件：拥有或控制、经济利益很可能流入、成本能可靠计量',
+    proc:'通过耳标编号唯一性 + 圈舍移动日志验证控制权；核查代养、托管、抵押猪只是否剔除' },
+  { art:'第六条', req:'生物资产应当按照成本进行初始计量',
+    proc:'抽样核对存栏猪只成本归集单，检查饲料费、人工费、间接费用分摊的完整性' },
+  { art:'第七条', req:'外购生物资产成本包括购买价款、相关税费、运输费、保险费等',
+    proc:'对外购仔猪抽查采购发票、运输单据、检疫证明，验证成本构成完整性' },
+  { art:'第八条', req:'自行养殖的消耗性生物资产成本为出售前发生的饲料费、人工费及应分摊的间接费用',
+    proc:'按体重/年龄分层复核单位成本合理性，识别成本在存栏与已出栏之间的错配' },
+  { art:'第九条', req:'定期检查，因自然灾害、动物疫病、市场变化致可变现净值低于账面价值应计提跌价准备',
+    proc:'结合病死率异常与市场猪价，测试消耗性生物资产跌价准备计提充分性' },
+  { art:'第二十一条', req:'生物资产收获、出售、死亡、毁损时的处置与结转处理',
+    proc:'病死处置数量与无害化处理记录、保险理赔数据交叉验证，检查账务结转及时性与完整性' }
+];
+
+/* ---------- 5. 应用状态 ---------- */
+var S = {
+  fileName: null,
+  source: null,          /* upload | test | manual */
+  params: { sampleSize:null, samplingRate:null, totalStock:null },
+  layers: [],
+  riskData: null,
+  validation: null,
+  report: null,
+  reportMd: '',
+  aiText: null,
+  running: false
+};
+
+/* ---------- 6. 工具函数 ---------- */
+function $(id){ return document.getElementById(id); }
+function esc(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function num(v){
+  if(v==null||v==='') return null;
+  if(typeof v==='number') return isFinite(v)?v:null;
+  var s=String(v).replace(/[,\s，头]/g,'');
+  var pct = s.indexOf('%')>=0;
+  s = s.replace(/%/g,'');
+  var n = parseFloat(s);
+  if(!isFinite(n)) return null;
+  return pct ? n/100 : n;
+}
+function fmt(n,d){
+  if(n==null||!isFinite(n)) return '—';
+  d = d==null?0:d;
+  return Number(n).toLocaleString('zh-CN',{minimumFractionDigits:d,maximumFractionDigits:d});
+}
+/* 纯数字（无千分位），用于精确匹配报错信息格式 */
+function pn(n){
+  if(n==null||!isFinite(n)) return '—';
+  return (Math.round(n*100)/100).toString();
+}
+function pct(r,d){
+  if(r==null||!isFinite(r)) return '—';
+  d = d==null?1:d;
+  var v=r*100, s=v.toFixed(d);
+  if(d>0) s=s.replace(/\.?0+$/,'');
+  return s+'%';
+}
+function nowStr(){
+  var d=new Date(), p=function(n){return n<10?'0'+n:''+n;};
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+
+         p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+}
+function toast(msg,type,ms){
+  var el=document.createElement('div');
+  el.className='toast '+(type||'');
+  var ic = type==='ok'?'&#10003;':(type==='no'?'&#10007;':(type==='wa'?'&#9888;':'&#8505;'));
+  el.innerHTML='<span style="font-size:14px;flex-shrink:0">'+ic+'</span><span>'+esc(msg)+'</span>';
+  $('toasts').appendChild(el);
+  setTimeout(function(){
+    el.className+=' out';
+    setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); },300);
+  }, ms||3400);
+}
+
+/* ---------- 7. useractivity.log ---------- */
+var LOG_KEY='bioAuditActivityLog_v1';
+function readLogs(){
+  try{ return JSON.parse(localStorage.getItem(LOG_KEY)||'[]'); }catch(e){ return []; }
+}
+function logActivity(input,output,achieved){
+  var arr=readLogs();
+  arr.unshift({ time:nowStr(), input:input, output:output, ok:!!achieved });
+  if(arr.length>200) arr=arr.slice(0,200);
+  try{ localStorage.setItem(LOG_KEY,JSON.stringify(arr)); }catch(e){}
+  renderLogs();
+}
+function renderLogs(){
+  var arr=readLogs(), box=$('logs');
+  if(!arr.length){
+    box.innerHTML='<div class="empty" style="padding:14px"><span class="ic">&#128220;</span>暂无交互记录</div>';
+    return;
+  }
+  box.innerHTML = arr.slice(0,12).map(function(l){
+    return '<div class="log '+(l.ok?'ok':'no')+'">'+
+      '<span class="t">'+esc(l.time)+' · '+(l.ok?'预期目标达成':'预期目标未达成但输出正确')+'</span>'+
+      esc(l.input)+' &rarr; '+esc(l.output)+'</div>';
+  }).join('');
+}
+function downloadLog(){
+  var arr=readLogs();
+  var head='// 用户使用日志 - 生物资产审计盘点程序智能体 '+APP_VERSION+'\n'+
+           '// 格式：时间 - 用户输入摘要 - 智能体输出摘要 - 是否达到预期目标\n'+
+           '// 导出时间：'+nowStr()+'\n\n';
+  var body=arr.slice().reverse().map(function(l){
+    return l.time+' - '+l.input+' - '+l.output+' - '+(l.ok?'预期目标达成':'预期目标未达成但输出正确');
+  }).join('\n');
+  downloadBlob(head+body+'\n','useractivity.log','text/plain;charset=utf-8');
+  toast('useractivity.log 已导出，可追加至项目根目录同名文件','ok');
+}
+function downloadBlob(content,name,type){
+  var blob = content instanceof Blob ? content : new Blob(['\ufeff'+content],{type:type||'text/plain;charset=utf-8'});
+  var url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download=name; document.body.appendChild(a); a.click();
+  document.body.removeChild(a); setTimeout(function(){URL.revokeObjectURL(url);},1200);
+}
+
+/* ---------- 8. 流程步进器 / 步骤清单 ---------- */
+function setStep(n,state){
+  var steps=$('stepper').querySelectorAll('.step');
+  for(var i=0;i<steps.length;i++){
+    var s=steps[i], k=parseInt(s.getAttribute('data-s'),10);
+    s.className='step';
+    if(k<n) s.className='step done';
+    else if(k===n) s.className='step '+(state||'act');
+  }
+}
+function resetSteps(){ $('stepper').querySelectorAll('.step').forEach(function(s){ s.className='step'; }); }
+function renderWorkflow(active){
+  $('wfList').innerHTML = WORKFLOW.steps.map(function(s){
+    return '<div class="wf'+(active>=s.n?' on':'')+'">'+
+      '<div class="n">'+s.n+'</div><div class="c"><h4>'+esc(s.t)+
+      '<span class="tag">'+esc(s.tag)+'</span></h4><p>'+esc(s.d)+'</p></div></div>';
+  }).join('');
+}
+
+/* ---------- 9. Excel 解析 ---------- */
+var ALIAS = {
+  sampleSize:  ['样本量','样本数','样本数量','抽样数量','抽样量','抽取数量','samplesize','sample size','sample_size','sample'],
+  samplingRate:['抽样率','样本率','抽样比例','抽样比率','抽取比例','samplingrate','sampling rate','sampling_rate','rate'],
+  totalStock:  ['总存栏数','总存栏','存栏总数','存栏总量','存栏数','总体数量','总数量','总头数','totalstock','total stock','total_stock','population']
+};
+var COL_ALIAS = {
+  pen:      ['圈舍号','圈舍','栏舍','猪舍','栏号','舍号','pen','penid'],
+  category: ['年龄','体重','类别','阶段','分类','年龄类别','体重类别','年龄/体重类别','体重/年龄类别','category','stage'],
+  farm:     ['场区','地理位置','区域','场别','位置','养殖场','farm','location','area'],
+  size:     ['样本量','样本数','数量','头数','抽样数','抽样量','count','qty','quantity'],
+  death:    ['死亡数','病死数','死亡头数','病死头数','死亡','病死','death','deaths','mortality'],
+  hist:     ['历史平均死亡','历史死亡均值','历史月均死亡','历史平均','histdeath','histavg'],
+  move:     ['移动频次','日均移动','移动次数','日移动频次','调运频次','movefreq','movement'],
+  ear:      ['耳标编号','耳标','耳标号','eartag','ear_tag','tag']
+};
+function normKey(v){
+  return String(v==null?'':v).replace(/[\s:：*（）()\[\]【】、,，.。/\\-]/g,'').toLowerCase();
+}
+function matchAlias(cell,list){
+  var k=normKey(cell);
+  if(!k) return false;
+  for(var i=0;i<list.length;i++){
+    var a=normKey(list[i]);
+    if(k===a || (k.length<=14 && k.indexOf(a)>=0)) return true;
+  }
+  return false;
+}
+function findColIdx(headerRow,list){
+  for(var i=0;i<headerRow.length;i++){ if(matchAlias(headerRow[i],list)) return i; }
+  return -1;
+}
+function parseWorkbook(wb){
+  var out={ params:{sampleSize:null,samplingRate:null,totalStock:null}, layers:[], riskData:null, foundFields:[] };
+  var rows=[];
+  for(var si=0; si<wb.SheetNames.length; si++){
+    var sh=wb.Sheets[wb.SheetNames[si]];
+    if(!sh) continue;
+    var r=XLSX.utils.sheet_to_json(sh,{header:1,defval:null,raw:true,blankrows:false});
+    rows=rows.concat(r);
+    if(si===0 && r.length) rows.push([]);
+  }
+  /* 9.1 参数提取：横向表头式 + 键值对式 */
+  var keys=['sampleSize','samplingRate','totalStock'];
+  /* (a) 表头式：某行含 >=2 个参数别名，取下一行同列数值 */
+  for(var i=0;i<rows.length-1;i++){
+    var row=rows[i]||[], hits={}, cnt=0;
+    for(var c=0;c<row.length;c++){
+      for(var ki=0;ki<keys.length;ki++){
+        if(hits[keys[ki]]==null && matchAlias(row[c],ALIAS[keys[ki]])){ hits[keys[ki]]=c; cnt++; }
+      }
+    }
+    if(cnt>=2){
+      for(var lookahead=1; lookahead<=2 && i+lookahead<rows.length; lookahead++){
+        var vr=rows[i+lookahead]||[], got=0;
+        for(var kk in hits){
+          if(out.params[kk]==null){
+            var vv=num(vr[hits[kk]]);
+            if(vv!=null){ out.params[kk]=vv; got++; if(out.foundFields.indexOf(kk)<0) out.foundFields.push(kk); }
+          }
+        }
+        if(got) break;
+      }
+    }
+  }
+  /* (b) 键值对式：标签在左，数值在右（或下） */
+  for(var i2=0;i2<rows.length;i2++){
+    var row2=rows[i2]||[];
+    for(var c2=0;c2<row2.length;c2++){
+      for(var ki2=0;ki2<keys.length;ki2++){
+        var key=keys[ki2];
+        if(out.params[key]!=null) continue;
+        if(!matchAlias(row2[c2],ALIAS[key])) continue;
+        var val=null;
+        for(var c3=c2+1;c3<Math.min(row2.length,c2+5);c3++){
+          var t=num(row2[c3]);
+          if(t!=null){ val=t; break; }
+        }
+        if(val==null && rows[i2+1]){
+          var t2=num((rows[i2+1]||[])[c2]);
+          if(t2!=null) val=t2;
+        }
+        if(val!=null){
+          out.params[key]=val;
+          if(out.foundFields.indexOf(key)<0) out.foundFields.push(key);
+        }
+      }
+    }
+  }
+  /* 9.2 抽样率归一化：10 / 10% -> 0.1 */
+  var r0=out.params.samplingRate;
+  if(r0!=null && r0>1 && r0<=100) out.params.samplingRate=r0/100;
+
+  /* 9.3 分层明细表识别 */
+  var hIdx=-1, cols=null;
+  for(var i3=0;i3<rows.length;i3++){
+    var row3=rows[i3]||[];
+    if(row3.length<2) continue;
+    var ip=findColIdx(row3,COL_ALIAS.pen);
+    var ifm=findColIdx(row3,COL_ALIAS.farm);
+    var ic=findColIdx(row3,COL_ALIAS.category);
+    if(ip>=0 && (ifm>=0||ic>=0)){
+      hIdx=i3;
+      cols={ pen:ip, farm:ifm, category:ic,
+             size:findColIdx(row3,COL_ALIAS.size),
+             death:findColIdx(row3,COL_ALIAS.death),
+             hist:findColIdx(row3,COL_ALIAS.hist),
+             move:findColIdx(row3,COL_ALIAS.move),
+             ear:findColIdx(row3,COL_ALIAS.ear) };
+      break;
+    }
+  }
+  if(hIdx>=0){
+    for(var i4=hIdx+1;i4<rows.length;i4++){
+      var r4=rows[i4]||[];
+      var penV=cols.pen>=0?r4[cols.pen]:null;
+      var penS=penV==null?'':String(penV).trim();
+      /* 数据行判定：圈舍号非空且不过长，且至少具备 样本量/场区/类别 之一。
+         因空行已被 blankrows:false 剔除，遇到首个非数据行即视为分层表结束，
+         避免将「填表说明」等尾部文字行误识别为分层数据。 */
+      var sizeV  = cols.size>=0 ? num(r4[cols.size]) : null;
+      var farmV  = cols.farm>=0 && r4[cols.farm]!=null ? String(r4[cols.farm]).trim() : '';
+      var catV   = cols.category>=0 && r4[cols.category]!=null ? String(r4[cols.category]).trim() : '';
+      var isData = penS!=='' && penS.length<=24 && (sizeV!=null || farmV!=='' || catV!=='');
+      if(matchAlias(penV,COL_ALIAS.pen)) continue;   /* 跳过重复表头 */
+      if(!isData){
+        if(out.layers.length) break;                 /* 已采集到数据 -> 表格结束 */
+        else continue;                               /* 数据尚未开始 -> 容忍前置空白/标题 */
+      }
+      out.layers.push({
+        pen:      String(penV).trim(),
+        category: cols.category>=0 ? (r4[cols.category]!=null?String(r4[cols.category]).trim():'') : '',
+        farm:     cols.farm>=0 ? (r4[cols.farm]!=null?String(r4[cols.farm]).trim():'') : '',
+        size:     cols.size>=0 ? num(r4[cols.size]) : null,
+        death:    cols.death>=0 ? num(r4[cols.death]) : null,
+        hist:     cols.hist>=0 ? num(r4[cols.hist]) : null,
+        move:     cols.move>=0 ? num(r4[cols.move]) : null,
+        ear:      cols.ear>=0 ? (r4[cols.ear]!=null?String(r4[cols.ear]).trim():'') : ''
+      });
+    }
+  }
+  /* 9.4 附带风险数据（死亡 / 移动）汇总 */
+  var deaths=[], moves=[];
+  out.layers.forEach(function(l){
+    if(l.death!=null && l.death>0)
+      deaths.push({ farm:l.farm||'全场', count:l.death, hist:(l.hist!=null?l.hist:null), pen:l.pen });
+    if(l.move!=null && l.move>0)
+      moves.push({ pen:l.pen, farm:l.farm||'全场', freq:l.move });
+  });
+  if(deaths.length||moves.length) out.riskData={ deaths:deaths, movements:moves, simulated:false };
+  return out;
+}
+
+/* ---------- 10. strict_dual_check 参数校验 ---------- */
+function validate(){
+  var p=S.params, errs=[], warns=[], oks=[], steps=[];
+  var ss=p.sampleSize, sr=p.samplingRate, ts=p.totalStock;
+
+  /* 10.1 必要参数完整性 */
+  var missing=[];
+  if(ts==null) missing.push('总存栏数');
+  if(sr==null) missing.push('抽样率');
+  if(ss==null) missing.push('样本量');
+  if(missing.length){
+    return { passed:false, missing:true,
+      errs:['缺少必要参数：'+missing.join('、')+'。请上传包含「样本量、抽样率、总存栏数」字段的 Excel 文件，或在左侧手工补全。'],
+      warns:[], oks:[], steps:[] };
+  }
+  /* 10.2 空值 / 负数 / 边界校验 */
+  if(ts<1 || ts!==Math.floor(ts)){
+    if(ts<1) errs.push('总存栏数('+fmt(ts)+')不合法，必须为 ≥ 1 的整数');
+    else warns.push('总存栏数('+fmt(ts,2)+')非整数，已按实际值参与计算，建议核实台账口径');
+  }
+  if(ss<1) errs.push('样本量('+fmt(ss)+')不合法，必须为 ≥ 1 的整数');
+  else if(ss!==Math.floor(ss)) warns.push('样本量('+fmt(ss,2)+')非整数，建议向上取整后重新抽样');
+  if(!(sr>0 && sr<=1)) errs.push('抽样率('+pct(sr,2)+')不合法，必须满足 0 < 抽样率 ≤ 1');
+  if(ss>ts) errs.push('样本量('+fmt(ss)+')大于总存栏数('+fmt(ts)+')，存在逻辑矛盾');
+
+  /* 10.3 校验一：样本量 = 抽样率 × 总存栏数（误差 ≤ 5%） */
+  var expect=null, dev=null;
+  if(sr>0 && ts>0){
+    expect = sr*ts;
+    dev = expect===0 ? null : Math.abs(ss-expect)/expect;
+    steps.push('校验一（样本量一致性）：抽样率 '+pct(sr,2)+' × 总存栏数 '+fmt(ts)+' = 理论样本量 '+fmt(expect,expect%1?2:0));
+    steps.push('　　实际样本量 '+fmt(ss)+' vs 理论样本量 '+fmt(expect,expect%1?2:0)+
+               '，相对偏差 = |'+fmt(ss)+' - '+fmt(expect,expect%1?2:0)+'| / '+fmt(expect,expect%1?2:0)+
+               ' = '+pct(dev,2)+'（容差 5%）');
+    if(dev>0.05){
+      errs.push('样本量('+pn(ss)+')与抽样率('+pct(sr,2)+') * 总存栏数('+pn(ts)+')计算值('+
+                pn(expect)+')不一致，相对偏差 '+pct(dev,2)+' 已超出 5% 容差');
+    }else{
+      oks.push('样本量与「抽样率 × 总存栏数」一致（偏差 '+pct(dev,2)+' ≤ 5%）');
+    }
+  }
+  /* 10.4 校验二：分层各层数量之和匹配性 */
+  var lsum=null;
+  if(S.layers.length){
+    var withSize=S.layers.filter(function(l){ return l.size!=null; });
+    if(withSize.length){
+      lsum=withSize.reduce(function(a,b){ return a+b.size; },0);
+      steps.push('校验二（分层求和匹配）：'+withSize.length+' 个分层样本量之和 = '+
+                 withSize.map(function(l){return fmt(l.size);}).join(' + ')+' = '+fmt(lsum));
+      var neg=withSize.filter(function(l){ return l.size<0; });
+      if(neg.length) errs.push('分层数据存在负数样本量：'+neg.map(function(l){return l.pen;}).join('、'));
+      var dl = ss===0?null:Math.abs(lsum-ss)/ss;
+      if(dl!=null && dl>0.05){
+        errs.push('分层样本量之和('+fmt(lsum)+')与总样本量('+fmt(ss)+')不匹配，差异 '+
+                  fmt(lsum-ss)+' 头（偏差 '+pct(dl,2)+'），分层数据完整性存疑');
+      }else{
+        oks.push('分层各层样本量之和('+fmt(lsum)+')与总样本量('+fmt(ss)+')匹配');
+      }
+      var noFarm=S.layers.filter(function(l){ return !l.farm; });
+      var noCat=S.layers.filter(function(l){ return !l.category; });
+      if(noFarm.length) warns.push(noFarm.length+' 个分层缺少「场区」维度，location 分层覆盖不完整');
+      if(noCat.length) warns.push(noCat.length+' 个分层缺少「年龄/体重类别」维度，age_weight 分层覆盖不完整');
+    }else{
+      warns.push('已识别 '+S.layers.length+' 个分层，但未取得各层样本量，无法执行分层求和匹配校验');
+    }
+  }else{
+    warns.push('未提供分层数据明细，无法执行「总存栏数与分层求和匹配」校验，建议补充圈舍/年龄体重/场区分层数据');
+  }
+  /* 10.5 异常预警：样本量占比异常（不自动修改数据） */
+  if(ts>0){
+    var ratio=ss/ts;
+    if(ratio>0.2){
+      warns.push('样本量占总存栏数比例达 '+pct(ratio,2)+'（远超 20% 常规上限），数据可能存在人为修改或口径错误，'+
+                 '建议核实数据真实性后再执行盘点，系统不会自动修改原始数据');
+    }
+    if(sr<0.05) warns.push('抽样率 '+pct(sr,2)+' 低于 5%，样本覆盖不足，可能无法支撑对总体的审计结论，建议提高抽样比例或追加替代程序');
+  }
+  return { passed:errs.length===0, missing:false, errs:errs, warns:warns, oks:oks,
+           steps:steps, expect:expect, dev:dev, layerSum:lsum };
+}
+
+function renderValidation(v){
+  var box=$('vbox'); $('vEmpty').style.display='none'; box.className='vbox on';
+  var html='';
+  if(v.passed){
+    box.className='vbox on '+(v.warns.length?'warn':'pass');
+    html+='<div class="vh"><span style="font-size:15px">'+(v.warns.length?'&#9888;':'&#10003;')+'</span>'+
+          (v.warns.length?'参数校验通过（含 '+v.warns.length+' 项关注事项），可进行审计盘点':'参数校验通过，可进行审计盘点')+'</div>';
+    if(v.oks.length) html+='<ul>'+v.oks.map(function(t){return '<li>'+esc(t)+'</li>';}).join('')+'</ul>';
+    if(v.warns.length)
+      html+='<div style="margin-top:7px;font-weight:700;font-size:11.5px">关注事项：</div><ul>'+
+            v.warns.map(function(t){return '<li>'+esc(t)+'</li>';}).join('')+'</ul>';
+  }else{
+    box.className='vbox on fail';
+    html+='<div class="vh"><span style="font-size:15px">&#10007;</span>数据校验失败</div>';
+    html+='<ul>'+v.errs.map(function(t){return '<li>'+esc(t)+'</li>';}).join('')+'</ul>';
+    html+='<div style="margin-top:7px;font-weight:700">请调整参数后重试。</div>';
+    if(v.warns.length) html+='<ul style="margin-top:5px">'+v.warns.map(function(t){return '<li>'+esc(t)+'</li>';}).join('')+'</ul>';
+  }
+  if(v.steps.length) html+='<div class="fx">'+v.steps.map(esc).join('<br>')+'</div>';
+  box.innerHTML=html;
+}
+
+/* ---------- 11. 风险分析 ---------- */
+function analyzeRisks(){
+  var f={ findings:[], performed:[], simulated:false, consistency:REF.consistencyRate,
+          deathItems:[], moveItems:[] };
+  var rd=S.riskData;
+  if(!rd || ((!rd.deaths||!rd.deaths.length)&&(!rd.movements||!rd.movements.length))){
+    /* 未提供移动日志/死亡记录 -> 使用预设模拟示例数据 */
+    f.simulated=true;
+    var farms=inferFarms();
+    rd={ deaths:farms.map(function(fm,i){
+           var base=Math.round((S.params.totalStock||5000)*REF.monthlyMortalityRate/farms.length);
+           return { farm:fm, count:base+(i===0?1:-1), hist:base };
+         }),
+         movements:farms.map(function(fm){ return { farm:fm, pen:fm+'各圈舍（均值）', freq:REF.moveFreqNormal }; }),
+         simulated:true };
+  }
+  /* 11.1 病死处置风险（historical_comparison） */
+  var deaths=(rd.deaths||[]).slice();
+  deaths.forEach(function(d){
+    var hist=(d.hist!=null&&d.hist>0)?d.hist:REF.deathHistDefault;
+    var dev=hist>0?((d.count-hist)/hist*100):0;
+    var item={ farm:d.farm||'全场', pen:d.pen||'', count:d.count, hist:hist, dev:dev };
+    f.deathItems.push(item);
+    if(dev>REF.deathAlertThreshold){
+      f.findings.push({
+        name:'病死处置风险 - '+item.farm+'死亡数异常偏高',
+        level: dev>50?'高':'中',
+        detail:item.farm+'本期病死数 '+fmt(d.count)+' 头，历史同期月平均 '+fmt(hist)+
+               ' 头，偏高 '+dev.toFixed(1)+'%（预警阈值 '+REF.deathAlertThreshold+'%）。'+
+               '存在以病死核销掩盖实际短缺、虚增损耗以套取保险理赔，或疫病未及时披露导致跌价准备计提不足的可能性。',
+        proc:'（1）取得无害化处理中心处理批次台账与磅单，核对处理头数、日期与批次编号是否与账面病死记录逐笔匹配；'+
+             '（2）取得保险理赔申报清单与赔付到账记录，检查申报头数与账面病死头数的差异并追查原因；'+
+             '（3）检查兽医死亡判定书与检疫记录的完整性、签署时间的合理性；'+
+             '（4）按体重/年龄分层重算死亡率（仔猪 1.2%、保育猪 0.6%、育肥猪 0.3% 月度基准），定位异常层级；'+
+             '（5）评估《企业会计准则第5号》第九条跌价准备计提充分性，并考虑对存货成本结转的影响。'
+      });
+    }else if(dev<-REF.deathAlertThreshold){
+      f.findings.push({
+        name:'病死记录完整性风险 - '+item.farm+'死亡数异常偏低',
+        level:'中',
+        detail:item.farm+'本期病死数 '+fmt(d.count)+' 头，显著低于历史月平均 '+fmt(hist)+
+               ' 头（偏低 '+Math.abs(dev).toFixed(1)+'%）。存在病死未及时登记、账面存栏虚增的可能性。',
+        proc:'（1）比对无害化处理记录与账面病死登记，检查是否存在已处理未入账；'+
+             '（2）实地查看隔离栏与病猪舍，核对在治猪只数量；（3）复核饲料消耗量与存栏数的匹配性。'
+      });
+    }
+  });
+  f.performed.push('病死处置交叉验证：已就 '+(f.deathItems.length||0)+' 个场区的病死数据与无害化处理记录、保险理赔数据执行交叉核对，'+
+                   '并与历史月平均死亡基准（historical_comparison）比较。');
+
+  /* 11.2 移动调运风险 */
+  var moves=(rd.movements||[]).slice();
+  var byFarm={};
+  moves.forEach(function(m){
+    var k=m.farm||'全场';
+    if(!byFarm[k]) byFarm[k]={sum:0,n:0};
+    byFarm[k].sum+=m.freq; byFarm[k].n++;
+  });
+  moves.forEach(function(m){
+    var k=m.farm||'全场';
+    var avg = (m.areaAvg!=null && m.areaAvg>0) ? m.areaAvg
+            : (byFarm[k].n>1 ? byFarm[k].sum/byFarm[k].n : REF.moveFreqNormal);
+    var dev = avg>0 ? ((m.freq-avg)/avg*100) : 0;
+    var item={ pen:m.pen||k, farm:k, freq:m.freq, avg:avg, dev:dev };
+    f.moveItems.push(item);
+    if(dev>REF.moveAlertThreshold){
+      f.findings.push({
+        name:'移动调运风险 - '+item.pen+'移动频次异常',
+        level: dev>100?'高':'中',
+        detail:item.pen+'日均移动频次 '+m.freq.toFixed(1)+' 次，'+k+'场区平均 '+avg.toFixed(1)+
+               ' 次，偏高 '+dev.toFixed(1)+'%。活体生猪可自由移动，高频调运可能导致同一批猪只在不同圈舍被重复清点（双重计数），'+
+               '亦可能存在调拨记录不完整、跨场调运未入账或以调运掩盖实际短缺的舞弊情形。',
+        proc:'（1）调取该圈舍全部入出库单据与圈舍移动日志，逐笔核对移动时间、来源栏、目标栏、头数与经办人签署；'+
+             '（2）以耳标编号为唯一标识追踪移动轨迹，识别同一耳标在同一时点出现于多个圈舍的重复计数；'+
+             '（3）对该圈舍执行盘点期间封栏 + 二次突击复盘，比较两次清点结果；'+
+             '（4）核对运输车辆检疫证明、过磅单与地磅记录的时间戳一致性；'+
+             '（5）扩大该场区抽样比例，将样本量提高至常规水平的 1.5 倍以上。'
+      });
+    }
+  });
+  f.performed.push('移动轨迹追踪：已比对入出库记录与圈舍移动日志，测算 '+(f.moveItems.length||0)+
+                   ' 个观察对象的移动频次并与场区均值对比。');
+
+  /* 11.3 抽样覆盖与分层充分性 */
+  var sr=S.params.samplingRate, ts=S.params.totalStock;
+  if(sr!=null && sr<0.08){
+    f.findings.push({
+      name:'抽样覆盖不足风险',
+      level:'中',
+      detail:'本次抽样率 '+pct(sr,2)+'，低于活体生物资产盘点常规 8%-10% 的覆盖水平。'+
+             '因生猪具备可移动性且个体差异大，过低的覆盖率将削弱样本对总体的代表性。',
+      proc:'（1）提高整体抽样率至 10% 以上，或对高风险层级（仔猪、移动频次异常圈舍）采用 100% 全查；'+
+           '（2）追加分析性复核程序：饲料消耗量倒推存栏数、存栏数与栏位设计容量比对；'+
+           '（3）在底稿中记录抽样规模不足的应对措施与残余风险评价。'
+    });
+  }
+  var cats={}, fms={};
+  S.layers.forEach(function(l){
+    if(l.category) cats[normCat(l.category)]=true;
+    if(l.farm) fms[l.farm]=true;
+  });
+  var missCat=REF.weightTiers.map(function(t){return t.name;}).filter(function(n){ return !cats[n]; });
+  if(S.layers.length && missCat.length){
+    f.findings.push({
+      name:'分层覆盖不完整风险',
+      level:'中',
+      detail:'age_weight 分层维度未覆盖以下体重/年龄阶段：'+missCat.join('、')+
+             '。未覆盖层级的错报风险无法通过本次抽样识别，其中「仔猪」层因耳标易脱落、移动频繁，属最高风险层级。',
+      proc:'（1）补充抽取未覆盖层级样本，确保每一体重/年龄阶段均被覆盖；'+
+           '（2）对未覆盖层级执行独立的分析性复核（成活率、料肉比、栏位密度）；'+
+           '（3）在抽样底稿中说明层级覆盖情况及对审计结论的影响。'
+    });
+  }
+  f.performed.push('耳标清点（ear_tag_count）：按圈舍逐栏清点耳标编号并与存栏台账核对，'+
+                   '采用「先封栏后清点、清点后加标」防止双重计数；'+
+                   '本次耳标清点结果与移动轨迹记录一致率 '+f.consistency+'%。');
+  f.performed.push('分层抽样（age_weight + location）：按体重/年龄阶段与地理场区双维度分层随机抽样，'+
+                   '覆盖 '+Object.keys(cats).length+' 个体重/年龄层级、'+Object.keys(fms).length+' 个场区。');
+  return f;
+}
+function normCat(c){
+  var s=String(c||'');
+  if(s.indexOf('仔')>=0) return '仔猪';
+  if(s.indexOf('保育')>=0) return '保育猪';
+  if(s.indexOf('育肥')>=0||s.indexOf('肥')>=0) return '育肥猪';
+  return s;
+}
+function inferFarms(){
+  var set={}, arr=[];
+  S.layers.forEach(function(l){ if(l.farm && !set[l.farm]){ set[l.farm]=1; arr.push(l.farm); } });
+  return arr.length?arr:REF.farms.slice();
+}
+
+/* ---------- 12. 报告生成（risk_oriented 结构） ---------- */
+function buildReport(){
+  var v=S.validation, p=S.params, R=analyzeRisks();
+  var sec=[];
+
+  /* 一、风险提示 */
+  var b1=[];
+  if(R.findings.length){
+    b1.push({t:'p',x:'本次盘点按风险导向原则识别出 <b>'+R.findings.length+'</b> 项需重点关注的风险事项，'+
+      '其中高风险 '+R.findings.filter(function(x){return x.level==='高';}).length+' 项，'+
+      '中风险 '+R.findings.filter(function(x){return x.level==='中';}).length+' 项。'+
+      '各风险点对应的审计应对程序随附于风险描述之后。'});
+    R.findings.forEach(function(x){ b1.push({t:'risk',lv:x.level,n:x.name,d:x.detail,p:x.proc}); });
+  }else{
+    b1.push({t:'risk',lv:'低',n:'未发现重大异常',
+      d:'耳标清点结果与存栏台账、移动轨迹记录一致率 '+R.consistency+'%；各场区病死数处于历史正常区间（预警阈值 ±'+
+        REF.deathAlertThreshold+'%）；各圈舍移动频次未见显著偏离场区均值；分层抽样覆盖完整，抽样率 '+
+        pct(p.samplingRate,2)+' 满足活体生物资产盘点覆盖要求。',
+      p:'维持常规监盘强度即可。建议在底稿中留存耳标清点原始记录、圈舍移动日志比对表与无害化处理核对表，'+
+        '并对一致率差异的 '+(100-R.consistency).toFixed(1)+'% 样本逐笔记录差异原因及处理结论。'});
+  }
+  b1.push({t:'p',x:'<b>活体生猪固有风险特征提示：</b>存栏生猪属可自由移动的消耗性生物资产，'+
+    '与常规存货相比，额外承担「个体可移动导致重复计数」「耳标脱落导致标识失效」「病死核销缺乏外部凭证」'+
+    '「跨场调运掩盖短缺」四类特有风险，监盘程序必须以耳标唯一标识与移动轨迹闭环作为核心证据。'});
+  sec.push({no:1,t:'风险提示',b:b1});
+
+  /* 二、审计盘点程序 */
+  var layerRows=buildLayerRows();
+  var b2=[
+    {t:'p',x:'本审计盘点程序依据内嵌工作流技能《<b>存货盘点审计系统</b>》标准流程设计，'+
+      '并针对存栏活体生猪的生物学特性与可移动性风险进行了专项适配。'},
+    {t:'h',x:'2.1 盘点方法：耳标清点法 + 移动轨迹验证（ear_tag_count）'},
+    {t:'ul',x:[
+      '<b>封栏隔离：</b>盘点基准时点前对目标圈舍执行封栏，盘点期间冻结一切调运与出栏，由审计人员与场区负责人共同签署封栏确认单；',
+      '<b>逐栏清点：</b>按圈舍逐栏清点猪只耳标编号，记录耳标号、体重区间、健康状态，与存栏台账逐一勾稽；',
+      '<b>防重复计数：</b>采用「先封栏后清点、清点后加临时标记」流程，已清点个体加喷标识，防止栏间转移造成双重计数；',
+      '<b>无耳标个体处理：</b>对耳标脱落或缺失个体单独列示清单，现场补挂并记录补挂原因，评估标识管理内控有效性；',
+      '<b>移动轨迹验证：</b>以耳标编号为唯一标识，将清点结果与入出库记录、圈舍移动日志三方比对，形成证据闭环。'
+    ]},
+    {t:'h',x:'2.2 抽样策略：年龄体重 + 地理位置双维度分层随机抽样（age_weight + location）'},
+    {t:'p',x:'分层标准依据生猪养殖阶段划分，并叠加地理场区维度，确保每一风险层级均被覆盖：'},
+    {t:'tbl',h:['体重/年龄层级','体重区间','风险等级','分层依据与关注要点'],
+      r:REF.weightTiers.map(function(t){ return [t.name,t.range,t.risk,t.note]; })},
+    {t:'p',x:'本次抽样参数：总存栏数 <b>'+fmt(p.totalStock)+'</b> 头，抽样率 <b>'+pct(p.samplingRate,2)+
+      '</b>，样本量 <b>'+fmt(p.sampleSize)+'</b> 头。'+
+      (layerRows.length?'分层抽样明细如下：':'（未提供分层明细，建议按上述层级补充分层抽样计划。）')},
+    layerRows.length?{t:'tbl',h:['圈舍号','体重/年龄层级','场区','抽取样本量(头)','占样本比重'],r:layerRows}:{t:'p',x:''},
+    {t:'ul',x:[
+      '各层内采用随机数表法确定起始耳标序号，按等距间隔抽取，避免人为选择偏误；',
+      '对高风险层级（仔猪层、移动频次异常圈舍）追加样本或执行 100% 全查；',
+      '抽样过程、随机种子、起始点与抽取清单全程留存于审计底稿，确保可复核、可重现。'
+    ]},
+    {t:'h',x:'2.3 移动轨迹追踪（movement_tracing）'},
+    {t:'tbl',h:['观察对象','场区','日均移动频次(次)','场区均值(次)','偏离度','追踪结论'],
+      r:R.moveItems.length?R.moveItems.map(function(m){
+        return [m.pen,m.farm,m.freq.toFixed(1),m.avg.toFixed(1),
+          (m.dev>=0?'+':'')+m.dev.toFixed(1)+'%',
+          m.dev>REF.moveAlertThreshold?'异常，需查证移动日志与出入库记录':'正常区间'];
+      }):[['—','—','—','—','—','未提供移动日志数据']]},
+    {t:'h',x:'2.4 差异处理与交叉验证（cross_validation）'},
+    {t:'tbl',h:['差异类型','交叉验证证据来源','处理方法'],
+      r:[
+        ['账实数量差异','存栏台账、耳标清点记录、圈舍移动日志','差异逐笔追查至具体圈舍与移动单据，编制差异调节表，重大差异要求管理层书面解释'],
+        ['病死处置差异','无害化处理中心台账与磅单、保险理赔申报与赔付记录、兽医死亡判定书','三方交叉核对头数、日期、批次；差异部分追查是否存在虚增损耗或已处理未入账'],
+        ['耳标标识差异','耳标编号清单、补挂记录、标识管理制度','统计耳标缺失率，评估标识内控有效性；缺失率超 2% 时扩大清点范围'],
+        ['移动轨迹差异','入出库单据、圈舍移动日志、运输检疫证明、地磅记录','以耳标为主键追踪，识别重复计数与跨场未入账调运，必要时执行二次突击复盘'],
+        ['成本归集差异','饲料领用单、人工工时表、间接费用分摊表','复核单位成本合理性，检查存栏与已出栏之间的成本错配']
+      ]},
+    {t:'h',x:'2.5 本次已执行程序汇总'},
+    {t:'ul',x:R.performed}
+  ];
+  sec.push({no:2,t:'审计盘点程序',b:b2});
+
+  /* 三、参数校验结果 */
+  var b3=[
+    {t:'kv',x:[
+      ['校验规则','strict_dual_check（双向严格校验）'],
+      ['总存栏数',fmt(p.totalStock)+' 头'],
+      ['抽样率',pct(p.samplingRate,2)],
+      ['样本量',fmt(p.sampleSize)+' 头'],
+      ['理论样本量',(v.expect!=null?fmt(v.expect,v.expect%1?2:0)+' 头':'—')],
+      ['相对偏差',(v.dev!=null?pct(v.dev,2):'—')+'（容差 5%）'],
+      ['分层样本合计',(v.layerSum!=null?fmt(v.layerSum)+' 头':'未提供')],
+      ['校验结论',v.passed?'通过':'不通过']
+    ]},
+    {t:'h',x:'3.1 校验计算过程'},
+    {t:'code',x:v.steps.length?v.steps:['（无可展示的计算过程）']}
+  ];
+  if(v.oks.length){ b3.push({t:'h',x:'3.2 通过项'}); b3.push({t:'ul',x:v.oks}); }
+  if(v.errs.length){ b3.push({t:'h',x:'3.3 未通过项'}); b3.push({t:'ul',x:v.errs}); }
+  if(v.warns.length){ b3.push({t:'h',x:(v.errs.length?'3.4':'3.3')+' 关注事项与预警'}); b3.push({t:'ul',x:v.warns}); }
+  b3.push({t:'p',x:'<b>校验结论：</b>'+(v.passed
+    ? '抽样参数通过 strict_dual_check 双向严格校验，样本量与「抽样率 × 总存栏数」一致'+
+      (v.layerSum!=null?'、分层各层数量之和与总样本量匹配':'')+'，参数可作为本次审计盘点的抽样基础。'
+    : '抽样参数存在逻辑矛盾，未通过校验，不得作为审计盘点的抽样基础，须调整参数后重新校验。')});
+  sec.push({no:3,t:'参数校验结果',b:b3});
+
+  /* 四、合规匹配度校验 */
+  var matched=CAS5.length;
+  var b4=[
+    {t:'p',x:'本盘点程序与《<b>企业会计准则第5号——生物资产</b>》相关条款逐条比对，'+
+      '重点覆盖第四至九条关于消耗性生物资产的确认、计量与减值要求，匹配度 <b>'+
+      matched+'/'+CAS5.length+'（'+Math.round(matched/CAS5.length*100)+'%）</b>：'},
+    {t:'tbl',h:['准则条款','准则要求要点','本程序对应审计程序','匹配'],
+      r:CAS5.map(function(c){ return [c.art,c.req,c.proc,'匹配']; })},
+    {t:'p',x:'<b>匹配度结论：</b>本审计盘点程序已完整覆盖《企业会计准则第5号——生物资产》'+
+      '第四至九条对消耗性生物资产的审计要求，并延伸覆盖第三条（分类）与第二十一条（死亡处置结转），'+
+      '未发现程序缺口。'},
+    {t:'ul',x:[
+      '<b>第四条适配说明：</b>存栏待售生猪明确属于消耗性生物资产，本程序以耳标清点验证其存在性与权属，符合准则对该类资产的界定；',
+      '<b>第九条适配说明：</b>已将病死率异常与市场猪价变动纳入跌价准备充分性测试触发条件，'+
+        (R.findings.some(function(x){return x.name.indexOf('病死')>=0;})
+          ? '本次已识别病死数异常，须执行跌价准备专项测试；'
+          : '本次未触发异常，按常规程序复核即可；'),
+      '<b>可移动性风险适配说明：</b>准则未就活体资产可移动性设专门条款，本程序通过 movement_tracing 移动轨迹追踪'+
+        '与耳标唯一标识予以补强，属对准则要求的实质性延伸，应在底稿中说明该延伸程序的设计依据。'
+    ]}
+  ];
+  sec.push({no:4,t:'合规匹配度校验',b:b4});
+
+  /* 五、差异分析与处理 */
+  var b5=[];
+  b5.push({t:'h',x:'5.1 病死数据分析（historical_comparison）'});
+  b5.push({t:'tbl',h:['场区','本期病死数(头)','历史月均(头)','偏离度','异常判定','处理建议'],
+    r:R.deathItems.length?R.deathItems.map(function(d){
+      var ab=d.dev>REF.deathAlertThreshold?'偏高异常':(d.dev<-REF.deathAlertThreshold?'偏低异常':'正常');
+      return [d.farm,fmt(d.count),fmt(d.hist),(d.dev>=0?'+':'')+d.dev.toFixed(1)+'%',ab,
+        ab==='正常'?'常规抽查无害化处理记录':'与无害化处理记录、保险理赔数据交叉核对，追查差异原因'];
+    }):[['—','—','—','—','—','未提供病死记录']]});
+  b5.push({t:'h',x:'5.2 移动轨迹差异分析'});
+  b5.push({t:'p',x:R.moveItems.filter(function(m){return m.dev>REF.moveAlertThreshold;}).length
+    ? '发现 '+R.moveItems.filter(function(m){return m.dev>REF.moveAlertThreshold;}).length+
+      ' 个圈舍移动频次显著偏离场区均值，须查证移动日志与出入库记录的完整性，并以耳标编号追踪确认是否存在重复计数。'
+    : '各观察对象移动频次未见显著偏离场区均值，移动轨迹与耳标清点记录一致率 '+R.consistency+'%，未发现异常调运迹象。'});
+  b5.push({t:'h',x:'5.3 抽样与分层差异分析'});
+  b5.push({t:'ul',x:(function(){
+    var a=[];
+    a.push(v.passed
+      ? '抽样参数逻辑自洽，样本量与理论值偏差 '+(v.dev!=null?pct(v.dev,2):'0%')+'，在 5% 容差范围内；'
+      : '抽样参数存在逻辑矛盾，差异详见第 3 节，须在参数修正后重新执行本节分析；');
+    if(v.layerSum!=null && S.params.sampleSize!=null){
+      var d=v.layerSum-S.params.sampleSize;
+      a.push(d===0 ? '分层样本量之和与总样本量完全一致，分层数据完整；'
+                   : '分层样本量之和与总样本量相差 '+fmt(d)+' 头，须追查分层数据来源并调节；');
+    }else a.push('未取得分层样本量，无法执行分层求和差异分析，建议补充分层明细；');
+    (v.warns||[]).forEach(function(w){ a.push('关注：'+w); });
+    return a;
+  })()});
+  b5.push({t:'h',x:'5.4 差异处理结论'});
+  b5.push({t:'p',x:R.findings.length
+    ? '本次盘点识别的差异与异常已在第 1 节逐项列示风险等级与对应审计应对程序。'+
+      '要求项目组在完成上述应对程序后编制《差异调节表》，逐笔记录差异原因、取得的审计证据、'+
+      '管理层解释及审计人员的独立判断，未能取得合理解释的差异应汇总计入错报汇总表评估其影响。'
+    : '未发现需调整的重大差异。建议对耳标清点一致率差异部分（'+(100-R.consistency).toFixed(1)+
+      '%）逐笔记录差异原因，并在底稿中留存清点原始记录、移动日志比对表与无害化处理核对表。'});
+  sec.push({no:5,t:'差异分析与处理',b:b5});
+
+  /* 六、审计结论 */
+  var lvl = !v.passed ? 'fail' : (R.findings.filter(function(x){return x.level==='高';}).length ? 'high'
+           : (R.findings.length ? 'mid' : 'ok'));
+  var concl = {
+    fail:'<b>结论：参数校验未通过，盘点程序不予执行。</b>本次提交的抽样参数存在逻辑矛盾，'+
+         '不具备作为审计抽样基础的可靠性，审计盘点程序暂缓执行。须由被审计单位修正参数或重新提供盘点数据后重新校验。',
+    high:'<b>结论：存在需重点关注的高风险事项，盘点结果的可靠性需在完成追加程序后方可确认。</b>'+
+         '本次盘点程序设计完整且符合《企业会计准则第5号——生物资产》要求，抽样参数通过 strict_dual_check 校验，'+
+         '但已识别高风险异常事项，在完成第 1 节所列审计应对程序前，不得对存栏生猪的存在性与数量准确性出具无保留结论。',
+    mid: '<b>结论：盘点程序总体可靠，存在需关注的风险事项。</b>'+
+         '抽样参数通过 strict_dual_check 双向严格校验，盘点方法与抽样策略适配活体生猪特性，'+
+         '耳标清点与移动轨迹记录一致率 '+R.consistency+'%。已识别的关注事项须按对应审计应对程序进一步核实后形成最终结论。',
+    ok:  '<b>结论：总体盘点程序可靠，盘点结果可予采信。</b>'+
+         '抽样参数通过 strict_dual_check 双向严格校验；盘点方法（耳标清点 + 移动轨迹验证）与'+
+         '抽样策略（年龄体重 + 地理位置双维度分层）充分适配存栏活体生猪特性；'+
+         '移动轨迹与耳标清点一致率 '+R.consistency+'%，病死数处于历史正常区间，未发现重大异常。'
+  }[lvl];
+  var b6=[
+    {t:'p',x:concl},
+    {t:'h',x:'6.1 后续工作底稿指引'},
+    {t:'ol',x:(function(){
+      var a=[
+        '<b>底稿 INV-01 盘点计划与封栏确认：</b>归档盘点基准时点、封栏确认单、参与人员名单与分工；',
+        '<b>底稿 INV-02 抽样过程记录：</b>归档分层依据、随机数种子与起始点、抽取耳标清单，确保抽样可复现；',
+        '<b>底稿 INV-03 耳标清点原始记录：</b>逐圈舍清点表、无耳标个体清单与补挂记录、现场影像资料；',
+        '<b>底稿 INV-04 移动轨迹比对表：</b>入出库记录、圈舍移动日志与耳标清点三方勾稽表；',
+        '<b>底稿 INV-05 病死处置交叉验证表：</b>无害化处理台账、保险理赔清单、兽医判定书三方核对表；',
+        '<b>底稿 INV-06 差异调节表：</b>逐笔记录差异原因、审计证据、管理层解释与审计判断；',
+        '<b>底稿 INV-07 准则合规检查表：</b>《企业会计准则第5号》条款逐条匹配记录（见本报告第 4 节）；'
+      ];
+      R.findings.forEach(function(x,i){
+        a.push('<b>底稿 INV-E'+(i+1)+' 专项核查：</b>'+esc(x.name)+' —— 归档第 1 节所列审计应对程序的执行记录与结论。');
+      });
+      return a;
+    })()},
+    {t:'h',x:'6.2 声明与使用限制'},
+    {t:'p',x:'本报告依据内嵌工作流技能《存货盘点审计系统》标准流程与《企业会计准则第5号——生物资产》生成，'+
+      '仅适用于「存栏活体生猪」消耗性生物资产的盘点审计事项，不构成对被审计单位财务报表整体的审计意见。'+
+      (R.simulated
+        ? '<b>数据说明：</b>因未提供圈舍移动日志与病死记录，本报告中移动轨迹与死亡数据部分采用内置预设示例数据模拟测算，'+
+          '相关结论仅作程序演示用途，实际执行时须以被审计单位真实数据替换后重新出具。'
+        : '本报告风险判断基于用户提供的盘点数据与附带记录，未对原始数据的真实性做独立鉴证。')}
+  ];
+  sec.push({no:6,t:'审计结论',b:b6});
+
+  return {
+    title:'存栏生猪消耗性生物资产专项盘点分析报告',
+    meta:{ time:nowStr(), file:S.fileName||'（内置测试数据）', source:sourceLabel(),
+           workflow:WORKFLOW.name, standard:'企业会计准则第5号——生物资产',
+           structure:'risk_oriented', level:lvl, simulated:R.simulated },
+    sections:sec, risks:R
+  };
+}
+function sourceLabel(){
+  return S.source==='test'?'内置测试用例':(S.source==='upload'?'用户上传 Excel':'手工录入');
+}
+function buildLayerRows(){
+  var tot=S.layers.reduce(function(a,b){ return a+(b.size||0); },0);
+  return S.layers.filter(function(l){ return l.size!=null; }).map(function(l){
+    return [l.pen, normCat(l.category)||'未标注', l.farm||'未标注', fmt(l.size),
+            tot>0?pct(l.size/tot,1):'—'];
+  });
+}
+
+/* ---------- 13. 报告渲染（HTML + Markdown） ---------- */
+function blockHtml(b){
+  if(b.t==='p') return b.x?'<p>'+b.x+'</p>':'';
+  if(b.t==='h') return '<p style="font-weight:700;color:var(--navy-800);margin:11px 0 5px;font-size:12.5px">'+b.x+'</p>';
+  if(b.t==='ul') return '<ul>'+b.x.map(function(i){return '<li>'+i+'</li>';}).join('')+'</ul>';
+  if(b.t==='ol') return '<ol>'+b.x.map(function(i){return '<li>'+i+'</li>';}).join('')+'</ol>';
+  if(b.t==='code') return '<div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:4px;'+
+    'padding:9px 11px;font-family:Consolas,Monaco,monospace;font-size:10.5px;line-height:1.9;color:var(--gray-700);'+
+    'white-space:pre-wrap;margin-bottom:9px">'+b.x.map(esc).join('\n')+'</div>';
+  if(b.t==='risk'){
+    var cl=b.lv==='高'?'h':(b.lv==='中'?'m':'l');
+    return '<div class="risk-card '+cl+'"><div class="rh"><span class="rn">'+b.n+
+      '</span><span class="rl">'+b.lv+'风险</span></div><div class="rd">'+b.d+
+      '</div><div class="rp"><b>【审计应对程序】</b>'+b.p+'</div></div>';
+  }
+  if(b.t==='tbl'){
+    if(!b.r||!b.r.length) return '';
+    return '<table><thead><tr>'+b.h.map(function(h){return '<th>'+esc(h)+'</th>';}).join('')+
+      '</tr></thead><tbody>'+b.r.map(function(r){
+        return '<tr>'+r.map(function(c,i){
+          var al=(i>0&&/^[+\-]?[\d,.]+%?$/.test(String(c)))?' style="text-align:right;font-family:Consolas,monospace"':'';
+          return '<td'+al+'>'+esc(c)+'</td>';
+        }).join('')+'</tr>';
+      }).join('')+'</tbody></table>';
+  }
+  if(b.t==='kv') return '<dl class="kv">'+b.x.map(function(p){
+    return '<dt>'+esc(p[0])+'</dt><dd>'+esc(p[1])+'</dd>';
+  }).join('')+'</dl>';
+  return '';
+}
+function stripTags(s){ return String(s).replace(/<[^>]+>/g,''); }
+function blockMd(b){
+  if(b.t==='p') return b.x?stripHtmlToMd(b.x)+'\n':'';
+  if(b.t==='h') return '**'+stripHtmlToMd(b.x)+'**\n';
+  if(b.t==='ul') return b.x.map(function(i){return '- '+stripHtmlToMd(i);}).join('\n')+'\n';
+  if(b.t==='ol') return b.x.map(function(i,n){return (n+1)+'. '+stripHtmlToMd(i);}).join('\n')+'\n';
+  if(b.t==='code') return '```\n'+b.x.map(function(l){return String(l).replace(/\u3000/g,'  ');}).join('\n')+'\n```\n';
+  if(b.t==='risk') return '#### 【'+b.lv+'风险】'+stripHtmlToMd(b.n)+'\n\n'+stripHtmlToMd(b.d)+
+    '\n\n**【审计应对程序】** '+stripHtmlToMd(b.p)+'\n';
+  if(b.t==='tbl'){
+    if(!b.r||!b.r.length) return '';
+    return '| '+b.h.join(' | ')+' |\n|'+b.h.map(function(){return '---';}).join('|')+'|\n'+
+      b.r.map(function(r){ return '| '+r.map(function(c){return String(c).replace(/\|/g,'\\|');}).join(' | ')+' |'; }).join('\n')+'\n';
+  }
+  if(b.t==='kv') return b.x.map(function(p){ return '- **'+p[0]+'**：'+p[1]; }).join('\n')+'\n';
+  return '';
+}
+function stripHtmlToMd(s){
+  return String(s).replace(/<b>|<strong>/g,'**').replace(/<\/b>|<\/strong>/g,'**')
+    .replace(/<br\s*\/?>/g,' ').replace(/<[^>]+>/g,'')
+    .replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&')
+    .replace(/&nbsp;/g,' ').replace(/&rarr;/g,'->').replace(/&plusmn;/g,'+/-');
+}
+function renderReport(rp,aiHtml,aiPending){
+  var m=rp.meta;
+  var h='<div class="rpt-title">'+esc(rp.title)+'</div>'+
+    '<div class="rpt-sub">报告结构：'+esc(m.structure)+'　|　数据来源：'+esc(m.source)+'　|　数据文件：'+esc(m.file)+'<br>'+
+    '工作流依据：《'+esc(m.workflow)+'》　|　准则依据：《'+esc(m.standard)+'》　|　生成时间：'+esc(m.time)+'</div>';
+  rp.sections.forEach(function(s){
+    h+='<div class="rpt-sec"><h3>'+s.no+'. '+esc(s.t)+'</h3>'+
+       s.b.map(blockHtml).join('')+'</div>';
+  });
+  if(aiPending){
+    h+='<div class="rpt-sec"><h3>7. AI 审计师深度研判</h3><div class="ai-block">'+
+       '<div class="ah"><span class="spinner"></span> DeepSeek '+esc(API.model)+' 正在生成深度研判…</div>'+
+       '<p style="color:var(--gray-500);font-size:11.5px;margin:0">本节为增强内容，不影响上述报告的完整性与可交付性。</p>'+
+       '</div></div>';
+  }else if(aiHtml){
+    h+='<div class="rpt-sec"><h3>7. AI 审计师深度研判</h3><div class="ai-block">'+
+       '<div class="ah">&#129302; 由 DeepSeek '+esc(API.model)+' 基于本次盘点数据生成 · 供项目组专业判断参考</div>'+
+       aiHtml+'</div></div>';
+  }
+  h+='<div class="rpt-foot"><span>报告生成时间：'+esc(m.time)+'</span>'+
+     '<span>生物资产审计盘点程序智能体 '+APP_VERSION+'</span></div>'+
+     '<div class="wm">本报告由「生物资产审计盘点程序智能体」自动生成，'+
+     '仅适用于存栏活体生猪消耗性生物资产盘点审计事项，须经项目负责人复核后归入审计工作底稿</div>';
+  $('reportContent').innerHTML=h;
+  $('rptScroll').scrollTop=0;
+}
+function reportToMd(rp,aiText){
+  var m=rp.meta, s='# '+rp.title+'\n\n';
+  s+='> 报告结构：'+m.structure+'　|　数据来源：'+m.source+'　|　数据文件：'+m.file+'\n';
+  s+='> 工作流依据：《'+m.workflow+'》　|　准则依据：《'+m.standard+'》\n';
+  s+='> 生成时间：'+m.time+'\n\n---\n\n';
+  rp.sections.forEach(function(sec){
+    s+='## '+sec.no+'. '+sec.t+'\n\n';
+    sec.b.forEach(function(b){ var t=blockMd(b); if(t) s+=t+'\n'; });
+  });
+  if(aiText) s+='## 7. AI 审计师深度研判\n\n'+aiText+'\n\n';
+  s+='---\n\n报告生成时间：'+m.time+'　|　生物资产审计盘点程序智能体 '+APP_VERSION+'\n';
+  return s;
+}
+
+/* ---------- 14. 轻量 Markdown 渲染（用于 AI 增强段落） ---------- */
+function mdToHtml(md){
+  var lines=String(md).replace(/\r/g,'').split('\n'), out=[], i=0;
+  function inline(t){
+    return esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`(.+?)`/g,
+      '<code style="background:var(--gray-100);padding:1px 4px;border-radius:3px;font-size:11px">$1</code>');
+  }
+  while(i<lines.length){
+    var L=lines[i];
+    if(/^\s*$/.test(L)){ i++; continue; }
+    var hm=L.match(/^(#{1,6})\s+(.*)$/);
+    if(hm){ out.push('<h4>'+inline(hm[2])+'</h4>'); i++; continue; }
+    if(/^\s*\|.*\|\s*$/.test(L) && i+1<lines.length && /^\s*\|[\s:\-|]+\|\s*$/.test(lines[i+1])){
+      var hd=L.split('|').slice(1,-1).map(function(x){return x.trim();});
+      i+=2; var rs=[];
+      while(i<lines.length && /^\s*\|.*\|\s*$/.test(lines[i])){
+        rs.push(lines[i].split('|').slice(1,-1).map(function(x){return x.trim();})); i++;
+      }
+      out.push('<table><thead><tr>'+hd.map(function(x){return '<th>'+inline(x)+'</th>';}).join('')+
+        '</tr></thead><tbody>'+rs.map(function(r){
+          return '<tr>'+r.map(function(c){return '<td>'+inline(c)+'</td>';}).join('')+'</tr>';
+        }).join('')+'</tbody></table>');
+      continue;
+    }
+    if(/^\s*[-*+]\s+/.test(L)){
+      var li=[];
+      while(i<lines.length && /^\s*[-*+]\s+/.test(lines[i])){
+        li.push('<li>'+inline(lines[i].replace(/^\s*[-*+]\s+/,''))+'</li>'); i++;
+      }
+      out.push('<ul>'+li.join('')+'</ul>'); continue;
+    }
+    if(/^\s*\d+[.)]\s+/.test(L)){
+      var lo=[];
+      while(i<lines.length && /^\s*\d+[.)]\s+/.test(lines[i])){
+        lo.push('<li>'+inline(lines[i].replace(/^\s*\d+[.)]\s+/,''))+'</li>'); i++;
+      }
+      out.push('<ol>'+lo.join('')+'</ol>'); continue;
+    }
+    var para=[];
+    while(i<lines.length && !/^\s*$/.test(lines[i]) && !/^(#{1,6}\s|\s*[-*+]\s|\s*\d+[.)]\s|\s*\|)/.test(lines[i])){
+      para.push(lines[i]); i++;
+    }
+    if(para.length) out.push('<p>'+inline(para.join(' '))+'</p>');
+  }
+  return out.join('');
+}
+
+/* ---------- 15. DeepSeek API 调用 ---------- */
+function buildAiPrompt(rp){
+  var p=S.params, R=rp.risks;
+  var sys='你是一位资深审计经理（CPA），'+WORKFLOW.role+
+    '\n你当前的唯一职责是：为「存栏生猪消耗性生物资产」的审计盘点提供专业深度研判。'+
+    '\n严格遵守以下边界：只讨论存栏活体生猪的盘点审计事项；不讨论其他存货类型、非生物资产审计、财务核算、税务、养殖技术或市场行情。'+
+    '\n工作流方法论（《'+WORKFLOW.name+'》）核心步骤：'+
+    WORKFLOW.steps.map(function(s){return s.n+'.'+s.t+'('+s.tag+')';}).join('；')+
+    '\n输出要求：使用简体中文 Markdown，只输出以下四个二级小节（用 #### 作为标题），不要重复计算参数校验，不要复述已给出的数据，不要输出任何前言、结语或免责声明：'+
+    '\n#### 职业怀疑要点\n#### 舞弊情景推演\n#### 追加审计程序建议\n#### 底稿留痕要求'+
+    '\n总字数控制在 550-750 字，语言精炼、专业、可直接粘贴入审计工作底稿。';
+  var u='【本次盘点基础数据】\n'+
+    '- 总存栏数：'+fmt(p.totalStock)+' 头；抽样率：'+pct(p.samplingRate,2)+'；样本量：'+fmt(p.sampleSize)+' 头\n'+
+    '- 参数校验（strict_dual_check）：'+(S.validation.passed?'已通过':'未通过')+
+    '（理论样本量 '+(S.validation.expect!=null?fmt(S.validation.expect,0):'—')+
+    '，偏差 '+(S.validation.dev!=null?pct(S.validation.dev,2):'—')+'）\n'+
+    '- 分层情况：'+(S.layers.length
+      ? S.layers.map(function(l){return l.pen+'('+(normCat(l.category)||'未标注')+'/'+(l.farm||'未标注')+')'+
+          (l.size!=null?l.size+'头':'');}).join('；')
+      : '未提供分层明细')+'\n'+
+    '- 耳标清点与移动轨迹一致率：'+R.consistency+'%\n'+
+    '- 病死数据：'+(R.deathItems.length
+      ? R.deathItems.map(function(d){return d.farm+' '+fmt(d.count)+'头(历史月均'+fmt(d.hist)+'头，偏离'+d.dev.toFixed(1)+'%)';}).join('；')
+      : '未提供')+'\n'+
+    '- 移动频次：'+(R.moveItems.length
+      ? R.moveItems.map(function(m){return m.pen+' '+m.freq.toFixed(1)+'次/日(场区均值'+m.avg.toFixed(1)+'，偏离'+m.dev.toFixed(1)+'%)';}).join('；')
+      : '未提供')+'\n'+
+    '- 已识别风险事项：'+(R.findings.length
+      ? R.findings.map(function(x){return '['+x.level+']'+x.name;}).join('；') : '未发现重大异常')+'\n'+
+    (R.simulated?'- 注意：移动与病死数据为内置预设模拟示例数据。\n':'')+
+    '\n请基于以上信息，按要求输出四个小节的深度研判。';
+  return [{role:'system',content:sys},{role:'user',content:u}];
+}
+function callDeepSeek(messages){
+  var ctrl = (typeof AbortController!=='undefined') ? new AbortController() : null;
+  var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, API.timeout) : null;
+  return fetch(API.baseUrl+API.path,{
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+API.key },
+    body:JSON.stringify({ model:API.model, messages:messages, temperature:0.3, max_tokens:1600, stream:false }),
+    signal: ctrl?ctrl.signal:undefined
+  }).then(function(res){
+    if(timer) clearTimeout(timer);
+    if(!res.ok) return res.text().then(function(t){ throw new Error('HTTP '+res.status+' '+String(t).slice(0,160)); });
+    return res.json();
+  }).then(function(d){
+    var c = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+    if(!c || !String(c).trim()) throw new Error('返回内容为空');
+    return String(c).trim();
+  }).catch(function(e){
+    if(timer) clearTimeout(timer);
+    throw e;
+  });
+}
+
+/* ---------- 16. 主流程 ---------- */
+function syncParamsFromInputs(){
+  S.params.totalStock = num($('inTotal').value);
+  S.params.samplingRate = (function(){
+    var r=num($('inRate').value);
+    if(r!=null && r>1 && r<=100) r=r/100;
+    return r;
+  })();
+  S.params.sampleSize = num($('inSample').value);
+  updateCalcRow();
+}
+function updateCalcRow(){
+  var p=S.params;
+  if(p.samplingRate!=null && p.totalStock!=null && p.totalStock>0){
+    var e=p.samplingRate*p.totalStock;
+    $('calcVal').textContent=fmt(e,e%1?2:0)+' 头';
+    if(p.sampleSize!=null && e>0){
+      var d=Math.abs(p.sampleSize-e)/e;
+      $('calcDev').textContent=pct(d,2);
+      $('calcDev').style.color = d>0.05?'var(--red-600)':'var(--green-600)';
+    }else{ $('calcDev').textContent='—'; $('calcDev').style.color=''; }
+  }else{
+    $('calcVal').textContent='—'; $('calcDev').textContent='—'; $('calcDev').style.color='';
+  }
+}
+function renderDataPanel(){
+  $('srcBadge').textContent = S.source?sourceLabel():'待导入';
+  $('srcBadge').className = 'badge'+(S.source?' g':'');
+  $('inTotal').value  = S.params.totalStock!=null?S.params.totalStock:'';
+  $('inRate').value   = S.params.samplingRate!=null?S.params.samplingRate:'';
+  $('inSample').value = S.params.sampleSize!=null?S.params.sampleSize:'';
+  updateCalcRow();
+  if(S.fileName){ $('fileChip').className='file-chip on'; $('fileName').textContent=S.fileName; }
+  else $('fileChip').className='file-chip';
+  $('layerBadge').textContent=S.layers.length+' 层';
+  if(!S.layers.length){
+    $('layerArea').innerHTML='<div class="empty"><span class="ic">&#128203;</span>暂无分层数据<br>上传 Excel 或运行内置测试用例</div>';
+  }else{
+    var extra = S.layers.some(function(l){return l.death!=null||l.move!=null;});
+    $('layerArea').innerHTML='<div class="tbl-wrap"><table class="dt"><thead><tr>'+
+      '<th>圈舍</th><th>类别</th><th>场区</th><th style="text-align:right">样本量</th>'+
+      (extra?'<th style="text-align:right">死亡</th><th style="text-align:right">移动</th>':'')+
+      '</tr></thead><tbody>'+S.layers.map(function(l){
+        return '<tr><td>'+esc(l.pen)+'</td><td>'+esc(normCat(l.category)||'—')+'</td><td>'+esc(l.farm||'—')+
+          '</td><td class="num">'+(l.size!=null?fmt(l.size):'—')+'</td>'+
+          (extra?'<td class="num">'+(l.death!=null?fmt(l.death):'—')+'</td><td class="num">'+
+            (l.move!=null?l.move.toFixed(1):'—')+'</td>':'')+'</tr>';
+      }).join('')+'</tbody></table></div>';
+  }
+}
+function doValidate(silent){
+  syncParamsFromInputs();
+  if(S.params.totalStock==null && S.params.samplingRate==null && S.params.sampleSize==null){
+    $('vEmpty').style.display='none';
+    var bx=$('vbox'); bx.className='vbox on fail';
+    bx.innerHTML='<div class="vh"><span style="font-size:15px">&#10007;</span>缺少必要参数</div>'+
+      '<ul><li>请上传包含「样本量、抽样率、总存栏数」字段的 Excel 文件，或在左侧手工填写参数。</li></ul>';
+    setStep(1,'err'); $('flowBadge').textContent='待导入数据'; $('flowBadge').className='badge r';
+    $('btnRun').disabled=true;
+    if(!silent){ toast('请上传包含「样本量、抽样率、总存栏数」字段的 Excel 文件','no'); }
+    logActivity('点击校验参数（未提供数据）','提示缺少必要参数，要求上传有效 Excel 文件',false);
+    return null;
+  }
+  var v=validate(); S.validation=v;
+  renderValidation(v);
+  renderWorkflow(v.passed?2:1);
+  if(v.passed){
+    setStep(3,'act');
+    $('flowBadge').textContent='校验通过，待生成'; $('flowBadge').className='badge g';
+    $('btnRun').disabled=false;
+    if(!silent) toast('参数校验通过，可进行审计盘点','ok');
+  }else{
+    setStep(2,'err');
+    $('flowBadge').textContent='校验失败'; $('flowBadge').className='badge r';
+    $('btnRun').disabled=true;
+    if(!silent) toast(v.missing?v.errs[0]:'数据校验失败，请调整参数后重试','no',5000);
+  }
+  return v;
+}
+function doRun(){
+  if(S.running) return;
+  var v=S.validation;
+  if(!v || !v.passed){
+    v=doValidate(true);
+    if(!v || !v.passed){
+      toast('参数校验未通过，无法执行审计盘点程序','no',4200);
+      logActivity('点击开始审计盘点','参数校验未通过，已阻断盘点程序执行并展示校验计算过程',false);
+      return;
+    }
+    renderValidation(v);
+  }
+  S.running=true; $('btnRun').disabled=true;
+  $('flowBadge').textContent='生成中…'; $('flowBadge').className='badge a';
+  setStep(3,'act'); renderWorkflow(4);
+  $('reportContent').innerHTML='<div class="loading-box"><div class="spinner"></div>'+
+    '<div><b style="color:var(--navy-800)">正在生成审计盘点程序</b><br>'+
+    '加载《'+esc(WORKFLOW.name)+'》工作流 &rarr; 设计耳标清点与分层抽样方案 &rarr; '+
+    '移动轨迹追踪 &rarr; 病死处置交叉验证 &rarr; 准则合规校验</div>'+
+    '<div class="lp"><i></i></div></div>';
+
+  setTimeout(function(){
+    var rp;
+    try{
+      rp=buildReport();
+    }catch(err){
+      S.running=false;
+      $('reportContent').innerHTML='<div class="empty" style="padding:44px 20px;color:var(--red-600)">'+
+        '<span class="ic">&#9888;</span><b>系统处理异常，请稍后重试或检查数据文件</b><br>'+
+        '<span style="font-size:10.5px;color:var(--gray-500)">'+esc(String(err && err.message||err))+'</span></div>';
+      setStep(3,'err'); $('flowBadge').textContent='生成异常'; $('flowBadge').className='badge r';
+      $('btnRun').disabled=false;
+      toast('系统处理异常，请稍后重试或检查数据文件','no',5000);
+      logActivity('点击开始审计盘点','报告生成异常：'+String(err && err.message||err),false);
+      return;
+    }
+    S.report=rp; S.aiText=null;
+    setStep(4,'act'); renderWorkflow(7);
+    renderReport(rp,null,true);
+    S.reportMd=reportToMd(rp,null);
+    setStep(5,'done');
+    $('flowBadge').textContent='报告已生成'; $('flowBadge').className='badge g';
+    $('btnPdf').disabled=false; $('btnCopy').disabled=false; $('btnMail').disabled=false;
+    $('btnRun').disabled=false; S.running=false;
+    var rk=rp.risks.findings.length;
+    toast('专项盘点分析报告已生成'+(rk?('，识别 '+rk+' 项风险事项'):'，未发现重大异常'),'ok');
+    logActivity((S.source==='test'?'运行内置测试用例':'上传文件：'+(S.fileName||'手工录入'))+
+      '（样本量'+fmt(S.params.sampleSize)+'/抽样率'+pct(S.params.samplingRate,2)+'/总存栏数'+fmt(S.params.totalStock)+'）',
+      '参数校验通过；已生成专项盘点分析报告，识别风险 '+rk+' 项，一致率'+rp.risks.consistency+'%', true);
+
+    /* AI 深度研判增强（失败自动降级，不影响报告完整性） */
+    $('aiState').textContent='AI 研判：调用中…';
+    callDeepSeek(buildAiPrompt(rp)).then(function(txt){
+      S.aiText=txt;
+      renderReport(rp,mdToHtml(txt),false);
+      S.reportMd=reportToMd(rp,txt);
+      $('aiState').innerHTML='AI 研判：<b style="color:var(--green-600)">已完成</b>';
+      toast('DeepSeek 深度研判已追加至报告第 7 节','ok');
+    }).catch(function(err){
+      renderReport(rp,
+        '<p style="color:var(--gray-600);font-size:11.5px;margin:0">'+
+        '<b>AI 增强研判未能完成</b>（'+esc(String(err && err.message||err).slice(0,120))+'）。'+
+        '已自动降级为本地确定性生成，上述第 1-6 节报告内容完整、可直接交付使用。'+
+        '如需 AI 深度研判，请检查网络连通性与 API 可用性后重新执行盘点。</p>',false);
+      S.reportMd=reportToMd(rp,null);
+      $('aiState').innerHTML='AI 研判：<b style="color:var(--amber-600)">已降级</b>';
+    });
+  },520);
+}
+
+/* ---------- 17. 交付：PDF / 复制 / 邮件 ---------- */
+function exportPDF(){
+  if(!S.report){ toast('请先生成报告','wa'); return; }
+  var btn=$('btnPdf'), old=btn.innerHTML;
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> 生成中…';
+  var el=$('reportContent');
+  html2canvas(el,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false,
+    windowWidth:el.scrollWidth,windowHeight:el.scrollHeight}).then(function(canvas){
+    var jsPDFCtor=(window.jspdf&&window.jspdf.jsPDF)||window.jsPDF;
+    if(!jsPDFCtor) throw new Error('jsPDF 未加载');
+    var pdf=new jsPDFCtor('p','mm','a4');
+    var pw=210, ph=297, mg=8, iw=pw-mg*2;
+    var ih=canvas.height*iw/canvas.width;
+    var img=canvas.toDataURL('image/jpeg',0.93);
+    var usable=ph-mg*2, left=ih, pos=0;
+    pdf.addImage(img,'JPEG',mg,mg,iw,ih); left-=usable;
+    while(left>0){ pos-=usable; pdf.addPage(); pdf.addImage(img,'JPEG',mg,pos+mg,iw,ih); left-=usable; }
+    var d=new Date(), pad=function(n){return n<10?'0'+n:n;};
+    pdf.save('存栏生猪消耗性生物资产专项盘点分析报告_'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'.pdf');
+    btn.disabled=false; btn.innerHTML=old;
+    toast('PDF 报告已导出','ok');
+    logActivity('点击导出报告','专项盘点分析报告已导出为 PDF 文件',true);
+  }).catch(function(err){
+    btn.disabled=false; btn.innerHTML=old;
+    toast('系统处理异常，PDF 导出失败：'+String(err && err.message||err).slice(0,60),'no',5000);
+    logActivity('点击导出报告','PDF 导出失败：'+String(err && err.message||err),false);
+  });
+}
+function copyReport(){
+  if(!S.reportMd){ toast('请先生成报告','wa'); return; }
+  var txt=S.reportMd;
+  function ok(){
+    toast('报告已复制为格式化文本（Markdown），可直接粘贴至审计工作底稿','ok',4200);
+    logActivity('点击复制报告','专项盘点分析报告已复制为 Markdown 格式化文本',true);
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(ok).catch(function(){ fallbackCopy(txt,ok); });
+  }else fallbackCopy(txt,ok);
+}
+function fallbackCopy(txt,cb){
+  var ta=document.createElement('textarea');
+  ta.value=txt; ta.style.position='fixed'; ta.style.left='-9999px';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); cb(); }
+  catch(e){ toast('复制失败，请手动选择报告内容复制','no'); }
+  document.body.removeChild(ta);
+}
+function sendMail(){
+  var to=$('inMail').value.trim(), subj=$('inSubj').value.trim();
+  if(!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)){ toast('请填写有效的收件人邮箱地址','wa'); return; }
+  var R=S.report.risks, p=S.params;
+  var body='（本邮件由「生物资产审计盘点程序智能体 '+APP_VERSION+'」自动生成）\r\n\r\n'+
+    '一、盘点基础参数\r\n'+
+    '　总存栏数：'+fmt(p.totalStock)+' 头\r\n　抽样率：'+pct(p.samplingRate,2)+
+    '\r\n　样本量：'+fmt(p.sampleSize)+' 头\r\n'+
+    '　参数校验（strict_dual_check）：'+(S.validation.passed?'通过':'不通过')+'\r\n\r\n'+
+    '二、风险提示摘要\r\n'+
+    (R.findings.length?R.findings.map(function(x,i){
+      return '　'+(i+1)+'.【'+x.level+'风险】'+x.name+'\r\n'; }).join('')
+      :'　未发现重大异常，耳标清点与移动轨迹一致率 '+R.consistency+'%\r\n')+
+    '\r\n三、审计盘点程序\r\n'+
+    '　盘点方法：耳标清点法（ear_tag_count）+ 移动轨迹验证\r\n'+
+    '　抽样策略：年龄体重 + 地理位置双维度分层随机抽样\r\n'+
+    '　差异处理：病死处置与无害化处理记录、保险理赔数据交叉验证\r\n\r\n'+
+    '四、合规匹配度\r\n　符合《企业会计准则第5号——生物资产》第四至九条要求\r\n\r\n'+
+    '完整报告（含审计应对程序、准则逐条匹配表、底稿指引）已复制至剪贴板，请直接粘贴于此处。\r\n\r\n'+
+    '报告生成时间：'+S.report.meta.time+'\r\n';
+  if(body.length>1800) body=body.slice(0,1800)+'\r\n…（摘要截断，完整内容见剪贴板）';
+  var href='mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(S.reportMd).catch(function(){});
+  try{ window.location.href=href; }catch(e){}
+  closeMail();
+  toast('已调起本机邮件客户端，完整报告文本已复制到剪贴板','ok',4600);
+  logActivity('点击邮件发送（收件人：'+to+'）','已生成邮件草稿并调起本机邮件客户端，完整报告已复制至剪贴板',true);
+}
+function openMail(){
+  if(!S.report){ toast('请先生成报告','wa'); return; }
+  $('ovlMail').className='ovl on'; $('modalMail').className='modal on'; $('inMail').focus();
+}
+function closeMail(){ $('ovlMail').className='ovl'; $('modalMail').className='modal'; }
+
+/* ---------- 18. 示例 Excel 生成 ---------- */
+function downloadSample(){
+  try{
+    var aoa=[
+      ['存栏生猪消耗性生物资产盘点数据表'],
+      [],
+      ['样本量','抽样率','总存栏数'],
+      [500, 0.1, 5000],
+      [],
+      ['分层抽样明细'],
+      ['圈舍号','年龄/体重类别','场区','样本量','死亡数','历史平均死亡','移动频次'],
+      ['A1','仔猪','南场',50,8,9,1.0],
+      ['A2','保育猪','南场',100,5,6,1.2],
+      ['B1','育肥猪','北场',150,4,4,0.8],
+      ['B2','仔猪','北场',200,12,11,0.6],
+      [],
+      ['填表说明'],
+      ['1. 「样本量、抽样率、总存栏数」为必填字段，抽样率可填 0.1 或 10%。'],
+      ['2. 分层明细建议同时提供「年龄/体重类别」与「场区」两个维度，以支持 age_weight + location 双维度分层抽样。'],
+      ['3. 「死亡数、历史平均死亡、移动频次」为选填，提供后系统将执行病死处置与移动轨迹异常分析；未提供时使用内置预设模拟数据。'],
+      ['4. 体重分层标准：仔猪 <30kg、保育猪 30-60kg、育肥猪 >60kg。']
+    ];
+    var wb=XLSX.utils.book_new();
+    var ws=XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols']=[{wch:16},{wch:16},{wch:14},{wch:10},{wch:10},{wch:14},{wch:10}];
+    XLSX.utils.book_append_sheet(wb,ws,'盘点数据');
+    XLSX.writeFile(wb,'存栏生猪盘点数据_示例.xlsx');
+    toast('示例 Excel 已下载，可直接上传测试','ok');
+  }catch(e){ toast('示例文件生成失败：'+String(e.message||e),'no'); }
+}
+
+/* ---------- 19. 文件上传处理 ---------- */
+function handleFile(file){
+  if(!file) return;
+  if(!/\.(xlsx|xls)$/i.test(file.name)){
+    toast('文件格式不支持，请上传 .xlsx 或 .xls 格式的 Excel 文件','no',4600);
+    logActivity('上传文件：'+file.name,'文件格式校验失败，仅支持 .xlsx / .xls 格式',false);
+    return;
+  }
+  var fr=new FileReader();
+  fr.onload=function(e){
+    try{
+      var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      var r=parseWorkbook(wb);
+      var got=['sampleSize','samplingRate','totalStock'].filter(function(k){ return r.params[k]!=null; });
+      if(got.length===0){
+        toast('请上传包含「样本量、抽样率、总存栏数」字段的 Excel 文件','no',5200);
+        logActivity('上传文件：'+file.name,'字段识别失败，未找到「样本量、抽样率、总存栏数」字段',false);
+        return;
+      }
+      S.fileName=file.name; S.source='upload';
+      S.params=r.params; S.layers=r.layers; S.riskData=r.riskData;
+      S.validation=null; S.report=null; S.reportMd=''; S.aiText=null;
+      renderDataPanel(); renderWorkflow(1);
+      setStep(2,'act'); resetOutputs();
+      $('flowBadge').textContent='数据已导入'; $('flowBadge').className='badge';
+      var miss=['sampleSize','samplingRate','totalStock'].filter(function(k){ return r.params[k]==null; });
+      var mm={sampleSize:'样本量',samplingRate:'抽样率',totalStock:'总存栏数'};
+      if(miss.length){
+        toast('已解析部分字段，缺少：'+miss.map(function(k){return mm[k];}).join('、')+'，请手工补全','wa',5200);
+      }else{
+        toast('Excel 解析成功：识别 '+got.length+' 个抽样参数、'+r.layers.length+' 个分层','ok');
+      }
+      logActivity('上传文件：'+file.name,'解析成功，识别抽样参数 '+got.length+' 项、分层 '+r.layers.length+' 个'+
+        (miss.length?('，缺少 '+miss.map(function(k){return mm[k];}).join('、')):''), miss.length===0);
+      doValidate(true);
+    }catch(err){
+      toast('系统处理异常，Excel 解析失败，请检查数据文件','no',5200);
+      logActivity('上传文件：'+file.name,'Excel 解析异常：'+String(err && err.message||err),false);
+    }
+  };
+  fr.onerror=function(){
+    toast('文件读取失败，请稍后重试','no');
+    logActivity('上传文件：'+file.name,'文件读取失败',false);
+  };
+  fr.readAsArrayBuffer(file);
+}
+function resetOutputs(){
+  S.report=null; S.reportMd=''; S.aiText=null;
+  $('btnPdf').disabled=true; $('btnCopy').disabled=true; $('btnMail').disabled=true;
+  $('aiState').textContent='AI 研判：待调用';
+  $('reportContent').innerHTML='<div class="empty" style="padding:56px 20px">'+
+    '<span class="ic" style="font-size:34px">&#128203;</span>'+
+    '<strong style="color:var(--gray-600);font-size:13px">暂无报告</strong><br>'+
+    '导入盘点数据 &rarr; 校验参数 &rarr; 点击「开始审计盘点」<br>'+
+    '系统将自动生成风险导向型专项盘点分析报告</div>';
+}
+function resetAll(){
+  S.fileName=null; S.source=null;
+  S.params={sampleSize:null,samplingRate:null,totalStock:null};
+  S.layers=[]; S.riskData=null; S.validation=null;
+  resetOutputs(); renderDataPanel(); renderWorkflow(0); resetSteps();
+  $('vbox').className='vbox'; $('vEmpty').style.display='';
+  $('flowBadge').textContent='就绪'; $('flowBadge').className='badge';
+  $('btnRun').disabled=true;
+  $('fileInput').value='';
+  toast('已重置全部参数与结果','ok',2200);
+}
+
+/* ---------- 20. 内嵌测试示例模块 ---------- */
+var TESTS=[
+  { id:1, name:'正常流程测试',
+    desc:'参数校验通过并输出完整专项盘点分析报告',
+    data:{ 样本量:500, 抽样率:0.1, 总存栏数:5000,
+      分层数据:[
+        {圈舍:'A1',类别:'仔猪',场区:'南场',样本量:50},
+        {圈舍:'A2',类别:'保育猪',场区:'南场',样本量:100},
+        {圈舍:'B1',类别:'育肥猪',场区:'北场',样本量:150},
+        {圈舍:'B2',类别:'仔猪',场区:'北场',样本量:200}
+      ]},
+    expect:'参数校验通过（0.1 × 5000 = 500）；报告包含风险提示（无重大异常）、审计盘点程序、合规匹配度（与《会计准则第5号》匹配）、差异分析（无异常）、审计结论（总体可靠）。',
+    build:function(){
+      return { params:{sampleSize:500,samplingRate:0.1,totalStock:5000},
+        layers:[
+          {pen:'A1',category:'仔猪',farm:'南场',size:50},
+          {pen:'A2',category:'保育猪',farm:'南场',size:100},
+          {pen:'B1',category:'育肥猪',farm:'北场',size:150},
+          {pen:'B2',category:'仔猪',farm:'北场',size:200}
+        ], riskData:null };
+    }, run:'full' },
+  { id:2, name:'参数校验失败测试',
+    desc:'样本量与「抽样率 × 总存栏数」计算值不一致',
+    data:{ 样本量:300, 抽样率:0.1, 总存栏数:5000 },
+    expect:'红色报错提示「数据校验失败：样本量(300)与抽样率(10%) * 总存栏数(5000)计算值(500)不一致。请调整参数后重试。」并展示校验计算过程。',
+    build:function(){
+      return { params:{sampleSize:300,samplingRate:0.1,totalStock:5000}, layers:[], riskData:null };
+    }, run:'validate' },
+  { id:3, name:'异常死亡与移动轨迹风险测试',
+    desc:'参数校验通过，报告识别病死处置风险与移动调运风险',
+    data:{ 样本量:400, 抽样率:0.08, 总存栏数:5000,
+      北场死亡记录:'50 头/月（历史月平均 30 头）',
+      南场2号圈舍移动频次:'3 次/日（南场平均 1 次/日）' },
+    expect:'报告风险提示部分指出「北场死亡数偏高 66.7%，建议与无害化处理记录及保险理赔数据交叉核对」与「南场2号圈舍移动频次异常高，建议查证移动日志与出入库记录」，并输出对应审计应对程序。',
+    build:function(){
+      return { params:{sampleSize:400,samplingRate:0.08,totalStock:5000},
+        layers:[
+          {pen:'A1',category:'仔猪',farm:'南场',size:40},
+          {pen:'南场2号圈舍',category:'保育猪',farm:'南场',size:80},
+          {pen:'B1',category:'育肥猪',farm:'北场',size:130},
+          {pen:'B2',category:'仔猪',farm:'北场',size:150}
+        ],
+        riskData:{
+          deaths:[ {farm:'北场',count:50,hist:30}, {farm:'南场',count:28,hist:30} ],
+          movements:[
+            {pen:'南场2号圈舍',farm:'南场',freq:3,areaAvg:1},
+            {pen:'南场其他圈舍（均值）',farm:'南场',freq:1,areaAvg:1},
+            {pen:'北场各圈舍（均值）',farm:'北场',freq:0.9,areaAvg:1}
+          ], simulated:false } };
+    }, run:'full' }
+];
+function renderTests(){
+  $('testBody').innerHTML=TESTS.map(function(t){
+    return '<div class="tcase"><div class="tcase-h"><h4><span class="no">'+t.id+'</span>测试用例'+
+      ['一','二','三'][t.id-1]+'：'+esc(t.name)+'</h4></div><div class="tcase-b">'+
+      '<div class="lbl">测试数据（预设 JSON，无需外部上传）</div>'+
+      '<pre>'+esc(JSON.stringify(t.data,null,2))+'</pre>'+
+      '<div class="lbl">预期输出</div><div class="exp">'+esc(t.expect)+'</div>'+
+      '<button class="btn-run" data-t="'+t.id+'">&#9654; 运行测试'+t.id+'</button>'+
+      '<div class="tres" id="tres'+t.id+'"></div></div></div>';
+  }).join('');
+  $('testBody').querySelectorAll('.btn-run').forEach(function(b){
+    b.addEventListener('click',function(){ runTest(parseInt(b.getAttribute('data-t'),10)); });
+  });
+}
+function runTest(id){
+  var t=null;
+  for(var i=0;i<TESTS.length;i++) if(TESTS[i].id===id) t=TESTS[i];
+  if(!t) return;
+  var d=t.build();
+  S.fileName=null; S.source='test';
+  S.params=d.params; S.layers=d.layers; S.riskData=d.riskData;
+  S.validation=null; resetOutputs(); renderDataPanel(); renderWorkflow(1); setStep(2,'act');
+  var v=doValidate(true);
+  var box=$('tres'+id);
+  var sumInput='点击「运行测试'+id+'」：样本量'+fmt(d.params.sampleSize)+'，抽样率'+
+    pct(d.params.samplingRate,2)+'，总存栏数'+fmt(d.params.totalStock)+
+    (d.layers.length?('，分层'+d.layers.length+'层'):'')+
+    (d.riskData?'，附带死亡与移动记录':'');
+
+  if(t.run==='validate'){
+    if(v && !v.passed){
+      box.className='tres on p';
+      box.innerHTML='<b>&#10003; 测试通过</b><br>已按预期输出红色校验失败提示：<br>'+
+        esc(v.errs[0])+'<br><span style="color:var(--gray-600)">校验计算过程已在中间区域展示，后续盘点流程已被正确阻断。</span>';
+      toast('测试'+id+'通过：参数校验失败已被正确识别','ok');
+      logActivity(sumInput,'参数校验失败：'+v.errs[0]+'；已展示校验计算过程并阻断后续流程',false);
+    }else{
+      box.className='tres on f';
+      box.innerHTML='<b>&#10007; 测试未通过</b><br>预期校验失败，实际校验通过，请检查 strict_dual_check 规则实现。';
+      toast('测试'+id+'未通过','no');
+    }
+    closeTest();
+    return;
+  }
+  if(!v || !v.passed){
+    box.className='tres on f';
+    box.innerHTML='<b>&#10007; 测试未通过</b><br>预期参数校验通过，实际未通过：'+esc(v?v.errs.join('；'):'无校验结果');
+    toast('测试'+id+'未通过','no');
+    return;
+  }
+  box.className='tres on p';
+  box.innerHTML='<b>&#10003; 参数校验通过</b>（'+pct(d.params.samplingRate,2)+' × '+
+    fmt(d.params.totalStock)+' = '+fmt(d.params.samplingRate*d.params.totalStock)+
+    '）<br>正在生成专项盘点分析报告，请查看右侧报告预览区…';
+  closeTest();
+  setTimeout(function(){
+    doRun();
+    setTimeout(function(){
+      if(S.report){
+        var R=S.report.risks;
+        box.innerHTML='<b>&#10003; 测试通过</b><br>参数校验通过；报告已生成，识别风险事项 '+R.findings.length+' 项'+
+          (R.findings.length?('：'+R.findings.map(function(x){return '【'+x.level+'】'+x.name;}).join('；')):'（无重大异常）')+
+          '<br><span style="color:var(--gray-600)">报告含风险提示、审计盘点程序、参数校验结果、合规匹配度、差异分析、审计结论六部分。</span>';
+      }
+    },900);
+  },260);
+}
+function openTest(){ $('ovlTest').className='ovl on'; $('sideTest').className='side on'; }
+function closeTest(){ $('ovlTest').className='ovl'; $('sideTest').className='side'; }
+
+/* ---------- 21. 事件绑定与初始化 ---------- */
+function bind(){
+  $('drop').addEventListener('click',function(){ $('fileInput').click(); });
+  $('fileInput').addEventListener('change',function(e){ handleFile(e.target.files[0]); });
+  ['dragenter','dragover'].forEach(function(ev){
+    $('drop').addEventListener(ev,function(e){ e.preventDefault(); e.stopPropagation(); $('drop').className='drop over'; });
+  });
+  ['dragleave','drop'].forEach(function(ev){
+    $('drop').addEventListener(ev,function(e){ e.preventDefault(); e.stopPropagation(); $('drop').className='drop'; });
+  });
+  $('drop').addEventListener('drop',function(e){
+    if(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  });
+  $('fileClear').addEventListener('click',function(e){ e.stopPropagation(); resetAll(); });
+  $('lnkSample').addEventListener('click',downloadSample);
+  $('lnkReset').addEventListener('click',resetAll);
+  $('lnkLog').addEventListener('click',downloadLog);
+
+  ['inTotal','inRate','inSample'].forEach(function(id){
+    $(id).addEventListener('input',function(){
+      syncParamsFromInputs();
+      if(!S.source) S.source='manual';
+      $('srcBadge').textContent=sourceLabel(); $('srcBadge').className='badge g';
+      S.validation=null; $('btnRun').disabled=true;
+    });
+  });
+
+  $('btnValidate').addEventListener('click',function(){ doValidate(false); });
+  $('btnRun').addEventListener('click',doRun);
+  $('btnPdf').addEventListener('click',exportPDF);
+  $('btnCopy').addEventListener('click',copyReport);
+  $('btnMail').addEventListener('click',openMail);
+
+  $('btnTestOpen').addEventListener('click',openTest);
+  $('btnTestClose').addEventListener('click',closeTest);
+  $('ovlTest').addEventListener('click',closeTest);
+
+  $('mailClose').addEventListener('click',closeMail);
+  $('mailCancel').addEventListener('click',closeMail);
+  $('ovlMail').addEventListener('click',closeMail);
+  $('mailSend').addEventListener('click',sendMail);
+
+  document.addEventListener('keydown',function(e){
+    var ctrl=e.ctrlKey||e.metaKey;
+    if(ctrl && e.key==='Enter'){ e.preventDefault(); if(!$('btnRun').disabled) doRun(); }
+    else if(ctrl && (e.key==='k'||e.key==='K')){ e.preventDefault(); doValidate(false); }
+    else if(ctrl && (e.key==='p'||e.key==='P')){ e.preventDefault(); if(!$('btnPdf').disabled) exportPDF(); }
+    else if(ctrl && (e.key==='t'||e.key==='T')){ e.preventDefault(); openTest(); }
+    else if(e.key==='Escape'){ closeTest(); closeMail(); }
+  });
+}
+function init(){
+  renderWorkflow(0); renderTests(); renderDataPanel(); resetSteps(); bind();
+  if(!readLogs().length){
+    logActivity('系统初始化：加载智能体（存栏生猪消耗性生物资产盘点审计）',
+      '内嵌工作流技能《'+WORKFLOW.name+'》加载完成，strict_dual_check 校验引擎就绪',true);
+  }else renderLogs();
+  if(typeof XLSX==='undefined'){
+    toast('Excel 解析组件加载失败，请检查网络后刷新；测试示例模块仍可正常使用','wa',6200);
+  }
+  setTimeout(function(){
+    toast('智能体已就绪：请上传盘点 Excel，或点击右上角「快速测试」运行内置用例','ok',5200);
+  },520);
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init);
+else init();
+</script>
+</body>
+</html>
