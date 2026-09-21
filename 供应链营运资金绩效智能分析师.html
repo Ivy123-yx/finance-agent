@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1024">
+<title>供应链营运资金绩效智能分析师</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html-docx-js/dist/html-docx.js"></script>
+<style>
+  :root{ --navy:#1A365D; --navy2:#2C5282; --gray:#F7FAFC; --line:#E2E8F0; --green:#38A169; --yellow:#DD6B20; --red:#E53E3E; --text:#2D3748; }
+  *{box-sizing:border-box;font-family:-apple-system,"Segoe UI","Microsoft YaHei",Helvetica,Arial,sans-serif;}
+  body{margin:0;background:var(--gray);color:var(--text);font-size:14px;}
+  .app{display:flex;min-height:100vh;}
+  .sidebar{width:210px;background:var(--navy);color:#fff;padding:18px 0;flex-shrink:0;}
+  .sidebar h1{font-size:15px;font-weight:600;padding:0 18px 14px;border-bottom:1px solid rgba(255,255,255,.15);line-height:1.5;}
+  .sidebar .sub{font-size:11px;opacity:.7;padding:8px 18px 14px;}
+  .nav-item{padding:12px 18px;cursor:pointer;font-size:13.5px;border-left:3px solid transparent;}
+  .nav-item:hover{background:rgba(255,255,255,.08);}
+  .nav-item.active{background:rgba(255,255,255,.14);border-left-color:#63B3ED;}
+  .main{flex:1;padding:22px 28px;min-width:0;overflow:auto;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:20px;margin-bottom:18px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  .card h2{margin:0 0 14px;font-size:16px;color:var(--navy);}
+  .card h3{margin:0 0 10px;font-size:14px;color:var(--navy2);}
+  .step-bar{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+  .step{background:#fff;border:1px solid var(--line);border-radius:20px;padding:6px 14px;font-size:12.5px;color:#718096;}
+  .step.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .btn{background:var(--navy);color:#fff;border:none;border-radius:6px;padding:10px 18px;font-size:13.5px;cursor:pointer;transition:.15s;}
+  .btn:hover{background:var(--navy2);}
+  .btn.sec{background:#fff;color:var(--navy);border:1px solid var(--navy);}
+  .btn.sec:hover{background:var(--gray);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .drop{ border:2px dashed var(--line);border-radius:8px;padding:38px;text-align:center;color:#718096;cursor:pointer;background:#fff;transition:.15s;}
+  .drop.over{border-color:var(--navy);background:#EBF4FF;}
+  .row{display:flex;gap:16px;flex-wrap:wrap;}
+  .chart{width:100%;height:340px;}
+  .half{width:calc(50% - 8px);min-width:380px;}
+  .badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11.5px;color:#fff;font-weight:600;}
+  table{border-collapse:collapse;width:100%;font-size:13px;margin-top:6px;}
+  th,td{border:1px solid var(--line);padding:7px 10px;text-align:center;}
+  th{background:var(--gray);color:var(--navy);}
+  .light{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle;margin-right:5px;}
+  .weak-card{border:1px solid var(--line);border-left-width:4px;border-radius:6px;padding:12px 14px;margin-bottom:10px;background:#fff;}
+  .weak-card.red{border-left-color:var(--red);}
+  .weak-card.yellow{border-left-color:var(--yellow);}
+  .weak-card.green{border-left-color:var(--green);}
+  .modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:99;}
+  .modal{background:#fff;border-radius:10px;max-width:620px;width:92%;max-height:84vh;overflow:auto;padding:22px;}
+  .tag{font-size:11px;padding:1px 7px;border-radius:4px;margin-right:4px;}
+  .tag.err{background:#FED7D7;color:#9B2C2C;}
+  .tag.warn{background:#FEEBC8;color:#9C4221;}
+  .muted{color:#718096;font-size:12.5px;}
+  .kv{display:flex;gap:10px;align-items:center;margin:6px 0;flex-wrap:wrap;}
+  input.cfg{width:90px;padding:5px 8px;border:1px solid var(--line);border-radius:5px;}
+  .pill{background:var(--gray);border:1px solid var(--line);border-radius:5px;padding:4px 10px;font-size:12px;}
+  #status{position:fixed;bottom:16px;right:16px;background:var(--navy);color:#fff;padding:10px 16px;border-radius:8px;font-size:12.5px;display:none;z-index:80;}
+  .hist-item{border-bottom:1px solid var(--line);padding:10px 0;cursor:pointer;}
+  .hist-item:hover{color:var(--navy);}
+  .report-sec{margin-bottom:18px;}
+  .report-sec h4{color:var(--navy);margin:0 0 8px;font-size:14px;border-bottom:2px solid var(--line);padding-bottom:5px;}
+  .hidden{display:none;}
+  pre{white-space:pre-wrap;font-family:inherit;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <h1>供应链营运资金<br>绩效智能分析师</h1>
+    <div class="sub">熵权法 + TOPSIS 绩效评价模型</div>
+    <div class="nav-item active" data-tab="upload">① 数据上传</div>
+    <div class="nav-item" data-tab="run">② 计算运行</div>
+    <div class="nav-item" data-tab="report">③ 报告查看</div>
+    <div class="nav-item" data-tab="history">④ 历史记录</div>
+    <div class="nav-item" data-tab="test">⚡ 快速测试</div>
+  </div>
+
+  <div class="main">
+    <!-- 上传 -->
+    <section id="tab-upload">
+      <div class="step-bar">
+        <span class="step active">1 数据上传</span><span class="step" id="s2">2 校验计算</span><span class="step" id="s3">3 报告查看</span>
+      </div>
+      <div class="card">
+        <h2>欢迎使用 · 请上传营运资金绩效评价 Excel 模型文件</h2>
+        <div class="muted">支持含 5 个工作表（原始数据 / 指标正向化 / 熵权计算 / TOPSIS得分 / 绩效报告）的 .xlsx 文件。上传后将自动校验，点击「开始分析」执行完整流程。</div>
+        <div class="drop" id="drop" style="margin-top:14px;">
+          <div style="font-size:34px;">📥</div>
+          <div style="margin-top:8px;">点击或拖拽 .xlsx 文件到此处</div>
+          <div class="muted" id="upname" style="margin-top:6px;"></div>
+        </div>
+        <input type="file" id="file" accept=".xlsx,.xls" class="hidden">
+        <div class="row" style="margin-top:14px;">
+          <button class="btn sec" id="btnSample">下载示例模板</button>
+          <span class="muted">无数据？可先下载内置模板体验（修正后含正常数据）。</span>
+        </div>
+        <div id="uploadResult" style="margin-top:14px;"></div>
+      </div>
+    </section>
+
+    <!-- 计算运行 -->
+    <section id="tab-run" class="hidden">
+      <div class="card">
+        <h2>② 参数配置与计算运行</h2>
+        <h3>诊断阈值设置（可保存，下次自动填充）</h3>
+        <div id="thresholdsBox" class="kv"></div>
+        <h3 style="margin-top:14px;">诊断方法与正向化</h3>
+        <div class="kv">
+          <label><input type="checkbox" id="m-thr" checked> 阈值法(threshold)</label>
+          <label><input type="checkbox" id="m-pct" checked> 百分位法(percentile)</label>
+          <label><input type="checkbox" id="m-trd" checked> 趋势法(trend)</label>
+          <span class="muted">逆指标正向化：1/x（固定）</span>
+        </div>
+        <div class="row" style="margin-top:16px;">
+          <button class="btn" id="btnRun">开始分析</button>
+          <button class="btn sec" id="btnSaveCfg">保存参数</button>
+          <span id="runMsg" class="muted"></span>
+        </div>
+      </div>
+      <div class="card" id="overviewCard">
+        <h2>绩效总览</h2>
+        <div class="kv">
+          <span>选择年度：</span><select id="ovYear" class="cfg" style="width:auto;"></select>
+          <span>热力图渠道：</span><select id="hmChannel" class="cfg" style="width:auto;"></select>
+        </div>
+        <div class="row">
+          <div class="half"><div id="radar" class="chart"></div></div>
+          <div class="half"><div id="heat" class="chart"></div></div>
+        </div>
+      </div>
+      <div class="card" id="compareCard">
+        <h2>渠道对比</h2>
+        <div class="row">
+          <div class="half"><div id="bar" class="chart"></div></div>
+          <div class="half"><div id="line" class="chart"></div></div>
+        </div>
+      </div>
+      <div class="card" id="weakCard">
+        <h2>短板诊断 <span id="riskBadge"></span></h2>
+        <div id="weakList"></div>
+      </div>
+    </section>
+
+    <!-- 报告 -->
+    <section id="tab-report" class="hidden">
+      <div class="row" style="margin-bottom:14px;">
+        <button class="btn" id="btnPdf">下载 PDF</button>
+        <button class="btn sec" id="btnWord">下载 Word</button>
+        <button class="btn sec" id="btnLLM">AI 增强建议</button>
+        <span id="llmMsg" class="muted"></span>
+      </div>
+      <div class="card" id="reportDiv"><!-- 报告内容由JS注入 --></div>
+    </section>
+
+    <!-- 历史 -->
+    <section id="tab-history" class="hidden">
+      <div class="card">
+        <h2>历史记录（本机参数与运行摘要）</h2>
+        <div id="histList"></div>
+      </div>
+    </section>
+
+    <!-- 测试 -->
+    <section id="tab-test" class="hidden">
+      <div class="card">
+        <h2>⚡ 快速测试（内置数据，无需上传）</h2>
+        <div class="muted">内置 3 渠道 × 3 年共 9 行数据，其中「采购 2025 存货周转天数=85」超出阈值 60，应触发红色预警且得分最低。</div>
+        <button class="btn" id="btnTest" style="margin-top:12px;">运行测试</button>
+        <span id="testMsg" class="muted"></span>
+      </div>
+      <div class="card" id="testResult" class="hidden"><div id="testWeak"></div></div>
+    </section>
+  </div>
+</div>
+
+<div class="modal-mask" id="modal">
+  <div class="modal">
+    <h2 style="color:var(--navy);margin-top:0;">数据校验报告</h2>
+    <div id="modalBody"></div>
+    <div class="row" style="margin-top:16px;justify-content:flex-end;">
+      <button class="btn sec" id="btnBack">返回修改</button>
+      <button class="btn" id="btnIgnore">忽略并继续</button>
+    </div>
+  </div>
+</div>
+<div id="status"></div>
+
+<script>
+// ============ 全局状态 ============
+const state = { rows:null, result:null, thresholds:{}, methods:{thr:true,pct:true,trd:true} };
+const NAVY='#1A365D', NAVY2='#2C5282';
+const charts={};
+const $ = s => document.querySelector(s);
+function toast(msg){ const t=$('#status'); t.textContent=msg; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(()=>t.style.display='none',2200); }
+
+// ============ 导航 ============
+document.querySelectorAll('.nav-item').forEach(n=>{
+  n.onclick=()=>{
+    document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+    n.classList.add('active');
+    document.querySelectorAll('section[id^="tab-"]').forEach(s=>s.classList.add('hidden'));
+    $('#tab-'+n.dataset.tab).classList.remove('hidden');
+    if(n.dataset.tab==='history') renderHistory();
+    if(n.dataset.tab==='report' && state.result) renderReport(state.result);
+    if(['run','report'].includes(n.dataset.tab) && state.result) renderCharts(state.result);
+  };
+});
+
+// ============ 参数记忆 ============
+function loadCfg(){
+  try{
+    const c=JSON.parse(localStorage.getItem('wcp_cfg')||'{}');
+    if(c.thresholds) state.thresholds=c.thresholds;
+    if(c.methods) state.methods=c.methods;
+  }catch(e){}
+}
+function saveCfg(){
+  localStorage.setItem('wcp_cfg', JSON.stringify({thresholds:state.thresholds, methods:state.methods}));
+  toast('参数已保存');
+}
+function renderThresholdCfg(){
+  const box=$('#thresholdsBox'); box.innerHTML='';
+  const defs = state.result ? state.result.thresholds : {'存货周转天数':{type:'max',value:60},'应付账款周转天数':{type:'min',value:40},'应收账款周转天数':{type:'max',value:45},'现金周转期':{type:'max',value:80}};
+  Object.keys(defs).forEach(k=>{
+    const t=defs[k];
+    if(!state.thresholds[k]) state.thresholds[k]={...t};
+    const span=document.createElement('span'); span.className='pill';
+    span.innerHTML=`${k}（${t.type==='max'?'≤上限':'≥下限'}）<input class="cfg" id="th_${k}" value="${state.thresholds[k].value}">`;
+    box.appendChild(span);
+  });
+}
+
+// ============ 上传 ============
+const drop=$('#drop'), fileInput=$('#file');
+drop.onclick=()=>fileInput.click();
+drop.ondragover=e=>{e.preventDefault();drop.classList.add('over');};
+drop.ondragleave=()=>drop.classList.remove('over');
+drop.ondrop=e=>{e.preventDefault();drop.classList.remove('over');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);};
+fileInput.onchange=()=>{if(fileInput.files[0])handleFile(fileInput.files[0]);};
+$('#btnSample').onclick=()=>{ window.location.href='/api/sample'; };
+
+async function handleFile(f){
+  $('#upname').textContent='已选择：'+f.name;
+  const fd=new FormData(); fd.append('file',f);
+  toast('上传并校验中…');
+  try{
+    const r=await fetch('/api/upload',{method:'POST',body:fd});
+    const j=await r.json();
+    showModal(j);
+  }catch(e){ toast('服务未启动，请双击 start.bat'); }
+}
+function showModal(j){
+  const b=$('#modalBody');
+  if(j.passed){
+    b.innerHTML=`<p style="color:#38A169;font-weight:600;">✓ 校验通过（${j.warnings.length} 条警告）</p>`+
+      (j.warnings.length?`<div class='muted'>`+j.warnings.slice(0,12).map(w=>`<div>· ${w.detail}</div>`).join('')+`</div>`:'')+
+      `<p class="muted">已读取 ${j.data?j.data.rows.length:0} 行原始数据，工作表：${(j.data?j.data.sheetsPresent.join('、'):'')}</p>`;
+  }else{
+    b.innerHTML=`<p style="color:#E53E3E;font-weight:600;">✗ 校验未通过（${j.errors.length} 个错误）</p>`+
+      `<div>`+j.errors.map(e=>`<span class="tag err">错误</span>${e.detail||e.type}</div>`).join('')+`</div>`;
+  }
+  $('#modal').style.display='flex';
+  state.rows = (j.data&&j.data.rows)||null;
+}
+$('#btnBack').onclick=()=>{ $('#modal').style.display='none'; };
+$('#btnIgnore').onclick=()=>{
+  $('#modal').style.display='none';
+  if(state.rows){ toast('已载入数据，进入计算'); gotoRun(); }
+};
+
+function gotoRun(){
+  document.querySelector('.nav-item[data-tab="run"]').click();
+  $('#s2').classList.add('active');
+  renderThresholdCfg();
+  syncMethodChecks();
+}
+
+function syncMethodChecks(){
+  $('#m-thr').checked=state.methods.thr; $('#m-pct').checked=state.methods.pct; $('#m-trd').checked=state.methods.trd;
+}
+
+// ============ 计算 ============
+$('#btnSaveCfg').onclick=saveCfg;
+$('#m-thr').onchange=e=>state.methods.thr=e.target.checked;
+$('#m-pct').onchange=e=>state.methods.pct=e.target.checked;
+$('#m-trd').onchange=e=>state.methods.trd=e.target.checked;
+
+$('#btnRun').onclick=async()=>{
+  if(!state.rows){ toast('请先上传文件'); return; }
+  // 收集阈值
+  Object.keys(state.thresholds).forEach(k=>{ const el=$('#th_'+k); if(el) state.thresholds[k].value=Number(el.value); });
+  saveCfg();
+  $('#runMsg').textContent='计算中…';
+  try{
+    const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows:state.rows,config:{thresholds:state.thresholds,methods:state.methods}})});
+    const j=await r.json();
+    if(j.status==='error'){ $('#runMsg').textContent='错误：'+(j.errors[0]&&j.errors[0].detail||'计算失败'); return; }
+    state.result=j;
+    $('#runMsg').textContent='完成 ✓ 风险等级：'+({green:'绿(正常)',yellow:'黄(关注)',red:'红(预警)'}[j.riskLevel]);
+    $('#s3').classList.add('active');
+    renderCharts(j); renderReport(j);
+    pushHistory(j);
+    toast('分析完成');
+  }catch(e){ $('#runMsg').textContent='服务未连接'; toast('服务未启动，请双击 start.bat'); }
+};
+
+// ============ 图表 ============
+function ensureCharts(){
+  ['radar','heat','bar','line'].forEach(id=>{ if(!charts[id]) charts[id]=echarts.init($('#'+id)); });
+}
+function renderCharts(j){
+  ensureCharts();
+  const channels=j.channels, years=j.years, inds=j.indicators;
+  // 年度选择器
+  const ovY=$('#ovYear'); ovY.innerHTML=years.map(y=>`<option ${y===years[years.length-1]?'selected':''}>${y}</option>`).join('');
+  const hmC=$('#hmChannel'); hmC.innerHTML=channels.map(c=>`<option ${c==='采购'?'selected':''}>${c}</option>`).join('');
+  const curYear=ovY.value;
+  // 雷达：各渠道综合得分（跨年均值）
+  charts.radar.setOption({
+    title:{text:'各渠道综合得分（雷达）',left:'center',textStyle:{color:NAVY,fontSize:13}},
+    tooltip:{},legend:{bottom:0,data:channels},
+    radar:{indicator:channels.map(c=>({name:c,max:1})),radius:'62%'},
+    series:[{type:'radar',data:channels.map((c,i)=>({value:[j.channelAvg[c]],name:c}))}]
+  });
+  // 热力图：年度×指标（选定渠道原始值）
+  const ch=hmC.value;
+  const hData=[]; let mx=0,mn=1e9;
+  inds.forEach((ind,yi)=>{ years.forEach((y,xi)=>{ const v=j.indicatorValues[ch][ind][xi]; hData.push([xi,yi,v]); if(v!=null){mx=Math.max(mx,v);mn=Math.min(mn,v);} }); });
+  charts.heat.setOption({
+    title:{text:`指标值热力图（${ch}）`,left:'center',textStyle:{color:NAVY,fontSize:13}},
+    tooltip:{formatter:p=>`${years[p.data[0]]} · ${inds[p.data[1]]}<br/>值：${p.data[2]}`},
+    grid:{top:40,left:90,right:20,bottom:60},
+    xAxis:{type:'category',data:years,axisLabel:{color:'#444'}},
+    yAxis:{type:'category',data:inds,axisLabel:{color:'#444'}},
+    visualMap:{min:mn,max:mx,calculable:true,orient:'horizontal',left:'center',bottom:10,inRange:{color:['#EBF8FF','#4299E1','#1A365D']}},
+    series:[{type:'heatmap',data:hData,label:{show:true,formatter:p=>p.data[2]}}]
+  });
+  // 条形：选定年度各渠道得分
+  const barData=channels.map(c=>({value:j.scores[curYear]?j.scores[curYear][c]:0,name:c}));
+  barData.sort((a,b)=>b.value-a.value);
+  charts.bar.setOption({
+    title:{text:`各渠道得分排名（${curYear}）`,left:'center',textStyle:{color:NAVY,fontSize:13}},
+    tooltip:{trigger:'axis'},grid:{top:40,bottom:30},
+    xAxis:{type:'category',data:barData.map(d=>d.name)},
+    yAxis:{type:'value',max:1},
+    series:[{type:'bar',data:barData.map(d=>({value:d.value,itemStyle:{color:NAVY}})),label:{show:true,position:'top'}}]
+  });
+  // 折线：各渠道综合得分多年趋势
+  charts.line.setOption({
+    title:{text:'多渠道综合得分趋势',left:'center',textStyle:{color:NAVY,fontSize:13}},
+    tooltip:{trigger:'axis'},legend:{bottom:0,data:channels},grid:{top:40,bottom:40},
+    xAxis:{type:'category',data:years},yAxis:{type:'value',max:1},
+    series:channels.map((c,i)=>({name:c,type:'line',smooth:true,data:years.map(y=>j.scores[y][c]),itemStyle:{color:[NAVY,NAVY2,'#63B3ED'][i%3]}}))
+  });
+  ovY.onchange=()=>renderCharts(j);
+  hmC.onchange=()=>renderCharts(j);
+  // 短板卡片
+  renderWeak(j);
+}
+
+function renderWeak(j){
+  $('#riskBadge').innerHTML=`<span class="badge" style="background:${j.riskLevel==='green'?'#38A169':j.riskLevel==='yellow'?'#DD6B20':'#E53E3E'};">风险：${({green:'绿(正常)',yellow:'黄(关注)',red:'红(预警)'})[j.riskLevel]}</span>`;
+  const box=$('#weakList'); box.innerHTML='';
+  if(!j.weaknesses.length){ box.innerHTML='<div class="muted">未发现显著短板。</div>'; return; }
+  j.weaknesses.forEach(w=>{
+    const color=w.risk===2?'red':w.risk===1?'yellow':'green';
+    const light=w.risk===2?'#E53E3E':w.risk===1?'#DD6B20':'#38A169';
+    const trendTxt={up:'↑ 上升(恶化)',down:'↓ 下降',flat:'→ 平稳'}[w.trend]||'→';
+    const d=document.createElement('div'); d.className='weak-card '+color;
+    d.innerHTML=`<span class="light" style="background:${light}"></span><b>${w.channel}</b> · ${w.indicator}
+      <span class="muted"> 当前值 <b>${w.value}</b> / 阈值 ${w.threshold} / ${trendTxt}</span>
+      <div class="muted">触发方法：${w.methods.join('、')}</div>`;
+    box.appendChild(d);
+  });
+}
+
+// ============ 报告 ============
+function renderReport(j){
+  const rp=j.report;
+  const riskColor={green:'#38A169',yellow:'#DD6B20',red:'#E53E3E'}[j.riskLevel];
+  let html=`<div class="report-sec"><h4>供应链营运资金绩效评价报告（${j.years[0]}–${j.years[j.years.length-1]}）</h4>
+    <p><b>风险等级：</b><span style="color:${riskColor};font-weight:700;">${rp.riskText}</span></p>
+    <p><b>摘要：</b>${rp.summary}</p></div>`;
+  // 得分排名
+  html+=`<div class="report-sec"><h4>1. 得分排名</h4><table><tr><th>年度</th>${j.channels.map(c=>`<th>${c}</th>`).join('')}</tr>`;
+  j.years.forEach(y=>{ html+=`<tr><td>${y}</td>${j.channels.map(c=>`<td>${j.scores[y][c]}</td>`).join('')}</tr>`; });
+  html+=`</table><p class="muted">权重：`+j.indicators.map(k=>`${k}=${j.weights[k]}`).join('，')+`</p></div>`;
+  // 渠道对比
+  html+=`<div class="report-sec"><h4>2. 渠道对比</h4><p>各渠道跨年综合得分（均值）：${j.channels.map(c=>`${c} ${j.channelAvg[c]}`).join('；')}。雷达图/条形图/趋势折线图见上方「绩效总览」与「渠道对比」。</p></div>`;
+  // 短板预警
+  html+=`<div class="report-sec"><h4>3. 短板预警（${j.weaknesses.length} 项）</h4>`;
+  if(!j.weaknesses.length) html+='<p class="muted">未发现显著短板。</p>';
+  else{
+    html+='<table><tr><th>渠道</th><th>指标</th><th>当前值</th><th>阈值</th><th>趋势</th><th>风险</th><th>方法</th></tr>';
+    j.weaknesses.forEach(w=>{ html+=`<tr><td>${w.channel}</td><td>${w.indicator}</td><td>${w.value}</td><td>${w.threshold}</td><td>${w.trend}</td><td>${w.risk===2?'红':w.risk===1?'黄':'绿'}</td><td>${w.methods.join('、')}</td></tr>`; });
+    html+='</table>';
+  }
+  html+=`</div>`;
+  // 趋势分析
+  html+=`<div class="report-sec"><h4>4. 趋势分析</h4><p>各渠道综合得分随年度变化见趋势折线图。下列指标存在连续恶化趋势：</p>`;
+  const tr=j.weaknesses.filter(w=>w.methods.includes('trend'));
+  html+= tr.length? '<ul>'+tr.map(w=>`<li>${w.channel} · ${w.indicator}（连续3年上升，提示风险）</li>`).join('')+'</ul>' : '<p class="muted">无连续恶化趋势。</p>';
+  html+=`</div>`;
+  // 计算过程注释
+  html+=`<div class="report-sec"><h4>5. 计算过程注释</h4><pre>${rp.calcNotes}</pre></div>`;
+  // 优化建议
+  html+=`<div class="report-sec"><h4>6. 优化建议</h4><ul>`+rp.advice.map(a=>`<li>${a}</li>`).join('')+`</ul><div id="llmAdvice"></div></div>`;
+  $('#reportDiv').innerHTML=html;
+}
+
+// ============ PDF / Word ============
+$('#btnPdf').onclick=async()=>{
+  if(!state.result){toast('请先分析');return;}
+  const el=$('#reportDiv');
+  const canvas=await html2canvas(el,{scale:2,backgroundColor:'#fff'});
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF('p','mm','a4');
+  const pw=pdf.internal.pageSize.getWidth();
+  const img=canvas.toDataURL('image/png');
+  const ih=canvas.height*pw/canvas.width;
+  pdf.addImage(img,'PNG',0,0,pw,ih);
+  pdf.save('供应链营运资金绩效评价报告.pdf');
+  logAct('下载PDF','报告PDF生成',true);
+};
+$('#btnWord').onclick=()=>{
+  if(!state.result){toast('请先分析');return;}
+  const html=$('#reportDiv').innerHTML;
+  const converted=htmlDocx.asBlob(`<html><head><meta charset="utf-8"></head><body>${html}</body></html>`);
+  saveAs(converted,'供应链营运资金绩效评价报告.docx');
+  logAct('下载Word','报告Word生成',true);
+};
+$('#btnLLM').onclick=async()=>{
+  if(!state.result){toast('请先分析');return;}
+  $('#llmMsg').textContent='生成中…';
+  try{
+    const r=await fetch('/api/suggest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({weaknesses:state.result.weaknesses,indicators:state.result.indicators})});
+    const j=await r.json();
+    const adv=Array.isArray(j.advice)?j.advice.join('<br/>'):j.advice;
+    $('#llmAdvice').innerHTML=`<p style="color:${NAVY2};"><b>AI 增强建议（${j.source==='llm'?'DeepSeek':'静态回退'}）：</b></p><div>${adv}</div>`;
+    $('#llmMsg').textContent='已生成';
+  }catch(e){ $('#llmMsg').textContent='生成失败'; }
+};
+
+// ============ 快速测试 ============
+$('#btnTest').onclick=async()=>{
+  $('#testMsg').textContent='运行中…';
+  try{
+    const r=await fetch('/api/test'); const j=await r.json();
+    state.result=j; state.rows=null;
+    $('#testMsg').textContent='完成 ✓';
+    document.querySelector('.nav-item[data-tab="run"]').click();
+    renderThresholdCfg(); syncMethodChecks();
+    renderCharts(j); renderReport(j);
+    pushHistory(j);
+    toast('测试完成');
+  }catch(e){ $('#testMsg').textContent='服务未连接'; toast('请先双击 start.bat 启动'); }
+};
+
+// ============ 历史 ============
+function pushHistory(j){
+  let h=[]; try{ h=JSON.parse(localStorage.getItem('wcp_hist')||'[]'); }catch(e){}
+  h.unshift({time:new Date().toLocaleString(),risk:j.riskLevel,weak:j.weaknesses.length,best:j.report.best?`${j.report.best.channel}(${j.report.best.year})`:'-',worst:j.report.worst?`${j.report.worst.channel}(${j.report.worst.year})`:'-'});
+  h=h.slice(0,20);
+  localStorage.setItem('wcp_hist',JSON.stringify(h));
+}
+function renderHistory(){
+  const box=$('#histList'); let h=[]; try{ h=JSON.parse(localStorage.getItem('wcp_hist')||'[]'); }catch(e){}
+  if(!h.length){ box.innerHTML='<div class="muted">暂无历史记录。</div>'; return; }
+  box.innerHTML=h.map(x=>`<div class="hist-item">🕑 ${x.time} ｜ 风险：<b>${x.risk}</b> ｜ 短板 ${x.weak} 项 ｜ 最优 ${x.best} / 最弱 ${x.worst}</div>`).join('');
+}
+
+// ============ 活动日志(前端动作也记录到后端) ============
+function logAct(action,summary,success){
+  fetch('/api/log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,summary,success})}).catch(()=>{});
+}
+
+// 初始化
+loadCfg();
+renderThresholdCfg();
+window.addEventListener('resize',()=>{Object.values(charts).forEach(c=>c&&c.resize());});
+
+// 自动演示模式（?autotest=1）：加载后自动运行快速测试，便于生成截图/演示
+if(location.search.indexOf('autotest=1')>=0){
+  window.addEventListener('load',()=>{ setTimeout(()=>{ const b=document.getElementById('btnTest'); if(b) b.click(); },600); });
+}
+</script>
+</body>
+</html>

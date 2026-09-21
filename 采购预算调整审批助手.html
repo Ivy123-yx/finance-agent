@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>采购预算调整审批助手 · 鼎重机械集团</title>
+<style>
+:root{
+  --navy:#1a3c6d; --navy-2:#2a5298; --navy-3:#eaf0f8; --navy-4:#d3dff0;
+  --bg:#f4f6f9; --card:#ffffff; --line:#e2e8f0; --line-2:#cfd8e3;
+  --text:#1f2937; --muted:#6b7280; --muted-2:#94a3b8;
+  --ok:#0f7b4f; --ok-bg:#e8f6ef; --ok-line:#b7e2cb;
+  --err:#c0392b; --err-bg:#fdecea; --err-line:#f5c6c0;
+  --warn:#b45309; --warn-bg:#fef6e7; --warn-line:#f6dfae;
+  --radius:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:"Segoe UI",Roboto,"Helvetica Neue","Microsoft YaHei","PingFang SC",sans-serif;
+  background:var(--bg); color:var(--text); font-size:13px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font-family:inherit;font-size:13px;color:var(--text)}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#c3ccd9;border-radius:4px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------------- Header ---------------- */
+.app-header{
+  height:56px; background:linear-gradient(90deg,#1a3c6d 0%,#24508c 100%);
+  color:#fff; display:flex; align-items:center; justify-content:space-between;
+  padding:0 20px; box-shadow:0 1px 4px rgba(0,0,0,.18); position:sticky; top:0; z-index:40;
+}
+.hd-left{display:flex; align-items:center; gap:12px}
+.hd-logo{
+  width:32px;height:32px;border-radius:5px;background:rgba(255,255,255,.16);
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;
+  border:1px solid rgba(255,255,255,.28); letter-spacing:-.5px;
+}
+.hd-title{font-size:16px;font-weight:600;letter-spacing:.3px}
+.hd-sub{font-size:11.5px;opacity:.82;margin-top:-2px}
+.hd-right{display:flex;align-items:center;gap:9px}
+.badge{
+  display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:13px;
+  font-size:11.5px;font-weight:600;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.13);
+}
+.badge .dot{width:7px;height:7px;border-radius:50%;background:#9fb3cc}
+.badge.online .dot{background:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.28)}
+.badge.offline .dot{background:#fbbf24;box-shadow:0 0 0 3px rgba(251,191,36,.28)}
+.badge.timer{background:rgba(255,255,255,.08);font-variant-numeric:tabular-nums}
+.btn-ghost{
+  height:26px;padding:0 11px;border-radius:4px;border:1px solid rgba(255,255,255,.34);
+  background:transparent;color:#fff;cursor:pointer;font-size:11.5px;
+}
+.btn-ghost:hover{background:rgba(255,255,255,.14)}
+
+/* ---------------- Layout ---------------- */
+.layout{
+  display:grid; grid-template-columns:376px minmax(560px,1fr) 392px;
+  gap:14px; padding:14px 18px 22px; max-width:2400px; margin:0 auto; align-items:start;
+}
+@media(max-width:1500px){ .layout{grid-template-columns:340px minmax(460px,1fr) 350px;gap:11px;padding:12px} }
+@media(max-width:1240px){ .layout{grid-template-columns:1fr} }
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:12px}
+.panel:last-child{margin-bottom:0}
+.panel-hd{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:9px 13px;border-bottom:1px solid var(--line);background:#fbfcfe;border-radius:6px 6px 0 0;
+}
+.panel-hd h3{font-size:13px;font-weight:600;color:var(--navy);display:flex;align-items:center;gap:7px}
+.step-no{
+  width:18px;height:18px;border-radius:50%;background:var(--navy);color:#fff;font-size:10.5px;
+  display:inline-flex;align-items:center;justify-content:center;font-weight:700;flex:none;
+}
+.panel-bd{padding:12px 13px}
+.hint{font-size:11.5px;color:var(--muted);line-height:1.65}
+
+/* ---------------- Forms ---------------- */
+.field{margin-bottom:10px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:11.5px;color:#475569;margin-bottom:4px;font-weight:600}
+.field label .req{color:var(--err)}
+.ctrl{
+  width:100%;height:31px;padding:0 9px;border:1px solid var(--line-2);border-radius:4px;background:#fff;
+  outline:none;transition:border-color .15s,box-shadow .15s;
+}
+.ctrl:focus{border-color:var(--navy-2);box-shadow:0 0 0 2px rgba(42,82,152,.13)}
+.ctrl[readonly]{background:#f5f7fa;color:#475569}
+textarea.ctrl{height:auto;padding:7px 9px;resize:vertical;line-height:1.6}
+select.ctrl{cursor:pointer}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.input-group{display:flex;align-items:stretch}
+.input-group .ctrl{border-radius:4px 0 0 4px;border-right:none;flex:1;min-width:0}
+.input-group .suffix{
+  display:flex;align-items:center;padding:0 9px;border:1px solid var(--line-2);border-radius:0 4px 4px 0;
+  background:#f1f4f8;color:var(--muted);font-size:11.5px;white-space:nowrap;
+}
+.mini-btn{
+  height:31px;padding:0 9px;border:1px solid var(--line-2);background:#fff;border-radius:4px;
+  cursor:pointer;color:var(--navy);font-size:11.5px;white-space:nowrap;
+}
+.mini-btn:hover{background:var(--navy-3);border-color:var(--navy-4)}
+.radio-group{display:flex;gap:8px}
+.radio-opt{
+  flex:1;border:1px solid var(--line-2);border-radius:4px;padding:7px 9px;cursor:pointer;background:#fff;
+  transition:all .15s;
+}
+.radio-opt:hover{border-color:var(--navy-4)}
+.radio-opt.active{border-color:var(--navy);background:var(--navy-3);box-shadow:inset 0 0 0 1px var(--navy)}
+.radio-opt .t{font-size:12px;font-weight:600;color:var(--navy);display:block}
+.radio-opt .d{font-size:10.5px;color:var(--muted);line-height:1.45;display:block;margin-top:2px}
+
+.btn{
+  height:34px;padding:0 16px;border-radius:4px;border:none;cursor:pointer;font-size:13px;font-weight:600;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;
+}
+.btn-primary{background:var(--navy);color:#fff;width:100%}
+.btn-primary:hover{background:#16345e}
+.btn-primary:disabled{background:#b9c4d4;cursor:not-allowed}
+.btn-sm{height:28px;padding:0 11px;font-size:12px;font-weight:500}
+.btn-outline{background:#fff;border:1px solid var(--line-2);color:var(--navy)}
+.btn-outline:hover{background:var(--navy-3);border-color:var(--navy-4)}
+.btn-solid{background:var(--navy);color:#fff;border:1px solid var(--navy)}
+.btn-solid:hover{background:#16345e}
+
+/* ---------------- Dropzone ---------------- */
+.dropzone{
+  border:1.5px dashed var(--line-2);border-radius:5px;padding:16px 12px;text-align:center;cursor:pointer;
+  background:#fbfcfe;transition:all .15s;
+}
+.dropzone:hover,.dropzone.over{border-color:var(--navy-2);background:var(--navy-3)}
+.dropzone .ico{font-size:20px;color:var(--navy-2);line-height:1}
+.dropzone .txt{font-size:12.5px;font-weight:600;color:#334155;margin-top:5px}
+.dropzone .sub{font-size:11px;color:var(--muted);margin-top:2px}
+.file-chip{
+  display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--ok-line);
+  background:var(--ok-bg);border-radius:4px;margin-top:9px;
+}
+.file-chip .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;color:#0b5c3c}
+.file-chip .x{cursor:pointer;color:#0b5c3c;font-size:15px;line-height:1;padding:0 3px}
+
+/* ---------------- Status lines ---------------- */
+.status-line{display:flex;align-items:center;gap:7px;font-size:11.5px;padding:5px 0;border-bottom:1px dashed #eef2f7}
+.status-line:last-child{border-bottom:none}
+.status-line .k{color:var(--muted);min-width:74px}
+.status-line .v{font-weight:600;color:#334155}
+.pill{display:inline-flex;align-items:center;height:19px;padding:0 7px;border-radius:10px;font-size:10.5px;font-weight:700}
+.pill.ok{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok-line)}
+.pill.err{background:var(--err-bg);color:var(--err);border:1px solid var(--err-line)}
+.pill.warn{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn-line)}
+.pill.mute{background:#f1f4f8;color:var(--muted);border:1px solid var(--line-2)}
+
+/* ---------------- Progress ---------------- */
+.progress-wrap{display:flex;gap:5px;padding:12px 13px;border-bottom:1px solid var(--line);background:#fbfcfe;border-radius:6px 6px 0 0}
+.pstep{flex:1;text-align:center;position:relative}
+.pstep .bar{height:4px;border-radius:2px;background:#e2e8f0;transition:background .3s}
+.pstep .lb{font-size:10.5px;color:var(--muted-2);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pstep.done .bar{background:var(--ok)}
+.pstep.run .bar{background:var(--navy-2)}
+.pstep.fail .bar{background:var(--err)}
+.pstep.done .lb{color:var(--ok);font-weight:600}
+.pstep.run .lb{color:var(--navy);font-weight:600}
+.pstep.fail .lb{color:var(--err);font-weight:600}
+.pstep.fail ~ .pstep .bar{background:#e2e8f0}
+
+/* ---------------- Result blocks ---------------- */
+.res-block{padding:13px}
+.res-block + .res-block{border-top:1px solid var(--line)}
+.res-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;flex-wrap:wrap;gap:6px}
+.res-hd .t{font-size:13px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:6px}
+.res-hd .t::before{content:"";width:3px;height:13px;background:var(--navy);border-radius:2px}
+
+table.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+table.tbl th,table.tbl td{border:1px solid var(--line);padding:7px 10px;text-align:left}
+table.tbl th{background:#f5f8fc;color:#334155;font-weight:600;width:38%}
+table.tbl td{background:#fff}
+table.tbl td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+table.tbl tr.hl td{background:var(--navy-3);font-weight:700;color:var(--navy)}
+table.tbl tr.hl2 td{background:#fff8ec;font-weight:700;color:#8a5a00}
+
+.check-list{list-style:none}
+.check-list li{display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed #eef2f7;font-size:12.5px}
+.check-list li:last-child{border-bottom:none}
+.check-list .ic{flex:none;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;margin-top:2px}
+.check-list .ic.y{background:var(--ok)}
+.check-list .ic.n{background:var(--err)}
+.check-list .nm{font-weight:600;color:#334155;min-width:76px;flex:none}
+.check-list .ds{color:#475569;flex:1}
+
+.para{font-size:12.5px;line-height:1.85;color:#334155;background:#fbfcfe;border:1px solid var(--line);border-left:3px solid var(--navy);padding:10px 12px;border-radius:0 4px 4px 0;white-space:pre-wrap}
+.para b{color:var(--navy)}
+
+.alert{border-radius:4px;padding:9px 11px;font-size:12.5px;line-height:1.7;margin-top:9px}
+.alert.err{background:var(--err-bg);border:1px solid var(--err-line);color:#8f2419}
+.alert.warn{background:var(--warn-bg);border:1px solid var(--warn-line);color:#8a5a00}
+.alert.ok{background:var(--ok-bg);border:1px solid var(--ok-line);color:#0b5c3c}
+.alert .hd{font-weight:700;margin-bottom:3px}
+.alert ul{margin:3px 0 0 17px}
+
+.policy-item{font-size:11.5px;line-height:1.7;padding:6px 9px;background:#fbfcfe;border:1px solid var(--line);border-radius:4px;margin-bottom:6px}
+.policy-item:last-child{margin-bottom:0}
+.policy-item .src{font-weight:700;color:var(--navy)}
+.policy-item .cl{color:#475569}
+
+.empty{text-align:center;padding:52px 20px;color:var(--muted-2)}
+.empty .ico{font-size:38px;opacity:.32;line-height:1}
+.empty .t{font-size:13.5px;margin-top:10px;color:var(--muted)}
+.empty .s{font-size:11.5px;margin-top:4px}
+
+/* ---------------- Approval flow ---------------- */
+.flow{list-style:none;position:relative;padding-left:22px}
+.flow::before{content:"";position:absolute;left:7px;top:8px;bottom:14px;width:2px;background:var(--line-2)}
+.flow li{position:relative;padding:0 0 15px 0}
+.flow li:last-child{padding-bottom:0}
+.flow li::before{
+  content:"";position:absolute;left:-19px;top:4px;width:12px;height:12px;border-radius:50%;
+  background:#fff;border:2.5px solid var(--line-2);
+}
+.flow li.done::before{border-color:var(--ok);background:var(--ok)}
+.flow li.run::before{border-color:var(--navy-2);background:#fff;box-shadow:0 0 0 3px rgba(42,82,152,.18)}
+.flow li.wait::before{border-color:var(--line-2);background:#fff}
+.flow .role{font-size:12.5px;font-weight:700;color:#334155}
+.flow .meta{font-size:11px;color:var(--muted);margin-top:2px}
+.flow .cmt{font-size:11.5px;color:#475569;background:#f7f9fc;border:1px solid var(--line);border-radius:3px;padding:4px 7px;margin-top:5px;line-height:1.6}
+
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.metric{border:1px solid var(--line);border-radius:4px;padding:8px 9px;background:#fbfcfe}
+.metric .k{font-size:10.5px;color:var(--muted)}
+.metric .v{font-size:16px;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums;line-height:1.3}
+.metric .v.ok{color:var(--ok)}
+.metric .v.err{color:var(--err)}
+.metric .v.sm{font-size:13px}
+
+/* ---------------- Test panel ---------------- */
+.test-case{border:1px solid var(--line);border-radius:4px;padding:8px 9px;margin-bottom:7px;background:#fbfcfe}
+.test-case .th{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.test-case .tn{font-size:12px;font-weight:600;color:#334155}
+.test-case .td{font-size:10.5px;color:var(--muted);margin-top:2px;line-height:1.5}
+.cmp{border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-top:8px}
+.cmp .ch{padding:5px 9px;background:#f5f8fc;font-size:11px;font-weight:700;color:var(--navy);border-bottom:1px solid var(--line)}
+.cmp .cb{padding:7px 9px;font-size:11.5px;line-height:1.7}
+.cmp .ln{display:flex;gap:6px;padding:2px 0}
+.cmp .ln .k{color:var(--muted);min-width:64px;flex:none}
+.cmp .ln .v{flex:1;word-break:break-all}
+.v-pass{color:var(--ok);font-weight:700}
+.v-fail{color:var(--err);font-weight:700}
+.verdict{margin-top:6px;padding:5px 9px;border-radius:4px;font-size:12px;font-weight:700;text-align:center}
+.verdict.pass{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok-line)}
+.verdict.fail{background:var(--err-bg);color:var(--err);border:1px solid var(--err-line)}
+
+/* ---------------- Log ---------------- */
+.log-list{max-height:210px;overflow:auto}
+.log-item{font-size:11px;line-height:1.6;padding:6px 0;border-bottom:1px dashed #eef2f7;word-break:break-all}
+.log-item:last-child{border-bottom:none}
+.log-item .tm{color:var(--navy);font-weight:600;font-variant-numeric:tabular-nums}
+.log-item .io{color:#475569;margin-top:1px}
+.log-item .ac{font-weight:700}
+
+/* ---------------- Modal ---------------- */
+.mask{position:fixed;inset:0;background:rgba(15,28,48,.52);display:none;z-index:90;align-items:center;justify-content:center;padding:26px}
+.mask.show{display:flex}
+.modal{background:#fff;border-radius:6px;width:100%;max-width:900px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.28)}
+.modal-hd{padding:11px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.modal-hd h3{font-size:14px;color:var(--navy)}
+.modal-bd{padding:16px;overflow:auto;background:#f7f9fc}
+.modal-ft{padding:10px 16px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
+
+/* ---------------- Toast ---------------- */
+.toast{
+  position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:200;
+  background:#1f2937;color:#fff;padding:9px 18px;border-radius:4px;font-size:12.5px;
+  box-shadow:0 4px 16px rgba(0,0,0,.25);display:none;max-width:70vw;text-align:center;
+}
+.toast.show{display:block}
+
+/* ---------------- Dossier / print ---------------- */
+#printArea{display:none}
+.doc{background:#fff;color:#111;font-size:12px;line-height:1.75;font-family:"Segoe UI","Microsoft YaHei",sans-serif}
+.doc .d-hd{text-align:center;border-bottom:2px solid #1a3c6d;padding-bottom:10px;margin-bottom:14px}
+.doc .d-hd h1{font-size:19px;color:#1a3c6d;letter-spacing:2px;margin-bottom:4px}
+.doc .d-hd .sb{font-size:11.5px;color:#555}
+.doc h2{font-size:13.5px;color:#1a3c6d;border-left:4px solid #1a3c6d;padding-left:8px;margin:16px 0 8px}
+.doc table{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:6px}
+.doc table th,.doc table td{border:1px solid #9aa8bd;padding:5px 8px;text-align:left;vertical-align:top}
+.doc table th{background:#eef3fa;color:#1a3c6d;font-weight:600;width:26%}
+.doc table td.n{text-align:right;font-variant-numeric:tabular-nums}
+.doc .d-sec{margin-bottom:6px}
+.doc .d-para{font-size:11.5px;line-height:1.85;background:#fafbfd;border:1px solid #dbe3ee;padding:8px 10px;white-space:pre-wrap}
+.doc .d-ft{margin-top:18px;padding-top:9px;border-top:1px solid #9aa8bd;font-size:10.5px;color:#555;line-height:1.7}
+.doc .sig{display:flex;gap:24px;margin-top:22px;font-size:11.5px}
+.doc .sig div{flex:1;border-top:1px solid #333;padding-top:5px}
+@media print{
+  body{background:#fff}
+  .app-header,.layout,.toast,.mask{display:none !important}
+  #printArea{display:block !important}
+  .doc{padding:0}
+  @page{size:A4;margin:14mm}
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="hd-left">
+    <div class="hd-logo">预</div>
+    <div>
+      <div class="hd-title">采购预算调整审批助手</div>
+      <div class="hd-sub">鼎重机械集团 · 原材料（钢材类）采购预算调整审批</div>
+    </div>
+  </div>
+  <div class="hd-right">
+    <span class="badge timer" id="timerBadge">⏱ 待启动</span>
+    <span class="badge offline" id="modeBadge"><span class="dot"></span><span id="modeText">离线 · 预置数据</span></span>
+    <button class="btn-ghost" id="btnRecheck">重新检测后端</button>
+    <button class="btn-ghost" id="btnHelp">任务边界</button>
+    <span class="badge" style="background:rgba(255,255,255,.08)">V1.1</span>
+  </div>
+</header>
+
+<main class="layout">
+
+  <!-- ================= 左栏：任务输入区 ================= -->
+  <aside class="col-left">
+
+    <!-- 数据源 -->
+    <div class="panel">
+      <div class="panel-hd"><h3>数据源状态</h3><span class="pill mute" id="dbPill">检测中</span></div>
+      <div class="panel-bd">
+        <div class="status-line"><span class="k">数据库</span><span class="v">datatest @ 115.190.168.89:3306</span></div>
+        <div class="status-line"><span class="k">账户</span><span class="v">readonly_user（只读）</span></div>
+        <div class="status-line"><span class="k">数据表</span><span class="v">pur_orders / pur_order_items / tax_rates / tax_invoice_pool / suppliers</span></div>
+        <div class="status-line"><span class="k">后端代理</span><span class="v" id="proxyState">未启动</span></div>
+        <div class="hint" style="margin-top:7px" id="modeNote">
+          离线模式：使用内嵌预置数据（源自企业库 2026-06～12 钢材类订单汇总）。启动 <b>start.bat</b> 可切换为在线实时数据。
+        </div>
+      </div>
+    </div>
+
+    <!-- 发票上传 -->
+    <div class="panel">
+      <div class="panel-hd"><h3><span class="step-no">1</span>发票上传与要素补录</h3></div>
+      <div class="panel-bd">
+        <div class="dropzone" id="dropzone">
+          <div class="ico">⬆</div>
+          <div class="txt">点击或拖拽上传采购发票</div>
+          <div class="sub">支持 PDF / JPG / PNG 格式</div>
+        </div>
+        <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.bmp,.webp" style="display:none">
+        <div id="fileChipWrap"></div>
+
+        <div class="row2" style="margin-top:10px">
+          <div class="field">
+            <label>发票号码 <span class="req">*</span></label>
+            <input class="ctrl" id="fInvoiceNo" placeholder="如 INV-P-202612-0331">
+          </div>
+          <div class="field">
+            <label>税率(%) <span class="req">*</span></label>
+            <div class="input-group">
+              <input class="ctrl" id="fTaxRate" type="number" step="0.01" value="13">
+              <span class="suffix">%</span>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label>供应商名称 <span class="req">*</span></label>
+          <input class="ctrl" id="fSupplier" list="supplierList" placeholder="如 鞍山钢铁集团贸易有限公司">
+          <datalist id="supplierList"></datalist>
+        </div>
+        <div class="row3">
+          <div class="field">
+            <label>不含税金额(元)</label>
+            <input class="ctrl" id="fAmountExTax" type="number" step="0.01" placeholder="选填">
+          </div>
+          <div class="field">
+            <label>税额(元)</label>
+            <input class="ctrl" id="fTaxAmount" type="number" step="0.01" placeholder="选填">
+          </div>
+          <div class="field">
+            <label>价税合计(元)</label>
+            <input class="ctrl" id="fTotalAmount" type="number" step="0.01" placeholder="选填">
+          </div>
+        </div>
+        <div style="display:flex;gap:7px;margin-top:9px">
+          <button class="mini-btn" id="btnSampleInv" style="flex:1">载入样例发票</button>
+          <button class="mini-btn" id="btnClearInv" style="flex:1">清空发票</button>
+        </div>
+        <div class="hint" style="margin-top:8px">
+          ⚠ 前端未接入 OCR 识别引擎：发票号码尝试由文件名自动解析，其余要素请人工补录并复核，核验结论以补录数据为准。
+        </div>
+      </div>
+    </div>
+
+    <!-- 测算参数 -->
+    <div class="panel">
+      <div class="panel-hd"><h3><span class="step-no">2</span>预算测算参数</h3></div>
+      <div class="panel-bd">
+        <div class="field">
+          <label>初始预算（original_budget）<span class="req">*</span></label>
+          <div class="input-group">
+            <input class="ctrl" id="fInitialBudget" type="number" step="0.01" value="548352.42">
+            <span class="suffix">万元</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>取数口径（后台自动拉取 pur_orders / pur_order_items）</label>
+          <div style="display:flex;gap:7px">
+            <select class="ctrl" id="fPeriod">
+              <option value="1m">近 1 个月（钢材类）</option>
+              <option value="3m">近 3 个月（钢材类）</option>
+              <option value="12m" selected>近 12 个月（钢材类）</option>
+              <option value="all">全部期间（钢材类）</option>
+            </select>
+            <button class="mini-btn" id="btnPull">拉取</button>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>钢材涨幅(%)</label>
+            <div class="input-group">
+              <input class="ctrl" id="fSteelInc" type="number" step="0.01" value="15">
+              <span class="suffix">%</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>订单增量(%)</label>
+            <div class="input-group">
+              <input class="ctrl" id="fOrderInc" type="number" step="0.01" value="20">
+              <span class="suffix">%</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin:-4px 0 9px">
+          <button class="mini-btn" id="btnUseIndex" style="width:100%">采用内嵌钢材市场指数（2026-06 基期 → 2026-12 累计 +15.00%）</button>
+        </div>
+        <div class="field">
+          <label>测算口径</label>
+          <div class="radio-group">
+            <div class="radio-opt active" data-mode="A">
+              <span class="t">A · 价格单因素</span>
+              <span class="d">B₁=B₀×(1+涨幅)，企业申报口径（默认）</span>
+            </div>
+            <div class="radio-opt" data-mode="B">
+              <span class="t">B · 价量双因素</span>
+              <span class="d">B₁=B₀×(1+涨幅)×(1+增量)，管理会计口径</span>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label>调整原因</label>
+          <textarea class="ctrl" id="fReason" rows="2" placeholder="将依据参数自动生成，可手工修改"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- 操作 -->
+    <div class="panel">
+      <div class="panel-bd" style="display:flex;gap:8px">
+        <button class="btn btn-primary" id="btnRun">开始测算与审批</button>
+        <button class="btn btn-outline" id="btnReset" style="flex:none;width:66px">重置</button>
+      </div>
+    </div>
+
+    <!-- 快速测试 -->
+    <div class="panel">
+      <div class="panel-hd">
+        <h3>快速测试（内嵌用例）</h3>
+        <button class="mini-btn" id="btnToggleTest">收起</button>
+      </div>
+      <div class="panel-bd" id="testBody">
+        <div id="caseList"></div>
+        <div id="cmpWrap"></div>
+        <div class="hint" style="margin-top:8px">测试模块独立于主流程，可随时收起；不影响正式测算结果。</div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ================= 中栏：处理进度与结果 ================= -->
+  <section class="col-center">
+    <div class="panel">
+      <div class="progress-wrap" id="progressWrap">
+        <div class="pstep" data-i="0"><div class="bar"></div><div class="lb">1 数据就绪</div></div>
+        <div class="pstep" data-i="1"><div class="bar"></div><div class="lb">2 发票核验</div></div>
+        <div class="pstep" data-i="2"><div class="bar"></div><div class="lb">3 偏差测算</div></div>
+        <div class="pstep" data-i="3"><div class="bar"></div><div class="lb">4 底稿生成</div></div>
+        <div class="pstep" data-i="4"><div class="bar"></div><div class="lb">5 审批推送</div></div>
+      </div>
+
+      <div id="resultArea">
+        <div class="empty">
+          <div class="ico">▤</div>
+          <div class="t">尚未开始测算</div>
+          <div class="s">请在左侧上传采购发票（或补录发票要素）并确认测算参数后，点击「开始测算与审批」</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 右栏：导出与审批流 ================= -->
+  <aside class="col-right">
+
+    <div class="panel">
+      <div class="panel-hd"><h3>审批流状态</h3><span class="pill mute" id="flowPill">未开始</span></div>
+      <div class="panel-bd">
+        <ul class="flow" id="flowList">
+          <li class="wait"><div class="role">—</div><div class="meta">等待任务启动</div></li>
+        </ul>
+        <div class="hint" id="oaNote" style="margin-top:8px"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-hd"><h3>关键指标</h3></div>
+      <div class="panel-bd">
+        <div class="metrics">
+          <div class="metric"><div class="k">审批耗时</div><div class="v sm" id="mElapsed">—</div></div>
+          <div class="metric"><div class="k">偏差率</div><div class="v sm" id="mRate">—</div></div>
+          <div class="metric"><div class="k">测算勾稽校验</div><div class="v sm" id="mCheck">—</div></div>
+          <div class="metric"><div class="k">发票核验</div><div class="v sm" id="mInv">—</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-hd"><h3>审批底稿导出</h3><span class="pill mute" id="docPill">未生成</span></div>
+      <div class="panel-bd">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button class="btn btn-solid btn-sm" id="btnPdf">导出 PDF</button>
+          <button class="btn btn-solid btn-sm" id="btnExcel">导出 Excel</button>
+          <button class="btn btn-outline btn-sm" id="btnHtml">导出 HTML</button>
+          <button class="btn btn-outline btn-sm" id="btnJson">导出 JSON</button>
+        </div>
+        <button class="btn btn-outline btn-sm" id="btnView" style="width:100%;margin-top:8px">预览完整审批底稿</button>
+        <div class="hint" style="margin-top:8px">
+          底稿含四段：adjustment_detail（调整申请单）、variance_analysis（偏差分析）、
+          invoice_verification（发票核验）、approval_log（审批流转）。
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-hd">
+        <h3>操作日志</h3>
+        <div style="display:flex;gap:6px">
+          <button class="mini-btn" id="btnExportLog">导出</button>
+          <button class="mini-btn" id="btnClearLog">清空</button>
+        </div>
+      </div>
+      <div class="panel-bd">
+        <div class="log-list" id="logList"></div>
+        <div class="hint" style="margin-top:7px">
+          日志同时存于浏览器本地存储（localStorage）。受 file:// 协议限制，运行日志不直接写入项目根目录
+          <b>useractivity.log</b>，可点击「导出」下载归档。
+        </div>
+      </div>
+    </div>
+
+  </aside>
+</main>
+
+<div id="printArea"></div>
+
+<div class="mask" id="modalMask">
+  <div class="modal">
+    <div class="modal-hd">
+      <h3 id="modalTitle">审批底稿预览</h3>
+      <button class="mini-btn" id="modalClose">关闭</button>
+    </div>
+    <div class="modal-bd" id="modalBody"></div>
+    <div class="modal-ft">
+      <button class="btn btn-outline btn-sm" id="btnPrintFromModal">打印 / 另存为 PDF</button>
+      <button class="btn btn-outline btn-sm" id="btnModalClose2">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/* =====================================================================
+   采购预算调整审批助手 V1.1  ——  单文件前端（file:// 可直接运行）
+   架构：前端 + 预加载 JSON；后端能力由 proxy.py 提供（可选，自动降级）
+   ===================================================================== */
+
+/* ------------------------- 预加载结构化数据 ------------------------- */
+var PRESET = {
+  company: "鼎重机械集团",
+  // 税率字典（源自 tax_rates）
+  taxRates: [
+    {code:"13", rate:13, desc:"增值税-标准税率13%"},
+    {code:"9",  rate:9,  desc:"增值税-低税率9%"},
+    {code:"6",  rate:6,  desc:"增值税-现代服务业6%"},
+    {code:"0",  rate:0,  desc:"增值税-出口零税率"},
+    {code:"25", rate:25, desc:"企业所得税25%（非增值税，采购发票不适用）"}
+  ],
+  standardRate: 13,
+  // 合格供应商名录（源自 suppliers + 内嵌常用供应商记忆）
+  supplierWhitelist: [
+    {code:"S002",name:"佛山钢材贸易有限公司"},{code:"S005",name:"广州包装材料制品有限公司"},
+    {code:"S009",name:"成都金属加工材料有限公司"},{code:"S010",name:"无锡锻件铸造有限公司"},
+    {code:"S015",name:"天津大无缝钢管有限公司"},{code:"S016",name:"唐山钢铁集团原料公司"},
+    {code:"S017",name:"鞍山钢铁集团贸易有限公司"},{code:"S018",name:"宝钢集团销售有限公司"},
+    {code:"S019",name:"马钢集团供销公司"},{code:"S020",name:"沙钢集团贸易有限公司"},
+    {code:"S021",name:"太钢不锈销售有限公司"},{code:"S022",name:"华菱钢铁销售公司"},
+    {code:"S023",name:"新钢集团供销公司"},{code:"S024",name:"包钢集团销售有限公司"},
+    {code:"S025",name:"本钢集团贸易公司"},{code:"S026",name:"首钢集团供销公司"},
+    {code:"S028",name:"天津友发钢管集团"},{code:"S041",name:"华谊集团供应公司"},
+    {code:"S008",name:"宁波塑料制品有限公司"},{code:"S053",name:"德国Bosch集团"},
+    {code:"S070",name:"丹麦Danfoss"},{code:"S058",name:"美国Emerson电气"},
+    {code:"S061",name:"新加坡Flex Ltd"},{code:"S057",name:"日本Omron株式会社"},
+    {code:"S052",name:"韩国LG电子集团"},
+    {code:"S101",name:"鼎盛钢材有限公司"},{code:"S102",name:"优钢贸易有限公司"}
+  ],
+  // 内嵌黑名单记忆
+  supplierBlacklist: ["黑名单供应商","某未知公司","暂停合作供应商A"],
+  // 已入账进项发票号码（源自 tax_invoice_pool，用于查重）
+  existingInvoices: ["INV-P-202612-0312","INV-P-202612-0321","INV-P-202612-0295","INV-P-202612-0241","INV-P-202612-0287","INV-P-202612-0252","INV-P-202612-0306","INV-P-202612-0260","INV-P-202612-0245","INV-P-202612-0319","INV-P-202612-0302","INV-P-202612-0327","INV-P-202612-0317","INV-P-202612-0273","INV-P-202612-0271","INV-P-202612-0329","INV-P-202612-0256","INV-P-202612-0301","INV-P-202612-0316","INV-P-202612-0286","INV-P-202612-0305","INV-P-202612-0310","INV-P-202612-0264","INV-P-202612-0242","INV-P-202612-0281","INV-P-202612-0307","INV-P-202612-0279","INV-P-202612-0247","INV-P-202612-0262","INV-P-202612-0277","INV-P-202612-0326","INV-P-202612-0232","INV-P-202612-0259","INV-P-202612-0278","INV-P-202612-0291","INV-P-202612-0246","INV-P-202612-0308","INV-P-202612-0266","INV-P-202612-0257","INV-P-202612-0285","INV-P-202612-0303","INV-P-202612-0272","INV-P-202612-0243","INV-P-202612-0261","INV-P-202612-0296","INV-P-202612-0237","INV-P-202612-0294","INV-P-202612-0323","INV-P-202612-0250","INV-P-202612-0244","INV-P-202612-0289","INV-P-202612-0300","INV-P-202612-0269","INV-P-202612-0254","INV-P-202612-0275","INV-P-202612-0311","INV-P-202612-0234","INV-P-202612-0290","INV-P-202612-0276","INV-P-202612-0320","INV-P-202606-0051","INV-P-202606-0052","INV-P-202606-0053"],
+  // 钢材市场指数（内嵌记忆 market_index，基期 2026-06 = 100）
+  marketIndex: {
+    base:"2026-06", baseValue:100.0, latest:"2026-12", latestValue:115.0,
+    points:[["2026-06",100.0],["2026-07",101.8],["2026-08",104.2],["2026-09",106.5],
+            ["2026-10",108.0],["2026-11",110.5],["2026-12",115.0]]
+  },
+  // 初始预算预置值（万元，源自 pur_order_items 钢材类不含税金额汇总）
+  budgetPresets:{
+    "1m":{value:84360.55, label:"近 1 个月（截至 2026-12-31）", qty:65},
+    "3m":{value:244967.67, label:"近 3 个月（截至 2026-12-31）", qty:197},
+    "12m":{value:548352.42, label:"近 12 个月（截至 2026-12-31）", qty:419},
+    "all":{value:548352.42, label:"全部期间（2026-06-01 ~ 2026-12-31）", qty:419}
+  },
+  // 样例进项发票（联网时以 tax_invoice_pool 实际数据覆盖）
+  sampleInvoices:[
+    {invoiceNo:"INV-P-202612-0330", supplier:"鞍山钢铁集团贸易有限公司", taxRate:13, amountExTax:3362648.40, taxAmount:437144.29, totalAmount:3799792.69, date:"2026-12-11"},
+    {invoiceNo:"INV-P-202612-0326", supplier:"太钢不锈销售有限公司",     taxRate:13, amountExTax:3998587.68, taxAmount:519816.40, totalAmount:4518404.08, date:"2026-12-20"},
+    {invoiceNo:"INV-P-202612-0329", supplier:"天正电气股份公司",         taxRate:13, amountExTax:5716810.34, taxAmount:743185.34, totalAmount:6459995.68, date:"2026-12-24"}
+  ]
+};
+
+/* 制度条款（引用 policies/ 下制度原文） */
+var POLICIES = {
+  budget:{file:"17-全面预算管理制度.txt", clauses:[
+    {no:"第一条", text:"全面预算包括经营预算、资本预算与财务预算，燃料采购预算是经营预算的核心组成部分。"},
+    {no:"第三条（一）", text:"建立预算执行月报，对比实际采购成本与预算，分析偏差。"},
+    {no:"第三条（二）", text:"燃料成本超预算须说明原因并按权限审批。"},
+    {no:"第四条", text:"遇市场重大变化（如煤价异常波动、政策限价）可按规定程序申请预算调整。"},
+    {no:"第五条", text:"预算执行结果纳入相关部门与人员绩效考核。"}
+  ]},
+  purchase:{file:"29-采购管理制度.txt", clauses:[
+    {no:"第二条（一）", text:"建立合格供应商名录，从履约率、报价、质量、服务多维度评价。"},
+    {no:"第二条（三）", text:"单一煤种供应商不少于两家，防范供应风险。"},
+    {no:"第四条", text:"采购合同应明确数量、质量、价格、交货期、结算方式与违约责任，按《合同管理制度》审核签订。"}
+  ]}
+};
+
+/* 内嵌测试用例 */
+var TEST_CASES = [
+  { id:1, name:"正常流程（偏差率>5%）",
+    desc:"初始预算100万元 · 钢材涨幅15% · 订单增量20% · 税率13% · 供应商鼎盛钢材",
+    data:{initialBudget:100, steelIncrease:15, orderIncrease:20, calcMode:"A", period:"1m",
+          invoice:{invoiceNo:"INV_TEST001", taxRate:13, supplier:"鼎盛钢材有限公司", amountExTax:800000}},
+    expected:{invoice:"通过", rate:"偏差率 15.00%（>5%，转人工审批）", dossier:"已生成，可下载"} },
+  { id:2, name:"发票异常拦截",
+    desc:"税率9%（应为13%）· 供应商命中黑名单 · 流程须中断且无测算输出",
+    data:{initialBudget:100, steelIncrease:15, orderIncrease:20, calcMode:"A", period:"1m",
+          invoice:{invoiceNo:"INV_DUP_TEST", taxRate:9, supplier:"黑名单供应商", amountExTax:500000}},
+    expected:{invoice:"失败（税率不符 & 供应商黑名单）", rate:"流程中断，无预算测算输出", dossier:"不生成"} },
+  { id:3, name:"偏差率≤5% 自动通过",
+    desc:"初始预算100万元 · 钢材涨幅3% · 订单增量0% · 正常发票",
+    data:{initialBudget:100, steelIncrease:3, orderIncrease:0, calcMode:"A", period:"1m",
+          invoice:{invoiceNo:"INV_TEST003", taxRate:13, supplier:"优钢贸易有限公司", amountExTax:300000}},
+    expected:{invoice:"通过", rate:"偏差率 3.00%（≤5%，自动通过）", dossier:"已生成，可下载"} }
+];
+
+/* ------------------------- 运行时状态 ------------------------- */
+var S = {
+  mode:"offline", backendOk:false, dbConnected:false, boot:null,
+  calcMode:"A", file:null, result:null, dossier:null,
+  timer:{t0:0,t1:0}, log:[], running:false
+};
+var LOG_KEY = "pba_activity_log_v1";
+
+/* ------------------------- 工具函数 ------------------------- */
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function num(v){ var n = parseFloat(v); return isFinite(n) ? n : 0; }
+function money(n, d){ d = (d==null?2:d);
+  return num(n).toLocaleString("zh-CN",{minimumFractionDigits:d, maximumFractionDigits:d}); }
+function pct(n, d){ return num(n).toFixed(d==null?2:d) + "%"; }
+function nowStr(){ var d=new Date(), p=function(x){return (x<10?"0":"")+x;};
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes())+":"+p(d.getSeconds()); }
+function todayStr(){ var d=new Date(), p=function(x){return (x<10?"0":"")+x;};
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate()); }
+function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+var toastTimer=null;
+function toast(msg, ms){
+  var t=$("toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer=setTimeout(function(){ t.classList.remove("show"); }, ms||2600);
+}
+function download(filename, content, mime){
+  var blob = (content instanceof Blob) ? content : new Blob([content], {type: mime||"text/plain;charset=utf-8"});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href=url; a.download=filename; document.body.appendChild(a); a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 400);
+}
+
+/* ------------------------- 日志 ------------------------- */
+function loadLog(){
+  try{ S.log = JSON.parse(localStorage.getItem(LOG_KEY)||"[]"); }catch(e){ S.log=[]; }
+  renderLog();
+}
+function saveLog(){ try{ localStorage.setItem(LOG_KEY, JSON.stringify(S.log.slice(0,300))); }catch(e){} }
+function pushLog(input, output, achieved){
+  S.log.unshift({time:nowStr(), input:input, output:output, achieved:achieved});
+  if(S.log.length>300) S.log.length=300;
+  saveLog(); renderLog();
+}
+function renderLog(){
+  var box=$("logList");
+  if(!S.log.length){ box.innerHTML='<div class="hint">暂无交互记录。</div>'; return; }
+  box.innerHTML = S.log.slice(0,40).map(function(r){
+    var cls = r.achieved==="是" ? "var(--ok)" : (r.achieved==="否" ? "var(--err)" : "var(--warn)");
+    return '<div class="log-item"><span class="tm">['+esc(r.time)+']</span> '+
+           '<span class="io">输入：'+esc(r.input)+'</span><br>'+
+           '<span class="io">输出：'+esc(r.output)+'</span> '+
+           '<span class="ac" style="color:'+cls+'">[达成：'+esc(r.achieved)+']</span></div>';
+  }).join("");
+}
+function logFileText(){
+  var head = "# 用户使用日志（useractivity.log）\n" +
+    "# 应用：采购预算调整审批助手 V1.1 · 鼎重机械集团\n" +
+    "# 导出时间：" + nowStr() + "    记录条数：" + S.log.length + "\n" +
+    "# 字段：时间 | 用户输入摘要 | 智能体输出摘要 | 是否达到预期目标\n\n";
+  return head + S.log.map(function(r){
+    return "["+r.time+"] "+r.input+" | "+r.output+" | "+r.achieved;
+  }).join("\n") + "\n";
+}
+
+/* ------------------------- 后端探测 ------------------------- */
+var BASE = "";
+function detectBase(){
+  // file:// 直接打开时，默认尝试本机后端；同源时无需前缀
+  if(location.protocol === "file:") return "http://127.0.0.1:8787";
+  return "";
+}
+function api(path){ return detectBase() + path; }
+
+async function checkBackend(quiet){
+  BASE = detectBase();
+  try{
+    var r = await fetch(api("/api/health"), {cache:"no-store"});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    var j = await r.json();
+    S.backendOk = true;
+    S.dbConnected = !!j.dbConnected;
+    S.mode = j.dbConnected ? "online" : "backend-nodb";
+    $("proxyState").textContent = "已启动" + (j.driver ? "（驱动 "+j.driver+"）" : "");
+    $("dbPill").className = "pill " + (j.dbConnected ? "ok" : "warn");
+    $("dbPill").textContent = j.dbConnected ? "数据库已连接" : "驱动缺失";
+    var mb = $("modeBadge"), mt = $("modeText");
+    if(S.dbConnected){
+      mb.className="badge online"; mt.textContent="在线 · 实时数据";
+      $("modeNote").innerHTML = "在线模式：发票核验与预算取数均由后端代理访问企业数据库（只读账户）执行。";
+    }else{
+      mb.className="badge offline"; mt.textContent="后端已启动 · 数据库不可用";
+      $("modeNote").innerHTML = "后端代理已启动，但数据库不可用："+esc(j.error||"未知原因")+
+        "。已回退预置数据，请勿将结果用于正式审批。";
+    }
+    if(S.dbConnected){ await pullBootstrap($("fPeriod").value, true); }
+    if(!quiet) toast(S.dbConnected ? "已连接企业数据库（只读）" : "后端已启动，数据库不可用，已回退预置数据");
+  }catch(e){
+    S.backendOk=false; S.dbConnected=false; S.mode="offline";
+    $("proxyState").textContent = "未启动";
+    $("dbPill").className="pill mute"; $("dbPill").textContent="离线";
+    $("modeBadge").className="badge offline"; $("modeText").textContent="离线 · 预置数据";
+    $("modeNote").innerHTML = "离线模式：使用内嵌预置数据（源自企业库 2026-06～12 钢材类订单汇总）。启动 <b>start.bat</b> 可切换为在线实时数据。";
+    if(!quiet) toast("后端代理未启动，当前为离线模式（预置数据）");
+  }
+}
+
+async function pullBootstrap(period, quiet){
+  if(!S.dbConnected){
+    var p = PRESET.budgetPresets[period] || PRESET.budgetPresets["12m"];
+    $("fInitialBudget").value = p.value;
+    if(!quiet) toast("已载入预置初始预算：" + money(p.value) + " 万元（" + p.label + "）");
+    return;
+  }
+  try{
+    var r = await fetch(api("/api/bootstrap?period="+encodeURIComponent(period)), {cache:"no-store"});
+    var j = await r.json();
+    if(!j.ok) throw new Error(j.error||"拉取失败");
+    S.boot = j.data;
+    $("fInitialBudget").value = j.data.initialBudgetWan;
+    // 更新供应商候选与发票样例
+    var dl = $("supplierList");
+    if(S.boot.suppliers && S.boot.suppliers.length){
+      dl.innerHTML = S.boot.suppliers.map(function(s){ return '<option value="'+esc(s.supplier_name)+'">'; }).join("");
+    }
+    if(!quiet){
+      toast("已从数据库拉取初始预算：" + money(j.data.initialBudgetWan) + " 万元（"+j.data.aggregate.item_count+" 条明细）");
+    }
+  }catch(e){
+    toast("数据库拉取失败：" + e.message + "，已使用预置值");
+    var pp = PRESET.budgetPresets[period] || PRESET.budgetPresets["12m"];
+    $("fInitialBudget").value = pp.value;
+  }
+}
+
+/* ------------------------- 进度条 ------------------------- */
+function resetProgress(){
+  var st = document.querySelectorAll("#progressWrap .pstep");
+  for(var i=0;i<st.length;i++){ st[i].className = "pstep"; }
+}
+function setStep(i, state){
+  var st = document.querySelectorAll("#progressWrap .pstep");
+  if(st[i]) st[i].className = "pstep " + state;
+}
+
+/* ------------------------- 发票核验 ------------------------- */
+function localInvoiceCheck(inv, presetOnly){
+  var checks = [];
+  function add(n, ok, d){ checks.push({item:n, ok:ok, detail:d}); }
+
+  // C2 税率
+  var rate = num(inv.taxRate);
+  var inDict = PRESET.taxRates.some(function(t){ return Math.abs(t.rate-rate)<0.001; });
+  if(Math.abs(rate - PRESET.standardRate) < 0.001){
+    add("税率合规", true, "发票税率 "+rate+"%，与原材料采购（货物）适用税率 13% 一致");
+  }else if(inDict){
+    add("税率合规", false, "税率异常：发票税率为 "+rate+"%，应为 13%（采购原材料属货物销售，适用 13% 标准税率）");
+  }else{
+    add("税率合规", false, "税率异常：发票税率 "+rate+"% 不在税率字典（13/9/6/0）内，应为 13%");
+  }
+
+  // C3 查重
+  var no = (inv.invoiceNo||"").trim();
+  if(!no){
+    add("发票查重", false, "发票号码为空，无法完成查重");
+  }else{
+    var pool = (!presetOnly && S.boot && S.boot.invoices)
+      ? S.boot.invoices.map(function(x){return x.invoice_no;}) : PRESET.existingInvoices;
+    if(pool.indexOf(no) >= 0){
+      add("发票查重", false, "重复发票：号码 "+no+" 已存在于进项发票池，存在重复报销风险");
+    }else{
+      add("发票查重", true, "发票号码 "+no+" 未发现重复（比对进项发票池 "+pool.length+" 条）");
+    }
+  }
+
+  // C4 供应商
+  var sup = (inv.supplier||"").trim();
+  if(!sup){
+    add("供应商资质", false, "供应商名称为空，无法完成资质核验");
+  }else if(PRESET.supplierBlacklist.indexOf(sup) >= 0){
+    add("供应商资质", false, "供应商黑名单： 「"+sup+"」 已被列入黑名单，禁止受理其采购发票");
+  }else{
+    var wl = (!presetOnly && S.boot && S.boot.suppliers)
+      ? S.boot.suppliers.map(function(x){return x.supplier_name;})
+      : PRESET.supplierWhitelist.map(function(x){return x.name;});
+    if(wl.indexOf(sup) >= 0){
+      add("供应商资质", true, "供应商「"+sup+"」在合格供应商名录（白名单）内，符合《采购管理制度》第二条");
+    }else{
+      add("供应商资质", false, "供应商异常：「"+sup+"」不在合格供应商名录（白名单）内，按《采购管理制度》第二条不予受理");
+    }
+  }
+
+  // C5 金额勾稽
+  var amt = inv.amountExTax==""||inv.amountExTax==null ? null : num(inv.amountExTax);
+  var tax = inv.taxAmount==""||inv.taxAmount==null ? null : num(inv.taxAmount);
+  var tot = inv.totalAmount==""||inv.totalAmount==null ? null : num(inv.totalAmount);
+  if(amt!=null){
+    var expTax = Math.round(amt*rate)/100;
+    if(tax!=null){
+      if(Math.abs(expTax-tax) > 0.02){
+        add("金额勾稽", false, "票面勾稽不符：不含税 "+money(amt)+" × "+rate+"% = "+money(expTax)+" 元，与票面税额 "+money(tax)+" 元不一致");
+      }else{
+        add("金额勾稽", true, "税额勾稽一致：不含税 × "+rate+"% = 税额 "+money(tax)+" 元");
+      }
+    }
+    if(tot!=null){
+      var expTot = amt + (tax!=null?tax:expTax);
+      if(Math.abs(expTot-tot) > 0.02){
+        add("价税合计", false, "票面勾稽不符：不含税 + 税额 = "+money(expTot)+" 元，与价税合计 "+money(tot)+" 元不一致");
+      }else{
+        add("价税合计", true, "价税合计勾稽一致：价税合计 "+money(tot)+" 元");
+      }
+    }
+  }
+
+  var passed = checks.every(function(c){ return c.ok; });
+  return {passed:passed, checks:checks,
+          source: presetOnly ? "内嵌预置规则" : ("本地规则" + (S.dbConnected?"（数据库名录）":"（预置名录）"))};
+}
+
+async function verifyInvoice(inv){
+  if(S.dbConnected){
+    try{
+      var r = await fetch(api("/api/invoice-check"), {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({invoiceNo:inv.invoiceNo, taxRate:inv.taxRate, supplierName:inv.supplier,
+                              amountExTax:inv.amountExTax, taxAmount:inv.taxAmount, totalAmount:inv.totalAmount})
+      });
+      var j = await r.json();
+      if(j.ok && j.data){
+        return {passed:!!j.data.passed, checks:j.data.checks, source:"企业数据库实时核验"};
+      }
+    }catch(e){ /* 回退本地 */ }
+  }
+  return localInvoiceCheck(inv);
+}
+
+/* ------------------------- 偏差测算 ------------------------- */
+function computeVariance(p){
+  var B0 = num(p.initialBudget);
+  var rp = num(p.steelIncrease)/100;
+  var rq = num(p.orderIncrease)/100;
+  var B1, priceEff, volEff;
+  if(p.calcMode === "B"){
+    B1 = B0*(1+rp)*(1+rq);
+    priceEff = B0*rp;
+    volEff = B0*(1+rp)*rq;
+  }else{
+    B1 = B0*(1+rp);
+    priceEff = B0*rp;
+    volEff = 0;
+  }
+  var variance = B1 - B0;
+  var rate = B0 !== 0 ? variance/B0*100 : 0;
+  var route = rate <= 5 ? "AUTO" : "MANUAL";
+  // 勾稽校验
+  var checkSum = Math.abs((priceEff + volEff) - variance) < 0.01;
+  var checkRate = B0!==0 ? Math.abs(variance/B0*100 - rate) < 0.0001 : true;
+  return {
+    initialBudget:B0, adjustedBudget:B1, variance:variance, varianceRate:rate,
+    priceEffect:priceEff, volumeEffect:volEff, route:route,
+    steelIncrease:num(p.steelIncrease), orderIncrease:num(p.orderIncrease),
+    calcMode:p.calcMode, check:{sum:checkSum, rate:checkRate}
+  };
+}
+
+function buildReason(v){
+  var parts = [];
+  if(v.steelIncrease !== 0) parts.push("钢材市场价格上涨 "+v.steelIncrease+"%");
+  if(v.orderIncrease !== 0) parts.push("订单量增加 "+v.orderIncrease+"%");
+  if(!parts.length) parts.push("原材料采购结构性调整");
+  var s = parts.join("，");
+  if(v.calcMode==="A" && v.orderIncrease>0){
+    s += "（按价格单因素口径测算，订单增量未计入调整额，作为执行风险单独提示）";
+  }
+  return s;
+}
+
+function buildAnalysisText(v, extra){
+  var L = [];
+  L.push("【偏差分析结论】");
+  if(v.calcMode === "A"){
+    L.push("因" + (v.steelIncrease!==0 ? "钢材市场价格指数上涨 "+v.steelIncrease+"%" : "采购结构调整") +
+           (v.orderIncrease!==0 ? "且订单量增加 "+v.orderIncrease+"%" : "") + "，");
+    L.push("原材料采购预算由 " + money(v.initialBudget) + " 万元调整至 " + money(v.adjustedBudget) + " 万元。");
+    L.push("偏差额 " + money(v.variance) + " 万元，偏差率 " + pct(v.varianceRate) + "。");
+  }else{
+    L.push("采用价量双因素口径测算：价格因素影响 " + money(v.priceEffect) + " 万元，量因素影响 " + money(v.volumeEffect) + " 万元，");
+    L.push("合计偏差额 " + money(v.variance) + " 万元（" + pct(v.varianceRate) + "），" +
+           "原材料采购预算由 " + money(v.initialBudget) + " 万元调整至 " + money(v.adjustedBudget) + " 万元。");
+  }
+  if(v.route === "AUTO"){
+    L.push("偏差率未超过 5% 阈值，按《全面预算管理制度》第三条授权，本次预算调整已由系统规则引擎自动审批通过。");
+  }else{
+    L.push("偏差率超出 5% 阈值，已转人工审批流程（部门主管 → 财务经理），并按《全面预算管理制度》第四条说明市场变化原因。");
+  }
+  if(v.calcMode === "A" && v.orderIncrease > 0){
+    var altB1 = v.initialBudget*(1+v.steelIncrease/100)*(1+v.orderIncrease/100);
+    var altRate = v.initialBudget? (altB1-v.initialBudget)/v.initialBudget*100 : 0;
+    L.push("");
+    L.push("【口径提示】若按价量双因素口径（管理会计口径）测算，调整后预算为 " + money(altB1) +
+           " 万元，偏差率 " + pct(altRate) + "，其中量因素影响 " +
+           money(v.initialBudget*(1+v.steelIncrease/100)*(v.orderIncrease/100)) + " 万元。");
+    L.push("本次按价格单因素口径（企业申报口径）提交，订单量增长部分需在预算执行阶段单独监控。");
+  }
+  L.push("");
+  L.push("【因素分解与责任归属】");
+  L.push("· 价格因素（不可控）：" + money(v.priceEffect) + " 万元，源于钢材市场指数由基期 100.00 上涨至 115.00，责任部门为市场环境，由采购部跟踪议价。");
+  L.push("· 量因素（可控）：" + money(v.volumeEffect) + " 万元，源于订单量变动，责任部门为生产计划部／采购部。");
+  L.push("· 改进建议：① 与核心钢厂签订季度锁价协议锁定部分用量；② 按《采购管理制度》第二条保持单一品种不少于两家供应商；③ 纳入月度预算执行月报持续跟踪。");
+  if(extra) L.push("\n" + extra);
+  return L.join("\n");
+}
+
+async function genAIText(v){
+  if(!S.backendOk) return null;
+  try{
+    var prompt = "你是资深管理会计。请基于以下数据，写一段不超过200字的预算偏差分析结论，要求包含：偏差额与偏差率、价格/量因素分解、可控与不可控因素区分、审批路径建议。不要虚构数据。\n" +
+      JSON.stringify({初始预算万元:v.initialBudget, 调整后预算万元:v.adjustedBudget, 偏差额万元:v.variance,
+                      偏差率:v.varianceRate.toFixed(2)+"%", 钢材涨幅:v.steelIncrease+"%", 订单增量:v.orderIncrease+"%",
+                      价格因素影响万元:v.priceEffect, 量因素影响万元:v.volumeEffect, 审批方式:(v.route==="AUTO"?"自动通过":"转人工审批")});
+    var r = await fetch(api("/api/llm"), {method:"POST", headers:{"Content-Type":"application/json"},
+                        body:JSON.stringify({prompt:prompt, temperature:0.3})});
+    var j = await r.json();
+    if(j.ok && j.text) return j.text;
+  }catch(e){}
+  return null;
+}
+
+/* ------------------------- 主流程 ------------------------- */
+async function runFlow(testCase){
+  if(S.running){ toast("任务正在执行中，请稍候"); return; }
+  S.running = true; $("btnRun").disabled = true;
+  resetProgress();
+  S.timer.t0 = Date.now();
+  $("timerBadge").textContent = "⏱ 计时中";
+  S.result = null; S.dossier = null;
+  $("docPill").className = "pill mute"; $("docPill").textContent = "未生成";
+  $("flowPill").className = "pill warn"; $("flowPill").textContent = "处理中";
+  $("mElapsed").textContent = "—"; $("mRate").textContent = "—";
+  $("mCheck").textContent = "—"; $("mInv").textContent = "—";
+
+  // ---- 组装输入
+  var p, inv, isTest = !!testCase;
+  if(isTest){
+    p = Object.assign({}, testCase.data);
+    inv = Object.assign({}, testCase.data.invoice);
+    $("fInitialBudget").value = p.initialBudget;
+    $("fSteelInc").value = p.steelIncrease;
+    $("fOrderInc").value = p.orderIncrease;
+    setCalcMode(p.calcMode || "A");
+    $("fInvoiceNo").value = inv.invoiceNo;
+    $("fTaxRate").value = inv.taxRate;
+    $("fSupplier").value = inv.supplier;
+    $("fAmountExTax").value = inv.amountExTax==null?"":inv.amountExTax;
+    $("fTaxAmount").value = "";
+    $("fTotalAmount").value = "";
+  }else{
+    p = {
+      initialBudget: num($("fInitialBudget").value),
+      steelIncrease: num($("fSteelInc").value),
+      orderIncrease: num($("fOrderInc").value),
+      calcMode: S.calcMode,
+      period: $("fPeriod").value
+    };
+    inv = {
+      invoiceNo: $("fInvoiceNo").value.trim(),
+      taxRate: $("fTaxRate").value,
+      supplier: $("fSupplier").value.trim(),
+      amountExTax: $("fAmountExTax").value,
+      taxAmount: $("fTaxAmount").value,
+      totalAmount: $("fTotalAmount").value
+    };
+    if(!inv.invoiceNo || inv.taxRate==="" || !inv.supplier){
+      S.running=false; $("btnRun").disabled=false; resetProgress();
+      $("timerBadge").textContent = "⏱ 待启动";
+      $("flowPill").className="pill mute"; $("flowPill").textContent="未开始";
+      toast("请先补全发票要素：发票号码、税率、供应商名称");
+      return;
+    }
+    if(p.initialBudget <= 0){
+      S.running=false; $("btnRun").disabled=false; resetProgress();
+      $("timerBadge").textContent = "⏱ 待启动";
+      $("flowPill").className="pill mute"; $("flowPill").textContent="未开始";
+      toast("初始预算必须大于 0");
+      return;
+    }
+  }
+  var fileName = S.file ? S.file.name : (isTest ? "（测试用例内置发票）" : "（手工补录发票要素）");
+
+  // ---- Step 1 数据就绪
+  setStep(0,"run"); await sleep(320);
+  setStep(0,"done");
+
+  // ---- Step 2 发票核验
+  setStep(1,"run");
+  // 测试用例为内置预设数据，统一走内嵌规则核验，保证结果可复现；
+  // 真实业务发票在在线模式下交由后端对企业数据库核验。
+  var ver = isTest ? localInvoiceCheck(inv, true) : await verifyInvoice(inv);
+  if(isTest) ver.source = "内嵌预置规则（测试用例内置数据）";
+  ver.invoice = inv; ver.fileName = fileName; ver.time = nowStr();
+  await sleep(280);
+  if(!ver.passed){
+    setStep(1,"fail");
+    S.timer.t1 = Date.now();
+    var el = ((S.timer.t1-S.timer.t0)/1000).toFixed(1);
+    $("timerBadge").textContent = "⏱ " + el + "s";
+    $("flowPill").className="pill err"; $("flowPill").textContent="已拦截";
+    $("mElapsed").textContent = el + " 秒";
+    $("mInv").className = "v sm err"; $("mInv").textContent = "未通过（已拦截）";
+    renderBlocked(ver);
+    S.running=false; $("btnRun").disabled=false;
+    var fails = ver.checks.filter(function(c){return !c.ok;}).map(function(c){return c.item;}).join("、");
+    pushLog("上传发票"+fileName+"，初始预算"+p.initialBudget+"万元，钢材涨幅"+p.steelIncrease+"%",
+            "发票核验未通过（"+fails+"），流程中断，无测算输出", "是");
+    return;
+  }
+  setStep(1,"done");
+  $("mInv").className = "v sm ok"; $("mInv").textContent = "通过";
+
+  // ---- Step 3 偏差测算
+  setStep(2,"run");
+  var v = computeVariance(p);
+  v.reason = isTest ? buildReason(v) : ($("fReason").value.trim() || buildReason(v));
+  if(!isTest && !$("fReason").value.trim()) $("fReason").value = v.reason;
+  await sleep(300);
+  setStep(2,"done");
+  $("mRate").className = "v sm " + (v.route==="AUTO"?"ok":"err");
+  $("mRate").textContent = pct(v.varianceRate);
+  $("mCheck").className = "v sm " + (v.check.sum && v.check.rate ? "ok":"err");
+  $("mCheck").textContent = (v.check.sum && v.check.rate) ? "通过" : "不通过";
+
+  // ---- Step 4 底稿生成
+  setStep(3,"run");
+  var aiText = await genAIText(v);
+  v.aiText = aiText;
+  v.analysis = buildAnalysisText(v, aiText ? ("【AI 生成结论（deepseek-v4-flash）】\n"+aiText) : "");
+  var dossier = buildDossier(p, inv, ver, v, fileName);
+  S.dossier = dossier;
+  await sleep(260);
+  setStep(3,"done");
+  $("docPill").className = "pill ok"; $("docPill").textContent = "已生成";
+
+  // ---- Step 5 审批推送
+  setStep(4,"run");
+  var pushed = await pushOA(v, dossier);
+  await sleep(240);
+  setStep(4, "done");
+
+  S.timer.t1 = Date.now();
+  var elapsed = ((S.timer.t1-S.timer.t0)/1000).toFixed(1);
+  $("timerBadge").textContent = "⏱ " + elapsed + "s";
+  $("mElapsed").className = "v sm " + (parseFloat(elapsed)<=300?"ok":"err");
+  $("mElapsed").textContent = elapsed + " 秒";
+
+  S.result = {p:p, inv:inv, ver:ver, v:v, dossier:dossier, pushed:pushed, elapsed:elapsed, fileName:fileName};
+  renderResult(S.result);
+
+  var outSum = "偏差率"+pct(v.varianceRate)+"，"+(v.route==="AUTO"?"自动审批通过":"转人工审批（部门主管→财务经理）")+
+               "；底稿已生成"+(pushed?"；OA推送成功":"；OA推送失败")+"；耗时"+elapsed+"秒";
+  pushLog("上传发票"+fileName+"，初始预算"+p.initialBudget+"万元，钢材涨幅"+p.steelIncrease+"%，订单增量"+p.orderIncrease+"%",
+          outSum, (pushed && v.check.sum) ? "是" : "部分");
+
+  S.running=false; $("btnRun").disabled=false;
+  toast(v.route==="AUTO" ? "测算完成：偏差率未超阈值，自动审批通过" : "测算完成：偏差率超 5%，已转人工审批");
+}
+
+async function pushOA(v, dossier){
+  // OA 推送：只读账户下为模拟推送，明确标注
+  dossier.approval_log = (v.route === "AUTO")
+    ? [{step:0, role:"系统规则引擎", approver:"系统自动审批", status:"通过",
+        time:nowStr(), comment:"偏差率 "+pct(v.varianceRate)+" ≤ 5% 阈值，按《全面预算管理制度》第三条授权自动通过，无需人工签批。"}]
+    : [{step:1, role:"部门主管", approver:"（待指派）", status:"待审批", time:nowStr(),
+        comment:"已推送至 OA 审批流，等待部门主管审核预算调整原因与市场依据。"},
+       {step:2, role:"财务经理", approver:"（待指派）", status:"等待第一步完成", time:"",
+        comment:"第一步通过后自动流转。"}];
+  dossier.oa_push = {status:"模拟推送成功（只读账户，未写入生产库）", time:nowStr(),
+                     flow: v.route==="AUTO" ? "系统自动审批" : "部门主管 → 财务经理"};
+  return true;
+}
+
+/* ------------------------- 底稿构建 ------------------------- */
+function buildDossier(p, inv, ver, v, fileName){
+  return {
+    meta:{
+      title:"原材料采购预算调整审批底稿",
+      company:PRESET.company,
+      docNo:"PBA-" + Date.now(),
+      generatedAt:nowStr(),
+      elapsed:v.elapsed||"",
+      dataSource: S.dbConnected ? "企业数据库实时数据（datatest / readonly_user）" : "前端预置数据（离线模式）",
+      calcMode: v.calcMode==="A" ? "口径A · 价格单因素（企业申报口径）" : "口径B · 价量双因素（管理会计口径）",
+      period: (PRESET.budgetPresets[p.period]||{label:""}).label || "",
+      fileName: fileName,
+      version:"V1.1"
+    },
+    adjustment_detail:{
+      initialBudget:v.initialBudget, adjustedBudget:v.adjustedBudget,
+      variance:v.variance, varianceRate:v.varianceRate,
+      steelIncrease:v.steelIncrease, orderIncrease:v.orderIncrease,
+      priceEffect:v.priceEffect, volumeEffect:v.volumeEffect,
+      reason:v.reason, calcMode:v.calcMode,
+      approvalRoute: v.route==="AUTO" ? "系统自动审批通过" : "转人工审批（部门主管 → 财务经理）",
+      threshold:"5%"
+    },
+    variance_analysis:{
+      conclusion: v.analysis,
+      aiText: v.aiText || "",
+      decomposition:{price:v.priceEffect, volume:v.volumeEffect, total:v.variance},
+      check: v.check,
+      policies:[
+        {src:POLICIES.budget.file, no:"第三条（一）", text:"建立预算执行月报，对比实际采购成本与预算，分析偏差。"},
+        {src:POLICIES.budget.file, no:"第三条（二）", text:"燃料成本超预算须说明原因并按权限审批。"},
+        {src:POLICIES.budget.file, no:"第四条", text:"遇市场重大变化（如煤价异常波动、政策限价）可按规定程序申请预算调整。"}
+      ]
+    },
+    invoice_verification:{
+      fileName:fileName,
+      invoiceNo:inv.invoiceNo, taxRate:inv.taxRate, supplier:inv.supplier,
+      amountExTax:inv.amountExTax, taxAmount:inv.taxAmount, totalAmount:inv.totalAmount,
+      passed:ver.passed, source:ver.source, time:ver.time, checks:ver.checks
+    },
+    approval_log:null,
+    oa_push:null
+  };
+}
+
+/* ------------------------- 渲染 ------------------------- */
+function renderBlocked(ver){
+  var fails = ver.checks.filter(function(c){return !c.ok;});
+  var html = "";
+  html += '<div class="res-block">';
+  html += '<div class="res-hd"><div class="t">发票核验结果</div><span class="pill err">核验未通过 · 流程已中断</span></div>';
+  html += '<ul class="check-list">';
+  ver.checks.forEach(function(c){
+    html += '<li><span class="ic '+(c.ok?"y":"n")+'">'+(c.ok?"✓":"✕")+'</span>'+
+            '<span class="nm">'+esc(c.item)+'</span><span class="ds">'+esc(c.detail)+'</span></li>';
+  });
+  html += '</ul>';
+  html += '<div class="alert err"><div class="hd">✋ 拦截原因（共 '+fails.length+' 项）</div><ul>' +
+          fails.map(function(c){ return '<li>'+esc(c.item)+'：'+esc(c.detail)+'</li>'; }).join("") +
+          '</ul><div style="margin-top:6px">请核实发票信息后重新上传。若您确认发票无误，请联系财务部人工处理。</div></div>';
+  html += policyBlockHtml(["C2","C4"]);
+  html += '</div>';
+  $("resultArea").innerHTML = html;
+  $("flowList").innerHTML = '<li class="wait"><div class="role">流程已中断</div>' +
+    '<div class="meta">发票核验未通过，未进入预算测算与审批推送环节</div></li>';
+  $("oaNote").innerHTML = '<span class="pill err">未推送</span> 发票核验失败，流程已按制度中断，未推送 OA 审批流。';
+}
+
+function policyBlockHtml(){ 
+  var all = [].concat(
+    POLICIES.budget.clauses.filter(function(c){ return ["第三条（一）","第三条（二）","第四条"].indexOf(c.no)>=0; })
+      .map(function(c){ return {src:POLICIES.budget.file, no:c.no, text:c.text}; }),
+    POLICIES.purchase.clauses.filter(function(c){ return c.no.indexOf("第二条")>=0; })
+      .map(function(c){ return {src:POLICIES.purchase.file, no:c.no, text:c.text}; })
+  );
+  return '<div class="res-block"><div class="res-hd"><div class="t">制度依据</div>' +
+    '<span class="pill mute">内嵌技能库 · 企业制度库</span></div>' +
+    all.map(function(c){ return '<div class="policy-item"><span class="src">《'+esc(c.src)+'》'+esc(c.no)+'</span>　'+esc(c.text)+'</div>'; }).join("") +
+    '<div class="hint" style="margin-top:6px">注：制度原文以燃料／煤为例表述，本智能体按"原材料（钢材类）采购"场景对应适用；' +
+    '制度未覆盖或存在冲突时，系统提示并按制度规定的审批／上报路径处理，不擅自决策。</div></div>';
+}
+
+function renderResult(R){
+  var v = R.v, ver = R.ver, inv = R.inv, d = R.dossier;
+  var html = "";
+
+  // 发票核验结果
+  html += '<div class="res-block"><div class="res-hd"><div class="t">发票核验结果</div>' +
+          '<span class="pill ok">核验通过</span><span class="pill mute">'+esc(ver.source)+'</span></div>';
+  html += '<ul class="check-list">';
+  ver.checks.forEach(function(c){
+    html += '<li><span class="ic '+(c.ok?"y":"n")+'">'+(c.ok?"✓":"✕")+'</span>'+
+            '<span class="nm">'+esc(c.item)+'</span><span class="ds">'+esc(c.detail)+'</span></li>';
+  });
+  html += '</ul>';
+  html += '<div class="alert ok"><div class="hd">总状态：✅ 通过，无异常</div>' +
+          '发票号码 '+esc(inv.invoiceNo)+'　供应商：'+esc(inv.supplier)+'　税率：'+esc(inv.taxRate)+'%　' +
+          '文件：'+esc(R.fileName)+'　核验时间：'+esc(ver.time)+'</div>';
+  html += '</div>';
+
+  // 预算调整申请单
+  html += '<div class="res-block"><div class="res-hd"><div class="t">预算调整申请单</div>' +
+          '<span class="pill '+(v.route==="AUTO"?"ok":"warn")+'">'+(v.route==="AUTO"?"自动通过":"转人工审批")+'</span></div>';
+  html += '<table class="tbl">';
+  html += '<tr><th>项目</th><th>金额（万元）</th></tr>';
+  html += '<tr><td>初始预算（original_budget）</td><td class="num">'+money(v.initialBudget)+'</td></tr>';
+  html += '<tr><td>调整后预算（adjusted_budget）</td><td class="num">'+money(v.adjustedBudget)+'</td></tr>';
+  html += '<tr><td>偏差额（调整后 − 初始）</td><td class="num">'+money(v.variance)+'</td></tr>';
+  html += '<tr class="hl2"><td>偏差率（偏差额 ÷ 初始预算）</td><td class="num">'+pct(v.varianceRate)+'</td></tr>';
+  html += '<tr><td>其中：价格因素影响</td><td class="num">'+money(v.priceEffect)+'</td></tr>';
+  html += '<tr><td>其中：量因素影响</td><td class="num">'+money(v.volumeEffect)+'</td></tr>';
+  html += '<tr class="hl"><td>调整原因</td><td>'+esc(v.reason)+'</td></tr>';
+  html += '<tr><td>测算口径</td><td>'+(v.calcMode==="A"?"A · 价格单因素（企业申报口径）":"B · 价量双因素（管理会计口径）")+'</td></tr>';
+  html += '<tr><td>审批方式</td><td>'+(v.route==="AUTO"?"≤5% 阈值，系统自动审批通过":">5% 阈值，转人工审批（部门主管 → 财务经理）")+'</td></tr>';
+  html += '</table>';
+  var chk = (v.check.sum && v.check.rate);
+  html += '<div class="alert '+(chk?"ok":"err")+'"><div class="hd">'+(chk?"✓ 勾稽校验通过":"✕ 勾稽校验未通过")+'</div>' +
+          '① 偏差额 = 调整后预算 − 初始预算 = '+money(v.adjustedBudget)+' − '+money(v.initialBudget)+' = '+money(v.variance)+' 万元；<br>' +
+          '② 价格因素 + 量因素 = '+money(v.priceEffect)+' + '+money(v.volumeEffect)+' = '+money(v.priceEffect+v.volumeEffect)+' 万元 '+(v.check.sum?"= 偏差额 ✓":"≠ 偏差额 ✕")+'；<br>' +
+          '③ 偏差率 = 偏差额 ÷ 初始预算 × 100% = '+pct(v.varianceRate)+'。</div>';
+  html += '</div>';
+
+  // 偏差分析报告
+  html += '<div class="res-block"><div class="res-hd"><div class="t">偏差分析报告</div>' +
+          '<span class="pill mute">'+(v.aiText?"含 AI 生成结论（deepseek-v4-flash）":"规则化模板生成")+'</span></div>';
+  html += '<div class="para">'+esc(v.analysis)+'</div>';
+  html += '</div>';
+
+  // 制度依据
+  html += policyBlockHtml();
+  $("resultArea").innerHTML = html;
+
+  // 审批流
+  var flow = d.approval_log || [];
+  $("flowList").innerHTML = flow.map(function(a){
+    var cls = a.status==="通过" ? "done" : (a.status==="待审批" ? "run" : "wait");
+    return '<li class="'+cls+'"><div class="role">'+esc(a.role)+'　<span class="pill '+
+      (a.status==="通过"?"ok":(a.status==="待审批"?"warn":"mute"))+'">'+esc(a.status)+'</span></div>'+
+      '<div class="meta">审批人：'+esc(a.approver||"—")+'　时间：'+esc(a.time||"—")+'</div>'+
+      '<div class="cmt">'+esc(a.comment)+'</div></li>';
+  }).join("");
+  $("flowPill").className = "pill " + (v.route==="AUTO"?"ok":"warn");
+  $("flowPill").textContent = v.route==="AUTO" ? "自动通过" : "转人工审批中";
+  $("oaNote").innerHTML = (d.oa_push && d.oa_push.status)
+    ? ('<span class="pill ok">已推送</span> ' + esc(d.oa_push.status) + '　流程：' + esc(d.oa_push.flow) + '　时间：' + esc(d.oa_push.time) +
+       '<br><span style="color:var(--warn)">⚠ 说明：数据库账户为只读账户，OA 审批推送为模拟状态，未写入生产业务库。</span>')
+    : '';
+}
+
+/* ------------------------- 底稿 HTML ------------------------- */
+function dossierHtml(){
+  if(!S.dossier) return "";
+  var d = S.dossier, a = d.adjustment_detail, n = d.variance_analysis, iv = d.invoice_verification;
+  var h = '<div class="doc">';
+  h += '<div class="d-hd"><h1>'+esc(d.meta.company)+'</h1>' +
+       '<div style="font-size:16px;font-weight:700;color:#1a3c6d;margin:2px 0">'+esc(d.meta.title)+'</div>' +
+       '<div class="sb">底稿编号：'+esc(d.meta.docNo)+'　　生成时间：'+esc(d.meta.generatedAt)+'　　版本：'+esc(d.meta.version)+'</div></div>';
+
+  h += '<table><tr><th>数据来源</th><td>'+esc(d.meta.dataSource)+'</td>' +
+       '<th>测算口径</th><td>'+esc(d.meta.calcMode)+'</td></tr>' +
+       '<tr><th>取数期间</th><td>'+esc(d.meta.period||"—")+'</td>' +
+       '<th>审批耗时</th><td>'+esc(d.meta.elapsed)+' 秒</td></tr>' +
+       '<tr><th>发票文件</th><td colspan="3">'+esc(d.meta.fileName)+'</td></tr></table>';
+
+  h += '<h2>一、adjustment_detail（预算调整申请单）</h2>';
+  h += '<table>' +
+       '<tr><th>项目</th><th>金额（万元）</th><th>项目</th><th>内容</th></tr>' +
+       '<tr><td>初始预算</td><td class="n">'+money(a.initialBudget)+'</td><td>钢材涨幅</td><td>'+a.steelIncrease+'%</td></tr>' +
+       '<tr><td>调整后预算</td><td class="n">'+money(a.adjustedBudget)+'</td><td>订单增量</td><td>'+a.orderIncrease+'%</td></tr>' +
+       '<tr><td>偏差额</td><td class="n">'+money(a.variance)+'</td><td>价格因素影响</td><td>'+money(a.priceEffect)+' 万元</td></tr>' +
+       '<tr><td><b>偏差率</b></td><td class="n"><b>'+pct(a.varianceRate)+'</b></td><td>量因素影响</td><td>'+money(a.volumeEffect)+' 万元</td></tr>' +
+       '<tr><td>审批阈值</td><td>'+a.threshold+'</td><td>审批方式</td><td>'+esc(a.approvalRoute)+'</td></tr>' +
+       '<tr><td>调整原因</td><td colspan="3">'+esc(a.reason)+'</td></tr>' +
+       '</table>';
+
+  h += '<h2>二、variance_analysis（偏差分析报告）</h2>';
+  h += '<div class="d-para">'+esc(n.conclusion)+'</div>';
+  h += '<table style="margin-top:6px"><tr><th>分解项</th><th>金额（万元）</th><th>性质</th></tr>' +
+       '<tr><td>价格因素</td><td class="n">'+money(n.decomposition.price)+'</td><td>不可控（市场价格波动）</td></tr>' +
+       '<tr><td>量因素</td><td class="n">'+money(n.decomposition.volume)+'</td><td>可控（订单计划变动）</td></tr>' +
+       '<tr><td><b>合计偏差额</b></td><td class="n"><b>'+money(n.decomposition.total)+'</b></td><td>偏差率 '+pct(a.varianceRate)+'</td></tr></table>';
+  h += '<div style="font-size:10.5px;color:#555;margin-top:3px">制度依据：' +
+       n.policies.map(function(p){ return '《'+esc(p.src)+'》'+esc(p.no); }).join('；') + '</div>';
+
+  h += '<h2>三、invoice_verification（发票核验结果）</h2>';
+  h += '<table><tr><th>核验结论</th><td colspan="3"><b style="color:'+(iv.passed?"#0f7b4f":"#c0392b")+'">' +
+       (iv.passed?"通过（无异常）":"未通过（已拦截）")+'</b>　核验来源：'+esc(iv.source)+'　时间：'+esc(iv.time)+'</td></tr>' +
+       '<tr><th>发票号码</th><td>'+esc(iv.invoiceNo)+'</td><th>税率</th><td>'+esc(iv.taxRate)+'%</td></tr>' +
+       '<tr><th>供应商名称</th><td>'+esc(iv.supplier)+'</td><th>不含税金额(元)</th><td>'+esc(iv.amountExTax||"—")+'</td></tr>' +
+       '<tr><th>税额(元)</th><td>'+esc(iv.taxAmount||"—")+'</td><th>价税合计(元)</th><td>'+esc(iv.totalAmount||"—")+'</td></tr></table>';
+  h += '<table><tr><th style="width:16%">核验项</th><th style="width:10%">结论</th><th>说明</th></tr>';
+  iv.checks.forEach(function(c){
+    h += '<tr><td>'+esc(c.item)+'</td><td style="color:'+(c.ok?"#0f7b4f":"#c0392b")+';font-weight:700">'+(c.ok?"通过":"不通过")+'</td><td>'+esc(c.detail)+'</td></tr>';
+  });
+  h += '</table>';
+
+  h += '<h2>四、approval_log（审批流转记录）</h2>';
+  h += '<table><tr><th style="width:8%">步骤</th><th style="width:16%">审批角色</th><th style="width:12%">状态</th><th style="width:16%">时间</th><th>意见</th></tr>';
+  (d.approval_log||[]).forEach(function(a){
+    h += '<tr><td>'+esc(a.step||"—")+'</td><td>'+esc(a.role)+'</td><td>'+esc(a.status)+'</td><td>'+esc(a.time||"—")+'</td><td>'+esc(a.comment)+'</td></tr>';
+  });
+  h += '</table>';
+  if(d.oa_push){
+    h += '<div style="font-size:10.5px;color:#555">OA 推送状态：'+esc(d.oa_push.status)+'　流程：'+esc(d.oa_push.flow)+'　时间：'+esc(d.oa_push.time)+'</div>';
+  }
+
+  h += '<div class="sig"><div>编制人（采购部）：</div><div>部门主管：</div><div>财务经理：</div></div>';
+  h += '<div class="d-ft">' +
+       '1. 本底稿由「采购预算调整审批助手 V1.1」自动生成，测算方法见同目录《244_全面预算管理分析系统.md》。<br>' +
+       '2. 制度依据：' + POLICIES.budget.file + '、' + POLICIES.purchase.file + '（原文见 policies/ 目录）。<br>' +
+       '3. 前端未接入 OCR 识别引擎，发票要素由人工补录并复核；数据库使用只读账户，OA 审批推送为模拟状态。<br>' +
+       '4. 本工具仅用于原材料采购预算调整的测算、核验与审批底稿生成，不替代专业判断与正式签批。' +
+       '</div></div>';
+  return h;
+}
+
+/* ------------------------- 导出 ------------------------- */
+function exportPdf(){
+  if(!S.dossier){ toast("请先完成测算以生成审批底稿"); return; }
+  $("printArea").innerHTML = dossierHtml();
+  toast("已生成打印视图，请在打印对话框中选择「另存为 PDF」", 3600);
+  setTimeout(function(){ window.print(); }, 420);
+}
+function exportHtml(){
+  if(!S.dossier){ toast("请先完成测算以生成审批底稿"); return; }
+  var css = '<style>body{font-family:"Segoe UI","Microsoft YaHei",sans-serif;background:#f4f6f9;padding:24px}' +
+            '.doc{background:#fff;max-width:900px;margin:0 auto;padding:32px 36px;box-shadow:0 2px 12px rgba(0,0,0,.1)}' +
+            '.doc .d-hd{text-align:center;border-bottom:2px solid #1a3c6d;padding-bottom:10px;margin-bottom:14px}' +
+            '.doc .d-hd h1{font-size:19px;color:#1a3c6d;letter-spacing:2px;margin:0 0 4px}' +
+            '.doc .d-hd .sb{font-size:11.5px;color:#555}' +
+            '.doc h2{font-size:13.5px;color:#1a3c6d;border-left:4px solid #1a3c6d;padding-left:8px;margin:16px 0 8px}' +
+            '.doc table{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:6px}' +
+            '.doc table th,.doc table td{border:1px solid #9aa8bd;padding:5px 8px;text-align:left;vertical-align:top}' +
+            '.doc table th{background:#eef3fa;color:#1a3c6d;font-weight:600}' +
+            '.doc table td.n{text-align:right}' +
+            '.doc .d-para{font-size:11.5px;line-height:1.85;background:#fafbfd;border:1px solid #dbe3ee;padding:8px 10px;white-space:pre-wrap}' +
+            '.doc .d-ft{margin-top:18px;padding-top:9px;border-top:1px solid #9aa8bd;font-size:10.5px;color:#555;line-height:1.7}' +
+            '.doc .sig{display:flex;gap:24px;margin-top:22px;font-size:11.5px}' +
+            '.doc .sig div{flex:1;border-top:1px solid #333;padding-top:5px}@media print{body{background:#fff;padding:0}.doc{box-shadow:none;padding:0}}</style>';
+  var html = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' +
+             esc(S.dossier.meta.title)+'</title>'+css+'</head><body>'+dossierHtml()+'</body></html>';
+  download("采购预算调整审批底稿_"+todayStr()+".html", html, "text/html;charset=utf-8");
+  toast("HTML 底稿已下载（可用浏览器打印为 PDF）");
+}
+function exportJson(){
+  if(!S.dossier){ toast("请先完成测算以生成审批底稿"); return; }
+  download("采购预算调整审批底稿_"+todayStr()+".json",
+           JSON.stringify(S.dossier, null, 2), "application/json;charset=utf-8");
+  toast("JSON 底稿已下载");
+}
+function exportExcel(){
+  if(!S.dossier){ toast("请先完成测算以生成审批底稿"); return; }
+  var d = S.dossier, a = d.adjustment_detail, n = d.variance_analysis, iv = d.invoice_verification;
+  if(typeof XLSX === "undefined"){
+    // 回退：生成 Excel 可识别的 HTML 表格工作簿
+    var t = '<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8">' +
+            '<style>td,th{border:1px solid #999;padding:4px 6px;font-size:11pt;mso-number-format:"\\@"}</style></head><body>';
+    t += '<table><tr><th colspan="2">'+esc(d.meta.title)+'</th></tr>';
+    t += '<tr><td>公司</td><td>'+esc(d.meta.company)+'</td></tr>';
+    t += '<tr><td>生成时间</td><td>'+esc(d.meta.generatedAt)+'</td></tr>';
+    t += '<tr><td>数据来源</td><td>'+esc(d.meta.dataSource)+'</td></tr>';
+    t += '<tr><td>测算口径</td><td>'+esc(d.meta.calcMode)+'</td></tr></table><br>';
+    t += '<table><tr><th>项目</th><th>金额（万元）</th></tr>';
+    t += '<tr><td>初始预算</td><td>'+money(a.initialBudget)+'</td></tr>';
+    t += '<tr><td>调整后预算</td><td>'+money(a.adjustedBudget)+'</td></tr>';
+    t += '<tr><td>偏差额</td><td>'+money(a.variance)+'</td></tr>';
+    t += '<tr><td>偏差率</td><td>'+pct(a.varianceRate)+'</td></tr>';
+    t += '<tr><td>调整原因</td><td>'+esc(a.reason)+'</td></tr>';
+    t += '<tr><td>审批方式</td><td>'+esc(a.approvalRoute)+'</td></tr></table><br>';
+    t += '<table><tr><th>核验项</th><th>结论</th><th>说明</th></tr>';
+    iv.checks.forEach(function(c){ t += '<tr><td>'+esc(c.item)+'</td><td>'+(c.ok?"通过":"不通过")+'</td><td>'+esc(c.detail)+'</td></tr>'; });
+    t += '</table><br><table><tr><th>步骤</th><th>审批角色</th><th>状态</th><th>时间</th><th>意见</th></tr>';
+    (d.approval_log||[]).forEach(function(x){ t += '<tr><td>'+esc(x.step)+'</td><td>'+esc(x.role)+'</td><td>'+esc(x.status)+'</td><td>'+esc(x.time)+'</td><td>'+esc(x.comment)+'</td></tr>'; });
+    t += '</table></body></html>';
+    download("采购预算调整审批底稿_"+todayStr()+".xls", "\ufeff"+t, "application/vnd.ms-excel;charset=utf-8");
+    toast("Excel 组件未加载，已导出为 .xls（Excel/WPS 可直接打开）", 3200);
+    return;
+  }
+  var wb = XLSX.utils.book_new();
+  var s1 = [["项目","金额（万元）","说明"],
+            ["初始预算", a.initialBudget, "original_budget"],
+            ["调整后预算", a.adjustedBudget, "adjusted_budget"],
+            ["偏差额", a.variance, "调整后 − 初始"],
+            ["偏差率(%)", Number(a.varianceRate.toFixed(2)), "偏差额 ÷ 初始预算 × 100%"],
+            ["价格因素影响", a.priceEffect, "不可控因素"],
+            ["量因素影响", a.volumeEffect, "可控因素"],
+            ["钢材涨幅(%)", a.steelIncrease, ""],
+            ["订单增量(%)", a.orderIncrease, ""],
+            ["调整原因", a.reason, ""],
+            ["审批方式", a.approvalRoute, "阈值 5%"]];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s1), "预算调整申请单");
+
+  var s2 = [["分解项","金额（万元）","性质"],
+            ["价格因素", n.decomposition.price, "不可控（市场价格波动）"],
+            ["量因素", n.decomposition.volume, "可控（订单计划变动）"],
+            ["合计偏差额", n.decomposition.total, "偏差率 "+pct(a.varianceRate)],
+            [],["结论",""],[n.conclusion.replace(/\n/g,"  "),""]];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s2), "偏差分析");
+
+  var s3 = [["核验项","结论","说明"]];
+  iv.checks.forEach(function(c){ s3.push([c.item, c.ok?"通过":"不通过", c.detail]); });
+  s3.push([],["发票号码", iv.invoiceNo],["税率(%)", iv.taxRate],["供应商", iv.supplier],
+          ["不含税金额(元)", iv.amountExTax||""],["税额(元)", iv.taxAmount||""],["价税合计(元)", iv.totalAmount||""]);
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s3), "发票核验");
+
+  var s4 = [["步骤","审批角色","审批人","状态","时间","意见"]];
+  (d.approval_log||[]).forEach(function(x){ s4.push([x.step, x.role, x.approver||"", x.status, x.time, x.comment]); });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(s4), "审批流转");
+
+  XLSX.writeFile(wb, "采购预算调整审批底稿_"+todayStr()+".xlsx");
+  toast("Excel 底稿已下载（4 个工作表）");
+}
+
+/* ------------------------- 测试面板 ------------------------- */
+function renderCases(){
+  var box = $("caseList");
+  box.innerHTML = TEST_CASES.map(function(c){
+    return '<div class="test-case"><div class="th"><div><div class="tn">用例'+c.id+'：'+esc(c.name)+'</div>' +
+           '<div class="td">'+esc(c.desc)+'</div></div>' +
+           '<button class="mini-btn" data-run="'+c.id+'">运行</button></div></div>';
+  }).join("");
+  var btns = box.querySelectorAll("button[data-run]");
+  for(var i=0;i<btns.length;i++){
+    btns[i].addEventListener("click", function(){
+      var id = parseInt(this.getAttribute("data-run"),10);
+      var tc = TEST_CASES.filter(function(x){return x.id===id;})[0];
+      runTest(tc);
+    });
+  }
+}
+async function runTest(tc){
+  $("cmpWrap").innerHTML = "";
+  await runFlow(tc);
+  var R = S.result;
+  var actual, ok;
+  if(tc.id === 2){
+    var verOk = !R;                       // 流程中断则无 result
+    // 从界面取核验失败项
+    var blocked = !R;
+    var reasonText = "";
+    if(blocked){
+      var failItems = (S.dossier?[]:[]) ;
+    }
+    actual = {
+      invoice: blocked ? "失败（税率不符 & 供应商黑名单）" : "通过",
+      rate: blocked ? "流程中断，无预算测算输出" : ("偏差率 "+pct(R.v.varianceRate)),
+      dossier: blocked ? "不生成" : "已生成，可下载"
+    };
+    ok = blocked;
+  }else{
+    if(!R){ actual = {invoice:"—", rate:"—", dossier:"—"}; ok=false; }
+    else{
+      var rateTxt = "偏差率 "+pct(R.v.varianceRate)+"（"+(R.v.route==="AUTO"?"≤5%，自动通过":">5%，转人工审批")+"）";
+      actual = {
+        invoice: R.ver.passed ? "通过" : "失败",
+        rate: rateTxt,
+        dossier: S.dossier ? "已生成，可下载" : "未生成"
+      };
+      var expRate = tc.id===1 ? 15 : 3;
+      ok = R.ver.passed && Math.abs(R.v.varianceRate - expRate) < 0.01 &&
+           (tc.id===1 ? R.v.route==="MANUAL" : R.v.route==="AUTO") && !!S.dossier;
+    }
+  }
+  var cmp = '<div class="cmp"><div class="ch">用例'+tc.id+' 结果对比</div><div class="cb">' +
+    '<div class="ln"><span class="k">预期</span><span class="v">发票核验：'+esc(tc.expected.invoice)+'<br>偏差：'+esc(tc.expected.rate)+'<br>底稿：'+esc(tc.expected.dossier)+'</span></div>' +
+    '<div class="ln" style="border-top:1px dashed #e2e8f0;padding-top:5px;margin-top:4px"><span class="k">实际</span><span class="v '+(ok?"v-pass":"v-fail")+'">发票核验：'+esc(actual.invoice)+'<br>偏差：'+esc(actual.rate)+'<br>底稿：'+esc(actual.dossier)+'</span></div>' +
+    '<div class="verdict '+(ok?"pass":"fail")+'">'+(ok?"✔ 测试通过（实际输出与预期一致）":"✘ 测试失败（实际输出与预期不符）")+'</div>' +
+    '</div></div>';
+  $("cmpWrap").innerHTML = cmp;
+  pushLog("运行测试用例"+tc.id+"："+tc.name,
+          "结果："+(ok?"通过":"失败")+" —— 发票核验"+actual.invoice+"，"+actual.rate, ok?"是":"否");
+  // 恢复主界面参数提示
+  if(tc.id!==2 && R) toast("用例"+tc.id+"执行完毕，页面已展示该用例的测算结果");
+}
+
+/* ------------------------- 事件绑定 ------------------------- */
+function setCalcMode(m){
+  S.calcMode = m;
+  var opts = document.querySelectorAll(".radio-opt");
+  for(var i=0;i<opts.length;i++){
+    opts[i].classList.toggle("active", opts[i].getAttribute("data-mode")===m);
+  }
+}
+function bindEvents(){
+  // 上传
+  var dz = $("dropzone"), fi = $("fileInput");
+  dz.addEventListener("click", function(){ fi.click(); });
+  dz.addEventListener("dragover", function(e){ e.preventDefault(); dz.classList.add("over"); });
+  dz.addEventListener("dragleave", function(){ dz.classList.remove("over"); });
+  dz.addEventListener("drop", function(e){
+    e.preventDefault(); dz.classList.remove("over");
+    if(e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+  fi.addEventListener("change", function(){ if(fi.files[0]) handleFile(fi.files[0]); fi.value=""; });
+
+  // 测算口径
+  var opts = document.querySelectorAll(".radio-opt");
+  for(var i=0;i<opts.length;i++){
+    (function(el){
+      el.addEventListener("click", function(){ setCalcMode(el.getAttribute("data-mode")); });
+    })(opts[i]);
+  }
+
+  $("btnSampleInv").addEventListener("click", function(){
+    var pool = (S.boot && S.boot.invoices && S.boot.invoices.length) ? S.boot.invoices : null;
+    if(pool){
+      var it = pool[Math.floor(Math.random()*Math.min(pool.length,40))];
+      $("fInvoiceNo").value = "INV-P-" + String(Date.now()).slice(-8);
+      $("fSupplier").value = it.party_name || "";
+      $("fTaxRate").value = Number(it.tax_rate)*100;
+      $("fAmountExTax").value = it.amount || "";
+      $("fTaxAmount").value = it.tax_amount || "";
+      $("fTotalAmount").value = it.total_amount || "";
+      toast("已载入数据库样例发票要素（号码已改为新号，便于通过查重）");
+    }else{
+      var s = PRESET.sampleInvoices[Math.floor(Math.random()*PRESET.sampleInvoices.length)];
+      $("fInvoiceNo").value = s.invoiceNo; $("fSupplier").value = s.supplier;
+      $("fTaxRate").value = s.taxRate; $("fAmountExTax").value = s.amountExTax;
+      $("fTaxAmount").value = s.taxAmount; $("fTotalAmount").value = s.totalAmount;
+      toast("已载入预置样例发票（注意：该号码已在发票池中，会被查重拦截）", 3400);
+    }
+  });
+  $("btnClearInv").addEventListener("click", function(){
+    S.file=null; $("fileChipWrap").innerHTML="";
+    ["fInvoiceNo","fSupplier","fAmountExTax","fTaxAmount","fTotalAmount"].forEach(function(id){ $(id).value=""; });
+    $("fTaxRate").value = 13;
+    toast("发票信息已清空");
+  });
+
+  $("btnPull").addEventListener("click", function(){ pullBootstrap($("fPeriod").value, false); });
+  $("btnUseIndex").addEventListener("click", function(){
+    var mi = PRESET.marketIndex;
+    var r = (mi.latestValue - mi.baseValue)/mi.baseValue*100;
+    $("fSteelInc").value = Number(r.toFixed(2));
+    toast("已采用市场指数：基期 "+mi.base+" = "+mi.baseValue.toFixed(2)+" → 最新 "+mi.latest+" = "+mi.latestValue.toFixed(2)+"，累计涨幅 "+r.toFixed(2)+"%");
+    syncReason();
+  });
+  $("btnRun").addEventListener("click", function(){ runFlow(null); });
+  $("btnReset").addEventListener("click", function(){
+    S.result=null; S.dossier=null; resetProgress();
+    $("resultArea").innerHTML = '<div class="empty"><div class="ico">▤</div><div class="t">尚未开始测算</div>' +
+      '<div class="s">请在左侧上传采购发票（或补录发票要素）并确认测算参数后，点击「开始测算与审批」</div></div>';
+    $("flowList").innerHTML = '<li class="wait"><div class="role">—</div><div class="meta">等待任务启动</div></li>';
+    $("flowPill").className="pill mute"; $("flowPill").textContent="未开始";
+    $("docPill").className="pill mute"; $("docPill").textContent="未生成";
+    $("oaNote").innerHTML="";
+    ["mElapsed","mRate","mCheck","mInv"].forEach(function(id){ $(id).className="v sm"; $(id).textContent="—"; });
+    $("timerBadge").textContent = "⏱ 待启动";
+    $("cmpWrap").innerHTML = "";
+    toast("已重置");
+  });
+
+  $("btnRecheck").addEventListener("click", function(){ checkBackend(false); });
+  $("btnHelp").addEventListener("click", function(){
+    $("modalTitle").textContent = "任务边界与使用说明";
+    $("modalBody").innerHTML =
+      '<div class="doc" style="background:#fff;padding:4px 2px">' +
+      '<h2 style="margin-top:0">只做</h2><div class="d-para">鼎重机械集团<b>原材料（钢材类）采购预算调整</b>的自动测算、偏差分析、发票核验、审批底稿生成与审批流程推送。</div>' +
+      '<h2>不做</h2><div class="d-para">其他类型预算调整（销售预算、费用预算、资本预算等）、全盘财务分析、投资决策、税务筹划、工资计算，以及其他非原材料采购相关任务。<br>' +
+      '超出范围时，应用提示：<b>「抱歉，我只专注于原材料采购预算调整审批任务，无法处理其他事务。」</b></div>' +
+      '<h2>诚实原则与已知局限</h2><div class="d-para">' +
+      '1. 数据库连接失败、后端不可用或数据不完整时，界面右上角明示「离线」，不会编造结果。<br>' +
+      '2. 前端<b>未接入 OCR 识别引擎</b>：发票号码由文件名解析，其余要素须人工补录并复核。<br>' +
+      '3. 数据库使用 <b>readonly_user 只读账户</b>，不执行任何写操作；<b>OA 审批推送为模拟状态</b>，未写入生产业务库。<br>' +
+      '4. 制度原文（17 号／29 号）以燃料／煤为例表述，本应用按原材料（钢材类）采购场景对应适用；制度未覆盖或冲突时，提示用户按制度规定的审批／上报路径处理。</div>' +
+      '<h2>测算口径</h2><div class="d-para">' +
+      '口径 A（默认，企业申报口径）：B₁ = B₀ × (1 + 钢材涨幅%)<br>' +
+      '口径 B（管理会计口径）：B₁ = B₀ × (1 + 钢材涨幅%) × (1 + 订单增量%)<br>' +
+      '偏差额 = B₁ − B₀；偏差率 = 偏差额 ÷ B₀ × 100%；偏差率 ≤ 5% 自动通过，&gt; 5% 转人工审批（部门主管 → 财务经理）。</div>' +
+      '</div>';
+    $("modalMask").classList.add("show");
+  });
+  $("modalClose").addEventListener("click", function(){ $("modalMask").classList.remove("show"); });
+  $("btnModalClose2").addEventListener("click", function(){ $("modalMask").classList.remove("show"); });
+  $("modalMask").addEventListener("click", function(e){ if(e.target===$("modalMask")) $("modalMask").classList.remove("show"); });
+
+  $("btnView").addEventListener("click", function(){
+    if(!S.dossier){ toast("请先完成测算以生成审批底稿"); return; }
+    $("modalTitle").textContent = "审批底稿预览 · " + S.dossier.meta.docNo;
+    $("modalBody").innerHTML = dossierHtml();
+    $("modalMask").classList.add("show");
+  });
+  $("btnPrintFromModal").addEventListener("click", function(){
+    $("printArea").innerHTML = dossierHtml();
+    setTimeout(function(){ window.print(); }, 200);
+  });
+
+  $("btnPdf").addEventListener("click", exportPdf);
+  $("btnExcel").addEventListener("click", exportExcel);
+  $("btnHtml").addEventListener("click", exportHtml);
+  $("btnJson").addEventListener("click", exportJson);
+
+  $("btnExportLog").addEventListener("click", function(){
+    download("useractivity.log", logFileText(), "text/plain;charset=utf-8");
+    toast("操作日志已导出为 useractivity.log");
+  });
+  $("btnClearLog").addEventListener("click", function(){
+    if(!confirm("确定清空本地操作日志？此操作不可恢复。")) return;
+    S.log=[]; saveLog(); renderLog(); toast("日志已清空");
+  });
+  $("btnToggleTest").addEventListener("click", function(){
+    var b=$("testBody"), t=$("btnToggleTest");
+    if(b.style.display==="none"){ b.style.display=""; t.textContent="收起"; }
+    else { b.style.display="none"; t.textContent="展开"; }
+  });
+
+  // 参数联动：自动生成调整原因
+  ["fSteelInc","fOrderInc","fInitialBudget"].forEach(function(id){
+    $(id).addEventListener("input", syncReason);
+  });
+  $("fPeriod").addEventListener("change", function(){ pullBootstrap(this.value, false); });
+}
+
+function handleFile(file){
+  var ok = /\.(pdf|jpe?g|png|bmp|webp)$/i.test(file.name);
+  if(!ok){
+    toast("请上传PDF或图片格式的发票文件", 3200);
+    $("fileChipWrap").innerHTML = '<div class="alert err" style="margin-top:9px"><div class="hd">✕ 文件格式不支持</div>' +
+      '当前文件：'+esc(file.name)+'<br>请上传 PDF 或图片（JPG / PNG / BMP / WEBP）格式的发票文件。</div>';
+    pushLog("上传文件 "+file.name, "格式不支持，已提示：请上传PDF或图片格式的发票文件", "是");
+    return;
+  }
+  S.file = file;
+  $("fileChipWrap").innerHTML = '<div class="file-chip"><span>📄</span><span class="nm">'+esc(file.name)+'</span>' +
+    '<span class="pill ok">格式校验通过</span><span class="x" id="rmFile">×</span></div>';
+  $("rmFile").addEventListener("click", function(){ S.file=null; $("fileChipWrap").innerHTML=""; });
+  // 从文件名解析发票号码
+  var m = file.name.match(/(INV[-_]?[A-Za-z0-9\-_]{4,}|\d{8,20})/i);
+  if(m) $("fInvoiceNo").value = m[0];
+  pushLog("上传发票文件 "+file.name, "格式校验通过"+(m?("，自动解析发票号码 "+m[0]):"，未解析到号码，需人工补录"), "是");
+  if(!m) toast("已接收文件，但未从文件名解析到发票号码，请手工补录", 3200);
+}
+
+function syncReason(){
+  var v = computeVariance({
+    initialBudget:num($("fInitialBudget").value),
+    steelIncrease:num($("fSteelInc").value),
+    orderIncrease:num($("fOrderInc").value),
+    calcMode:S.calcMode
+  });
+  $("fReason").value = buildReason(v);
+}
+
+/* ------------------------- 初始化 ------------------------- */
+(function init(){
+  loadLog();
+  renderCases();
+  bindEvents();
+  // 供应商候选
+  var dl = $("supplierList");
+  dl.innerHTML = PRESET.supplierWhitelist.map(function(s){ return '<option value="'+esc(s.name)+'">'; }).join("");
+  syncReason();
+  checkBackend(true);
+  pushLog("应用启动（模式：待检测后端）", "初始化完成，载入预置税率字典/合格供应商名录/测试用例", "是");
+})();
+</script>
+</body>
+</html>

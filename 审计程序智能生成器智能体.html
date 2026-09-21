@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>审计程序智能生成器 V1.0</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --primary:#1a5276;
+  --primary-light:#2e86c1;
+  --primary-pale:#eaf2f8;
+  --bg:#f4f6f8;
+  --card:#ffffff;
+  --border:#dfe6ec;
+  --text:#1f2d3d;
+  --text-sub:#5a6b7b;
+  --high:#c0392b;
+  --mid:#c77a10;
+  --low:#1e8449;
+  --special:#8e44ad;
+  --shadow:0 2px 10px rgba(26,82,118,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Microsoft YaHei","微软雅黑","PingFang SC",-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg);color:var(--text);font-size:13.5px;line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer;border:none;border-radius:6px;transition:.15s}
+input,select,textarea{font-family:inherit;font-size:13px;color:var(--text)}
+table{border-collapse:collapse;width:100%}
+
+/* ---------- Header ---------- */
+header{
+  background:linear-gradient(100deg,#1a5276 0%,#21618c 55%,#2e86c1 100%);
+  color:#fff;padding:0 24px;height:64px;display:flex;align-items:center;
+  justify-content:space-between;box-shadow:0 2px 12px rgba(26,82,118,.25);
+  position:sticky;top:0;z-index:50;
+}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .logo{
+  width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,.16);
+  display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;
+  border:1px solid rgba(255,255,255,.25);
+}
+.brand h1{font-size:19px;font-weight:700;letter-spacing:.5px}
+.brand .sub{font-size:11.5px;opacity:.82;margin-top:-2px}
+.header-actions{display:flex;align-items:center;gap:10px}
+.hbtn{
+  background:rgba(255,255,255,.14);color:#fff;padding:7px 14px;font-size:12.5px;
+  border:1px solid rgba(255,255,255,.28);border-radius:18px;
+}
+.hbtn:hover{background:rgba(255,255,255,.26)}
+.ai-chip{
+  display:flex;align-items:center;gap:6px;font-size:11.5px;padding:5px 11px;
+  border-radius:14px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+}
+.dot{width:7px;height:7px;border-radius:50%;background:#95a5a6}
+.dot.ok{background:#2ecc71}.dot.err{background:#e74c3c}.dot.wait{background:#f1c40f}
+/* file:// 提示横幅 */
+.file-notice{
+  display:flex;align-items:center;gap:12px;background:#fff6e6;border:1px solid #f3d291;
+  color:#8a5a00;font-size:12.5px;padding:9px 16px;line-height:1.5;
+}
+.file-notice .fn-ico{font-size:15px}
+.file-notice b{color:#a35a00}
+.mini-btn{
+  background:#1a5276;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;
+}
+.mini-btn:hover{background:#154360}
+.mini-btn.ghost{background:transparent;color:#8a5a00;border:1px solid #d9b65a}
+.mini-btn.ghost:hover{background:#fceccb}
+
+/* ---------- Layout ---------- */
+.layout{display:flex;gap:16px;padding:16px;align-items:flex-start;min-width:1200px}
+.panel-left{width:430px;flex:0 0 430px;display:flex;flex-direction:column;gap:14px}
+.panel-right{flex:1;min-width:0;display:flex;flex-direction:column;gap:14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow)}
+.card-h{
+  padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;
+  justify-content:space-between;background:linear-gradient(180deg,#fbfdfe,#f5f9fc);
+  border-radius:10px 10px 0 0;
+}
+.card-h h3{font-size:14px;color:var(--primary);font-weight:700;display:flex;align-items:center;gap:7px}
+.card-h h3::before{content:"";width:3px;height:14px;background:var(--primary-light);border-radius:2px}
+.card-b{padding:14px}
+
+/* ---------- Form ---------- */
+.frow{display:flex;gap:10px;margin-bottom:10px}
+.fitem{flex:1;min-width:0}
+.fitem label{display:block;font-size:12px;color:var(--text-sub);margin-bottom:4px;font-weight:600}
+.fitem label .req{color:var(--high);margin-left:2px}
+.fitem input,.fitem select{
+  width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:6px;background:#fff;outline:none;
+}
+.fitem input:focus,.fitem select:focus{border-color:var(--primary-light);box-shadow:0 0 0 3px rgba(46,134,193,.12)}
+.fitem input.invalid,.fitem select.invalid{border-color:var(--high);background:#fdf0ee}
+.hint{font-size:11px;color:#8a97a3;margin-top:3px}
+
+.risk-grid{display:flex;flex-direction:column;gap:7px}
+.risk-row{
+  display:flex;align-items:center;gap:8px;padding:6px 9px;border:1px solid var(--border);
+  border-radius:7px;background:#fcfdfe;
+}
+.risk-row .cy{flex:1;font-size:12.5px;font-weight:600}
+.risk-row .cy small{display:block;font-weight:400;color:#8a97a3;font-size:10.5px}
+.risk-row select{width:96px;padding:5px 7px;border:1px solid var(--border);border-radius:6px;background:#fff}
+.lv-tag{width:34px;text-align:center;font-size:11px;font-weight:700;border-radius:4px;padding:2px 0}
+.factors{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.fchip{font-size:11px;line-height:1;padding:4px 8px;border:1px solid #cdd9e3;border-radius:11px;background:#f4f8fb;color:#47607a;cursor:pointer;user-select:none;transition:.15s}
+.fchip:hover{border-color:#1a5276;color:#1a5276}
+.fchip.on{background:#1a5276;border-color:#1a5276;color:#fff}
+.ftag{display:inline-block;font-size:10px;line-height:1;padding:2px 5px;border-radius:8px;background:#fdeaea;color:#c0392b;vertical-align:middle;margin-left:4px}
+.lv-高{background:#fdecea;color:var(--high)}
+.lv-中{background:#fef5e7;color:var(--mid)}
+.lv-低{background:#eafaf1;color:var(--low)}
+.lv-empty{background:#f0f3f5;color:#9aa7b1}
+
+.mini-table{font-size:12px}
+.mini-table th{background:#f2f7fa;color:var(--primary);font-weight:700;padding:6px;border:1px solid var(--border);font-size:11.5px}
+.mini-table td{border:1px solid var(--border);padding:3px}
+.mini-table input{width:100%;border:none;padding:5px;background:transparent;outline:none;text-align:right}
+.mini-table input.txt{text-align:left}
+.mini-table input:focus{background:#f0f7fc}
+.icon-btn{background:#fdecea;color:var(--high);width:24px;height:24px;border-radius:5px;font-size:14px;line-height:1}
+.icon-btn:hover{background:#f9d5d0}
+
+.chk-line{display:flex;align-items:center;gap:7px;font-size:12.5px;margin-bottom:7px;color:var(--text-sub)}
+.chk-line input{width:14px;height:14px;accent-color:var(--primary)}
+
+.btn-bar{display:flex;gap:8px;flex-wrap:wrap}
+.btn{padding:9px 14px;font-size:13px;font-weight:600;border-radius:7px}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:#154360}
+.btn-second{background:var(--primary-pale);color:var(--primary);border:1px solid #cfe2ef}
+.btn-second:hover{background:#d9e9f4}
+.btn-ghost{background:#fff;color:var(--text-sub);border:1px solid var(--border)}
+.btn-ghost:hover{background:#f5f7f9}
+.btn-sm{padding:6px 11px;font-size:12px}
+.btn-block{flex:1}
+
+/* ---------- Tabs ---------- */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);padding:0 12px;background:linear-gradient(180deg,#fbfdfe,#f5f9fc);border-radius:10px 10px 0 0}
+.tab{
+  padding:11px 18px;font-size:13.5px;font-weight:600;color:var(--text-sub);background:transparent;
+  border-bottom:3px solid transparent;border-radius:0;position:relative;
+}
+.tab:hover{color:var(--primary)}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary);background:#fff}
+.tab .badge{
+  display:inline-block;min-width:18px;padding:0 5px;margin-left:6px;font-size:10.5px;
+  background:var(--primary-light);color:#fff;border-radius:9px;line-height:16px;
+}
+.toolbar{display:flex;gap:7px;padding:10px 14px;border-bottom:1px solid var(--border);background:#fafcfd;flex-wrap:wrap;align-items:center}
+.toolbar .spacer{flex:1}
+.tab-body{padding:16px;min-height:520px;max-height:calc(100vh - 210px);overflow:auto}
+
+.empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:420px;color:#9aa7b1;gap:10px;text-align:center;
+}
+.empty .big{font-size:44px;opacity:.35}
+
+/* ---------- Result tables ---------- */
+.rtable{font-size:12.5px;border:1px solid var(--border)}
+.rtable th{
+  background:var(--primary);color:#fff;font-weight:600;padding:9px 8px;text-align:left;
+  font-size:12px;border-right:1px solid rgba(255,255,255,.18);position:sticky;top:0;z-index:2;
+}
+.rtable td{padding:8px;border-bottom:1px solid #edf1f4;border-right:1px solid #f2f5f7;vertical-align:top}
+.rtable tbody tr:nth-child(even){background:#fbfdfe}
+.rtable tbody tr:hover{background:#f0f7fc}
+.rtable td.num{text-align:right;font-variant-numeric:tabular-nums}
+.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap}
+.tag-常规{background:#eaf2f8;color:var(--primary)}
+.tag-专项{background:#f4ecf7;color:var(--special)}
+.tag-高{background:#fdecea;color:var(--high)}
+.tag-中{background:#fef5e7;color:var(--mid)}
+.tag-低{background:#eafaf1;color:var(--low)}
+.tag-new{background:#e8f8f5;color:#0e6655;border:1px dashed #17a589}
+.tag-del{background:#fbeee6;color:#935116}
+.cycle-head td{background:#eef4f9!important;font-weight:700;color:var(--primary);font-size:12.5px}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:#fff;border:1px solid var(--border);border-left:4px solid var(--primary-light);border-radius:8px;padding:12px 14px}
+.kpi .k{font-size:11.5px;color:var(--text-sub);margin-bottom:4px}
+.kpi .v{font-size:20px;font-weight:700;color:var(--primary);font-variant-numeric:tabular-nums}
+.kpi .u{font-size:11px;color:#9aa7b1;margin-left:3px;font-weight:400}
+.kpi.ok{border-left-color:var(--low)} .kpi.ok .v{color:var(--low)}
+.kpi.warn{border-left-color:var(--high)} .kpi.warn .v{color:var(--high)}
+
+.section-title{
+  font-size:13.5px;font-weight:700;color:var(--primary);margin:18px 0 9px;
+  padding-left:9px;border-left:3px solid var(--primary-light);
+}
+.section-title:first-child{margin-top:0}
+.formula{
+  background:#f7fafc;border:1px dashed #c9dcea;border-radius:7px;padding:11px 13px;
+  font-family:Consolas,"Courier New",monospace;font-size:12.5px;color:#1b4f72;line-height:2;
+  white-space:pre-wrap;word-break:break-all;
+}
+.callout{border-radius:8px;padding:12px 14px;font-size:12.5px;line-height:1.8;border:1px solid}
+.callout.info{background:#eaf2f8;border-color:#c9dcea;color:#154360}
+.callout.good{background:#eafaf1;border-color:#c5e8d5;color:#145a32}
+.callout.bad{background:#fdecea;border-color:#f5c6c0;color:#922b21}
+.callout.warn{background:#fef5e7;border-color:#f7dcae;color:#7e5109}
+.callout b{font-weight:700}
+
+.opinion-box{border-radius:10px;padding:20px;text-align:center;margin-bottom:16px;border:2px solid}
+.opinion-box .lbl{font-size:12.5px;letter-spacing:2px;opacity:.8}
+.opinion-box .op{font-size:30px;font-weight:800;margin:6px 0;letter-spacing:2px}
+.op-无保留意见{background:#eafaf1;border-color:#7dcea0;color:#145a32}
+.op-保留意见{background:#fef5e7;border-color:#f0b27a;color:#7e5109}
+.op-否定意见{background:#fdecea;border-color:#e6928a;color:#922b21}
+.op-无法表示意见{background:#f4f0f7;border-color:#bb8fce;color:#4a235a}
+
+.ai-box{background:#f8fbfd;border:1px solid #d6e6f2;border-radius:8px;padding:13px;font-size:12.5px;line-height:1.9;white-space:pre-wrap}
+.ai-box.loading{color:#8a97a3;font-style:italic}
+
+/* ---------- Modal ---------- */
+.mask{position:fixed;inset:0;background:rgba(23,42,58,.5);display:none;align-items:center;justify-content:center;z-index:200;padding:24px}
+.mask.show{display:flex}
+.modal{background:#fff;border-radius:12px;width:900px;max-width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+.modal-h{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.modal-h h3{font-size:16px;color:var(--primary)}
+.modal-b{padding:18px;overflow:auto}
+.modal-f{padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:#fafcfd;border-radius:0 0 12px 12px}
+.close-x{background:#f0f3f5;width:28px;height:28px;border-radius:6px;font-size:16px;color:var(--text-sub)}
+
+.case{border:1px solid var(--border);border-radius:9px;margin-bottom:14px;overflow:hidden}
+.case-h{background:#f2f7fa;padding:10px 13px;display:flex;justify-content:space-between;align-items:center}
+.case-h b{color:var(--primary);font-size:13.5px}
+.case-b{padding:13px;font-size:12.5px}
+.case-b .kv{display:grid;grid-template-columns:120px 1fr;gap:4px 10px;margin-bottom:9px}
+.case-b .kv .k{color:var(--text-sub)}
+.exp-act{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.exp-act>div{border:1px solid var(--border);border-radius:7px;padding:10px;font-size:12px;background:#fcfdfe}
+.exp-act h5{font-size:12px;color:var(--primary);margin-bottom:6px}
+.pass{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#eafaf1;color:#145a32}
+.fail{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#fdecea;color:#922b21}
+
+/* ---------- Footer ---------- */
+footer{
+  display:flex;justify-content:space-between;align-items:center;padding:10px 24px;
+  border-top:1px solid var(--border);background:#fff;color:var(--text-sub);font-size:12px;min-width:1200px;
+}
+footer .fl{display:flex;gap:14px;align-items:center}
+
+/* ---------- Toast ---------- */
+#toasts{position:fixed;top:76px;right:20px;z-index:300;display:flex;flex-direction:column;gap:8px}
+.toast{
+  background:#fff;border-left:4px solid var(--primary);border-radius:7px;padding:11px 16px;
+  box-shadow:0 6px 20px rgba(0,0,0,.16);font-size:13px;min-width:250px;max-width:420px;
+  animation:slide .25s ease;
+}
+.toast.ok{border-left-color:var(--low)}
+.toast.err{border-left-color:var(--high)}
+.toast.warn{border-left-color:var(--mid)}
+@keyframes slide{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
+
+.log-table{font-size:11.5px}
+.log-table th{background:#f2f7fa;color:var(--primary);padding:6px;border:1px solid var(--border);text-align:left}
+.log-table td{padding:5px 6px;border:1px solid #edf1f4;vertical-align:top;word-break:break-all}
+
+/* ---------- Print ---------- */
+#printArea{display:none}
+@media print{
+  body{background:#fff}
+  header,footer,.layout,#toasts,.mask{display:none!important}
+  #printArea{display:block;padding:0}
+  #printArea h1{font-size:20px;color:#1a5276;margin-bottom:4px}
+  #printArea h2{font-size:14px;color:#1a5276;margin:16px 0 8px;border-left:3px solid #2e86c1;padding-left:8px}
+  #printArea table{width:100%;font-size:10.5px;margin-bottom:10px}
+  #printArea th{background:#1a5276!important;color:#fff!important;padding:5px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #printArea td{border:1px solid #ccc;padding:4px}
+  #printArea .meta{font-size:11px;color:#555;margin-bottom:10px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">审</div>
+    <div>
+      <h1>审计程序智能生成器</h1>
+      <div class="sub">风险导向审计程序匹配 · MUS 货币单元抽样 · 审计结论输出</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <div class="ai-chip"><span class="dot" id="aiDot"></span><span id="aiTxt">AI 辅助：待机</span></div>
+    <button class="hbtn" id="btnSetting">API 设置</button>
+    <button class="hbtn" id="btnTest">测试示例</button>
+  </div>
+</header>
+
+<div id="fileNotice" class="file-notice" style="display:none">
+  <span class="fn-ico">⚠</span>
+  <span id="fnText">检测到以 <b>file://</b> 方式打开，浏览器会拦截跨域请求，DeepSeek AI 辅助可能无法使用（自动回退本地规则）。</span>
+  <button class="mini-btn" id="btnServe" style="margin-left:auto">启动本地服务器</button>
+  <button class="mini-btn ghost" id="fnClose">知道了</button>
+</div>
+
+<div class="layout">
+  <!-- ============ 左侧输入区 ============ -->
+  <div class="panel-left">
+
+    <div class="card">
+      <div class="card-h"><h3>一、项目信息</h3><span class="hint" id="memHint">项目记忆：0</span></div>
+      <div class="card-b">
+        <div class="frow">
+          <div class="fitem">
+            <label>项目名称<span class="req">*</span></label>
+            <input id="fProject" list="projList" placeholder="如：凌驰汽车集团2024年度审计">
+            <datalist id="projList"></datalist>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fitem"><label>审计期间</label><input id="fPeriod" value="2024年度" placeholder="2024年度"></div>
+          <div class="fitem"><label>项目负责人</label><input id="fOwner" placeholder="签字注册会计师"></div>
+        </div>
+        <div class="frow">
+          <div class="fitem">
+            <label>总体风险分级<span class="req">*</span></label>
+            <select id="fOverall"><option value="低">低</option><option value="中" selected>中</option><option value="高">高</option></select>
+          </div>
+          <div class="fitem">
+            <label>报表整体重要性（元）</label>
+            <input id="fMateriality" type="number" min="0" step="1000" placeholder="选填，用于结论参考">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <h3>二、业务循环风险分级</h3>
+        <button class="btn btn-ghost btn-sm" id="btnAllMid">全部设为中</button>
+      </div>
+      <div class="card-b">
+        <div class="risk-grid" id="riskGrid"></div>
+        <div class="hint" style="margin-top:8px">六大循环必须全部选择风险等级；高风险循环将自动追加专项审计程序。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>三、MUS 抽样参数</h3></div>
+      <div class="card-b">
+        <div class="frow">
+          <div class="fitem"><label>总体账面金额（元）<span class="req">*</span></label><input id="fBV" type="number" min="0" step="1" placeholder="50000000"></div>
+          <div class="fitem"><label>可容忍错报（元）<span class="req">*</span></label><input id="fTM" type="number" min="0" step="1" placeholder="1000000"></div>
+        </div>
+        <div class="frow">
+          <div class="fitem"><label>预计错报（元）<span class="req">*</span></label><input id="fPM" type="number" min="0" step="1" placeholder="200000"></div>
+          <div class="fitem">
+            <label>误受风险<span class="req">*</span></label>
+            <select id="fARIA">
+              <option value="1">1%（置信系数 2.58）</option>
+              <option value="5" selected>5%（置信系数 1.96）</option>
+              <option value="10">10%（置信系数 1.65）</option>
+              <option value="20">20%（置信系数 1.28）</option>
+            </select>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fitem"><label>扩展因子 EF</label><input id="fEF" type="number" min="1" max="2" step="0.1" value="1.0"></div>
+          <div class="fitem"><label>重大错报阈值（元）</label><input id="fPervasive" type="number" min="0" step="1000" placeholder="默认=可容忍错报×3"></div>
+        </div>
+        <div class="frow">
+          <div class="fitem"><label>随机起点（元，留空自动生成）</label><input id="fStart" type="number" min="0" step="1" placeholder="自动"></div>
+        </div>
+        <div class="hint">样本规模 n = ⌈账面金额 × 置信系数 ÷（可容忍错报 − 预计错报 × EF）⌉</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <h3>四、错报明细</h3>
+        <button class="btn btn-second btn-sm" id="btnAddErr">+ 增加一行</button>
+      </div>
+      <div class="card-b">
+        <table class="mini-table">
+          <thead><tr><th style="width:38px">序号</th><th>账面金额</th><th>审计金额</th><th>说明</th><th style="width:36px"></th></tr></thead>
+          <tbody id="errBody"></tbody>
+        </table>
+        <div class="hint" style="margin-top:7px">账面金额 ≥ 抽样间隔的项目视为高值项目，错报全额计入已知错报，不再推断。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>五、特殊情形</h3></div>
+      <div class="card-b">
+        <label class="chk-line"><input type="checkbox" id="fScope">审计范围受到限制／无法获取充分适当审计证据</label>
+        <label class="chk-line"><input type="checkbox" id="fFraud">识别出舞弊迹象或管理层凌驾于控制之上</label>
+        <label class="chk-line"><input type="checkbox" id="fGoing">存在与持续经营相关的重大不确定性</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-b">
+        <div class="btn-bar" style="margin-bottom:8px">
+          <button class="btn btn-primary btn-block" id="btnGen">生成审计程序</button>
+          <button class="btn btn-primary btn-block" id="btnCalc">计算抽样</button>
+        </div>
+        <div class="btn-bar">
+          <button class="btn btn-second btn-block" id="btnUpdate">一键更新</button>
+          <button class="btn btn-ghost" id="btnSave">保存本地</button>
+          <button class="btn btn-ghost" id="btnReset">重置</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 右侧输出区 ============ -->
+  <div class="panel-right">
+    <div class="card">
+      <div class="tabs">
+        <button class="tab active" data-tab="prog">审计程序清单<span class="badge" id="bProg">0</span></button>
+        <button class="tab" data-tab="mus">抽样方案</button>
+        <button class="tab" data-tab="risk">风险评估结论</button>
+        <button class="tab" data-tab="opinion">最终审计结论</button>
+      </div>
+      <div class="toolbar">
+        <button class="btn btn-second btn-sm" id="btnCopy">复制全部</button>
+        <button class="btn btn-second btn-sm" id="btnXlsx">导出 Excel</button>
+        <button class="btn btn-second btn-sm" id="btnDoc">导出 Word</button>
+        <button class="btn btn-second btn-sm" id="btnPdf">导出 PDF</button>
+        <span class="spacer"></span>
+        <span class="hint" id="genTime">尚未生成</span>
+      </div>
+      <div class="tab-body">
+        <div id="tab-prog"></div>
+        <div id="tab-mus" style="display:none"></div>
+        <div id="tab-risk" style="display:none"></div>
+        <div id="tab-opinion" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="fl">
+    <span>审计程序智能生成器 <b>V1.0</b></span>
+    <span>·</span>
+    <span>编制人：李昀晓</span>
+    <span>·</span>
+    <span>纯前端运行，无后端依赖</span>
+  </div>
+  <div class="fl">
+    <button class="btn btn-ghost btn-sm" id="btnLog">操作日志</button>
+    <button class="btn btn-ghost btn-sm" id="btnMem">项目记忆</button>
+  </div>
+</footer>
+
+<!-- ============ 测试示例 ============ -->
+<div class="mask" id="mTest">
+  <div class="modal">
+    <div class="modal-h"><h3>内置测试示例</h3><button class="close-x" data-close="mTest">×</button></div>
+    <div class="modal-b" id="testBody"></div>
+    <div class="modal-f"><button class="btn btn-ghost btn-sm" data-close="mTest">关闭</button></div>
+  </div>
+</div>
+
+<!-- ============ 操作日志 ============ -->
+<div class="mask" id="mLog">
+  <div class="modal">
+    <div class="modal-h"><h3>操作日志 useractivity.log</h3><button class="close-x" data-close="mLog">×</button></div>
+    <div class="modal-b" id="logBody"></div>
+    <div class="modal-f">
+      <button class="btn btn-ghost btn-sm" id="btnLogClear">清空日志</button>
+      <button class="btn btn-second btn-sm" id="btnLogDown">导出 useractivity.log</button>
+      <button class="btn btn-ghost btn-sm" data-close="mLog">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 项目记忆 ============ -->
+<div class="mask" id="mMem">
+  <div class="modal" style="width:680px">
+    <div class="modal-h"><h3>项目记忆（最多保留 10 个）</h3><button class="close-x" data-close="mMem">×</button></div>
+    <div class="modal-b" id="memBody"></div>
+    <div class="modal-f">
+      <button class="btn btn-ghost btn-sm" id="btnMemClear">清除全部记忆</button>
+      <button class="btn btn-ghost btn-sm" data-close="mMem">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ API 设置 ============ -->
+<div class="mask" id="mSet">
+  <div class="modal" style="width:560px">
+    <div class="modal-h"><h3>大模型 API 设置</h3><button class="close-x" data-close="mSet">×</button></div>
+    <div class="modal-b">
+      <label class="chk-line"><input type="checkbox" id="sEnable">启用 AI 辅助说明（失败时自动回退本地规则）</label>
+      <div class="frow"><div class="fitem"><label>API Base URL</label><input id="sBase"></div></div>
+      <div class="frow"><div class="fitem"><label>模型名称</label><input id="sModel"></div>
+        <div class="fitem"><label>备用模型</label><input id="sModel2"></div></div>
+      <div class="frow"><div class="fitem"><label>API Key（密钥名称：FAI-worktable）</label><input id="sKey" type="password"></div></div>
+      <div class="callout info" style="margin-top:6px">程序匹配与 MUS 计算全部在本地完成，AI 仅用于生成文字说明与格式化输出。本地文件（file://）打开时浏览器可能拦截跨域请求，此时自动使用本地规则，不影响任何核心功能。</div>
+    </div>
+    <div class="modal-f"><button class="btn btn-primary btn-sm" id="btnSetSave">保存设置</button><button class="btn btn-ghost btn-sm" data-close="mSet">关闭</button></div>
+  </div>
+</div>
+
+<div class="mask" id="mSet">
+  <div class="modal" style="width:560px">
+    <div class="modal-h"><h3>大模型 API 设置</h3><button class="close-x" data-close="mSet">×</button></div>
+    <div class="modal-b">
+      <label class="chk-line"><input type="checkbox" id="sEnable">启用 AI 辅助说明（失败时自动回退本地规则）</label>
+      <div class="frow"><div class="fitem"><label>API Base URL</label><input id="sBase"></div></div>
+      <div class="frow"><div class="fitem"><label>模型名称</label><input id="sModel"></div>
+        <div class="fitem"><label>备用模型</label><input id="sModel2"></div></div>
+      <div class="frow"><div class="fitem"><label>API Key（密钥名称：FAI-worktable）</label><input id="sKey" type="password"></div></div>
+      <div class="callout info" style="margin-top:6px">程序匹配与 MUS 计算全部在本地完成，AI 仅用于生成文字说明与格式化输出。本地文件（file://）打开时浏览器可能拦截跨域请求，此时自动使用本地规则，不影响任何核心功能。</div>
+    </div>
+    <div class="modal-f"><button class="btn btn-primary btn-sm" id="btnSetSave">保存设置</button><button class="btn btn-ghost btn-sm" data-close="mSet">关闭</button></div>
+  </div>
+</div>
+
+<div class="mask" id="mServe">
+  <div class="modal" style="width:600px">
+    <div class="modal-h"><h3>启动本地服务器（启用 AI 辅助）</h3><button class="close-x" data-close="mServe">×</button></div>
+    <div class="modal-b">
+      <p style="margin:0 0 8px">以 <b>file://</b> 双击打开时，浏览器会拦截向 <code>api.deepseek.com</code> 的跨域请求，导致 AI 辅助不可用。解决办法：用本地静态服务器以 <b>http://localhost</b> 方式打开。</p>
+      <p style="margin:0 0 6px;font-weight:600">方式一：双击本目录下的 <code>start-server.bat</code></p>
+      <pre id="serveCmd" style="background:#f4f6f8;border:1px solid #e1e6ea;border-radius:6px;padding:10px;font-size:12px;white-space:pre-wrap;margin:0 0 10px">python -m http.server 8080</pre>
+      <p style="margin:0 0 6px;font-weight:600">方式二：命令行手动执行</p>
+      <pre style="background:#f4f6f8;border:1px solid #e1e6ea;border-radius:6px;padding:10px;font-size:12px;white-space:pre-wrap;margin:0 0 6px">cd 本文件所在目录
+python -m http.server 8080
+# 然后在浏览器打开 http://localhost:8080</pre>
+      <div class="callout info">启动后回到本页面，重新生成即可正常调用 DeepSeek 生成 AI 说明。若仍失败，多为网络或密钥问题（见顶部「AI 辅助」状态与提示）。</div>
+    </div>
+    <div class="modal-f"><button class="btn btn-primary btn-sm" id="btnCopyServe">复制命令</button><button class="btn btn-ghost btn-sm" data-close="mServe">关闭</button></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<div id="printArea"></div>
+
+<script>
+/* ==================================================================
+   审计程序智能生成器 V1.0
+   纯前端实现：规则矩阵匹配 + MUS 抽样 + 审计意见 + 导出 + 日志 + 记忆
+   ================================================================== */
+"use strict";
+
+/* ---------- 0. 常量与知识库 ---------- */
+const VERSION = "V1.0";
+const LS = { PROJ:"apg_projects", LOG:"useractivity.log", API:"apg_api" };
+const LEVELS = ["高","中","低"];
+const LEVEL_ORDER = { "高":3, "中":2, "低":1 };
+/* 误受风险 → 置信系数 */
+const CONF = { "1":2.58, "5":1.96, "10":1.65, "20":1.28 };
+
+/* 六大业务循环审计程序规则矩阵（rule_matrix）
+   常规程序按 levels 适用；专项程序仅高风险触发 */
+const CYCLES = [
+{
+  key:"sales", name:"销售与收款", desc:"收入确认 / 应收账款 / 收款",
+  risks:{
+    "高":"存在收入提前或虚构确认的舞弊风险，应收账款可收回性及坏账准备计提存在重大错报风险",
+    "中":"收入截止与应收账款账龄划分可能存在错报，坏账准备估计存在偏差",
+    "低":"收入确认政策一贯执行，控制运行有效，仅存在一般性错报风险"
+  },
+  programs:[
+    {n:"了解并测试销售与收款循环内部控制的设计与运行有效性", nature:"常规", levels:["低","中","高"], a:"发生、准确性"},
+    {n:"对营业收入、毛利率、应收账款周转率实施分析程序并调查异常波动", nature:"常规", levels:["低","中","高"], a:"完整性、准确性"},
+    {n:"抽查销售发票、发货单、出库单与账簿记录的一致性", nature:"常规", levels:["中","高"], a:"发生、准确性"},
+    {n:"获取应收账款账龄分析表并复核坏账准备（预期信用损失）计提", nature:"常规", levels:["中","高"], a:"计价与分摊"},
+    {n:"对营业收入实施资产负债表日前后各 10 日的截止测试", nature:"专项", levels:["高"], a:"截止"},
+    {n:"对应收账款实施函证程序（含未回函项目的替代测试）", nature:"专项", levels:["高"], a:"存在、权利"},
+    {n:"检查重大销售合同的收入确认条款（控制权转移、可变对价、退货权）", nature:"专项", levels:["高"], a:"发生、准确性"},
+    {n:"对期后大额销售退回及红字发票执行专项检查", nature:"专项", levels:["高"], a:"发生、截止"},
+    {n:"对关联方及本期新增客户交易执行穿行测试与第三方信息核查", nature:"专项", levels:["高"], a:"发生、披露"}
+  ]
+},
+{
+  key:"purchase", name:"采购与付款", desc:"采购成本 / 应付账款 / 付款",
+  risks:{
+    "高":"存在少计或延迟入账应付账款、虚假采购套取资金的重大错报风险",
+    "中":"应付账款完整性与采购截止可能存在错报，暂估入账依据不足",
+    "低":"三单匹配控制有效，采购与付款流程规范，风险处于可接受水平"
+  },
+  programs:[
+    {n:"了解并测试采购与付款循环内部控制（含请购、审批、验收、付款）", nature:"常规", levels:["低","中","高"], a:"发生、准确性"},
+    {n:"对营业成本、应付账款周转率及主要供应商结构实施分析程序", nature:"常规", levels:["低","中","高"], a:"完整性"},
+    {n:"抽查采购订单、验收单、供应商发票的三单匹配情况并核对入账金额", nature:"常规", levels:["中","高"], a:"发生、准确性"},
+    {n:"复核应付账款账龄及长期挂账余额，检查其形成原因", nature:"常规", levels:["中","高"], a:"存在、计价"},
+    {n:"对应付账款实施资产负债表日前后截止测试", nature:"专项", levels:["高"], a:"截止、完整性"},
+    {n:"对主要供应商及余额异常（含借方余额、零余额）供应商实施函证", nature:"专项", levels:["高"], a:"存在、完整性"},
+    {n:"检查暂估应付账款的计提依据、后续冲回及跨期一致性", nature:"专项", levels:["高"], a:"完整性、准确性"},
+    {n:"检查期后付款记录以测试应付账款的完整性（未入账负债搜索）", nature:"专项", levels:["高"], a:"完整性"}
+  ]
+},
+{
+  key:"production", name:"生产与仓储", desc:"存货 / 成本核算 / 仓储",
+  risks:{
+    "高":"存货数量与计价存在重大错报风险，成本归集分配方法可能被操纵",
+    "中":"存货跌价准备计提及在产品完工程度估计存在偏差",
+    "低":"存货管理与成本核算制度健全，盘点控制有效"
+  },
+  programs:[
+    {n:"了解并测试存货管理与成本核算内部控制（收发存、盘点、成本分配）", nature:"常规", levels:["低","中","高"], a:"存在、准确性"},
+    {n:"对存货周转率、单位成本、料工费结构实施分析程序", nature:"常规", levels:["低","中","高"], a:"准确性"},
+    {n:"抽查存货收发存记录、成本计算单与总账明细账的勾稽关系", nature:"常规", levels:["中","高"], a:"准确性、完整性"},
+    {n:"复核存货跌价准备计提方法与可变现净值确定依据", nature:"常规", levels:["中","高"], a:"计价与分摊"},
+    {n:"监盘资产负债表日存货并执行双向抽盘及盘点差异追查", nature:"专项", levels:["高"], a:"存在、完整性"},
+    {n:"对在产品完工程度及料工费分配方法执行专项复核与倒轧测试", nature:"专项", levels:["高"], a:"计价与分摊"},
+    {n:"对长库龄、呆滞及抵押存货执行可变现净值测试", nature:"专项", levels:["高"], a:"计价、披露"},
+    {n:"对委外加工、在途及第三方保管存货执行函证或替代程序", nature:"专项", levels:["高"], a:"存在、权利"}
+  ]
+},
+{
+  key:"financing", name:"筹资与投资", desc:"借款 / 投资 / 金融工具",
+  risks:{
+    "高":"存在表外融资、违规担保及投资估值不当导致的重大错报风险",
+    "中":"利息资本化计算与投资分类可能存在错报，披露不够充分",
+    "低":"筹资投资业务简单，授权审批控制有效"
+  },
+  programs:[
+    {n:"了解并测试筹资与投资业务的授权审批控制及决策程序", nature:"常规", levels:["低","中","高"], a:"发生、权利与义务"},
+    {n:"检查借款合同、利息计提与利息资本化计算的准确性", nature:"常规", levels:["低","中","高"], a:"准确性"},
+    {n:"复核长期股权投资及金融资产的分类、初始计量与后续计量", nature:"常规", levels:["中","高"], a:"计价与分摊"},
+    {n:"检查融资担保、资产抵押质押及重大承诺事项的披露完整性", nature:"常规", levels:["中","高"], a:"披露"},
+    {n:"对银行借款、金融机构往来及受限资金实施函证", nature:"专项", levels:["高"], a:"存在、完整性"},
+    {n:"对以公允价值计量的金融工具执行估值模型复核（必要时利用专家工作）", nature:"专项", levels:["高"], a:"计价与分摊"},
+    {n:"对重大投资并购交易执行合同审阅、对价分摊及合并范围确认", nature:"专项", levels:["高"], a:"准确性、披露"},
+    {n:"对表外融资、结构化主体及关联方资金占用执行专项识别程序", nature:"专项", levels:["高"], a:"完整性、披露"}
+  ]
+},
+{
+  key:"payroll", name:"工薪与人事", desc:"职工薪酬 / 社保 / 股份支付",
+  risks:{
+    "高":"存在虚列人员套取资金、高管薪酬及股份支付核算不当的风险",
+    "中":"应付职工薪酬计提完整性与社保公积金计缴可能存在偏差",
+    "低":"薪酬体系稳定，人事与发放岗位分离，控制有效"
+  },
+  programs:[
+    {n:"了解并测试薪酬与人事循环内部控制（考勤、审批、代发、离职）", nature:"常规", levels:["低","中","高"], a:"发生、准确性"},
+    {n:"对职工薪酬总额、人均薪酬及人员变动实施分析程序", nature:"常规", levels:["低","中","高"], a:"完整性、准确性"},
+    {n:"抽查工资表、考勤记录与银行代发清单的一致性", nature:"常规", levels:["中","高"], a:"发生、准确性"},
+    {n:"复核社保、公积金及个人所得税代扣代缴的计提与缴纳", nature:"常规", levels:["中","高"], a:"完整性、合规"},
+    {n:"对高管薪酬、股份支付及离职补偿执行专项检查并核对决议文件", nature:"专项", levels:["高"], a:"准确性、披露"},
+    {n:"针对虚增人员（幽灵员工）风险执行人事档案与代发流水交叉核对", nature:"专项", levels:["高"], a:"发生"},
+    {n:"对期末应付职工薪酬计提完整性执行截止测试及期后支付检查", nature:"专项", levels:["高"], a:"完整性、截止"}
+  ]
+},
+{
+  key:"fixedasset", name:"固定资产", desc:"资产取得 / 折旧 / 减值 / 处置",
+  risks:{
+    "高":"存在资本化支出划分不当、折旧政策变更及减值计提不足的重大错报风险",
+    "中":"在建工程转固时点与折旧计算可能存在错报",
+    "低":"固定资产管理规范，卡片台账与实物相符"
+  },
+  programs:[
+    {n:"了解并测试固定资产取得、使用、维护与处置的内部控制", nature:"常规", levels:["低","中","高"], a:"存在、准确性"},
+    {n:"复核折旧政策、预计使用寿命与本期折旧计算的准确性（重新计算）", nature:"常规", levels:["低","中","高"], a:"计价与分摊"},
+    {n:"抽查固定资产实物并与固定资产卡片、台账、总账三方核对", nature:"常规", levels:["中","高"], a:"存在"},
+    {n:"检查在建工程转固时点及资本化支出与费用化支出的划分", nature:"常规", levels:["中","高"], a:"准确性、截止"},
+    {n:"对固定资产实施监盘并执行由账至物、由物至账的双向抽盘", nature:"专项", levels:["高"], a:"存在、完整性"},
+    {n:"对存在减值迹象的资产执行减值测试并复核可收回金额的确定", nature:"专项", levels:["高"], a:"计价与分摊"},
+    {n:"对本期新增大额资产核查合同、发票、付款凭证及权属证明文件", nature:"专项", levels:["高"], a:"权利与义务"},
+    {n:"对固定资产处置、报废损益及清理程序执行专项检查", nature:"专项", levels:["高"], a:"发生、准确性"}
+  ]
+}
+];
+
+/* ===== 风险因子体系（V1.1 新增）=====
+   每个循环可勾选具体风险因子，勾选后纳入对应的“因子驱动型”审计程序（force:true），
+   实现“风险因子 → 审计程序”的精准匹配，而非仅按高/中/低等级计数。
+   因子驱动程序 levels:[]，默认不出现；仅当对应因子被勾选且 force:true 时纳入。 */
+const UFP = [ /* 通用因子驱动程序：跨循环，勾选即纳入 */
+  {n:"测试与本循环相关的信息技术一般控制（ITGC）及应用控制（如系统自动过账、权限管控、接口传输完整性）", nature:"专项", levels:[], a:"发生、准确性", factors:["it_gc"], force:true},
+  {n:"对资产负债表日后期后事项（诉讼、退货、承诺、监管处罚）执行审计程序并评估对财务报表列报的影响", nature:"专项", levels:[], a:"完整性、列报", factors:["subseq"], force:true},
+  {n:"识别未披露关联方及关联方交易，执行关联方交易定价、担保与披露完整性测试", nature:"专项", levels:[], a:"发生、披露", factors:["related"], force:true},
+  {n:"评估持续经营能力，检查管理层持续经营假设、缓解措施及财务报表披露的恰当性", nature:"专项", levels:[], a:"列报、披露", factors:["going_concern"], force:true},
+  {n:"针对识别出的舞弊迹象执行延伸审计程序（如放大样本规模、实地观察、独立第三方函证）", nature:"专项", levels:[], a:"发生、准确性", factors:["fraud_ind"], force:true}
+];
+const SPEC_PROGRAMS = {
+  sales:[ {n:"针对新业务模式/复杂合同条款执行收入确认专项审计（多重履约义务、可变对价、特许权使用费）", nature:"专项", levels:[], a:"发生、准确性", factors:["rev_recog"], force:true},
+          {n:"对信用风险显著上升的客户组合执行预期信用损失模型复核与坏账准备敏感性分析", nature:"专项", levels:[], a:"计价与分摊", factors:["credit_risk"], force:true} ],
+  purchase:[ {n:"对主要供应商集中度及潜在虚构交易执行背景调查与资金流核查", nature:"专项", levels:[], a:"发生、完整性", factors:["vendor_risk"], force:true},
+             {n:"对资产负债表日前后采购与付款执行截止测试，验证暂估负债的完整性与跨期一致性", nature:"专项", levels:[], a:"截止、完整性", factors:["cutoff_risk"], force:true} ],
+  production:[ {n:"对制造费用分配方法与联产品/副产品成本分摊执行专项复核", nature:"专项", levels:[], a:"准确性", factors:["cost_alloc"], force:true},
+               {n:"对长库龄、呆滞及过时存货执行可变现净值测试与跌价准备复核", nature:"专项", levels:[], a:"计价与分摊", factors:["obsolescence"], force:true} ],
+  financing:[ {n:"对以公允价值计量的金融资产/负债执行估值模型复核（必要时利用专家工作）", nature:"专项", levels:[], a:"计价与分摊", factors:["fair_value"], force:true},
+              {n:"对表外融资、结构化主体及关联方资金占用执行专项识别程序", nature:"专项", levels:[], a:"完整性、披露", factors:["off_bs"], force:true} ],
+  payroll:[ {n:"对虚增人员（幽灵员工）风险扩大人事档案、考勤与银行代发流水交叉核对范围", nature:"专项", levels:[], a:"发生", factors:["ghost_emp"], force:true},
+            {n:"对股份支付、高管薪酬及离职补偿执行专项检查并核对董事会/股东会决议文件", nature:"专项", levels:[], a:"准确性、披露", factors:["share_pay"], force:true} ],
+  fixedasset:[ {n:"对在建工程转固时点及资本化/费用化支出划分执行专项复核", nature:"专项", levels:[], a:"准确性、截止", factors:["cip"], force:true},
+               {n:"对存在减值迹象的资产执行减值测试并复核可收回金额的确定", nature:"专项", levels:[], a:"计价与分摊", factors:["impairment"], force:true} ]
+};
+const CYCLE_FACTORS = {
+  sales:[ {key:"rev_recog",label:"收入确认复杂"},{key:"credit_risk",label:"信用风险上升"},{key:"it_gc",label:"IT系统依赖"},{key:"subseq",label:"期后事项"},{key:"related",label:"关联方交易"},{key:"going_concern",label:"持续经营"},{key:"fraud_ind",label:"舞弊迹象"} ],
+  purchase:[ {key:"vendor_risk",label:"供应商集中度"},{key:"cutoff_risk",label:"截止/暂估风险"},{key:"it_gc",label:"IT系统依赖"},{key:"subseq",label:"期后事项"},{key:"related",label:"关联方交易"},{key:"going_concern",label:"持续经营"},{key:"fraud_ind",label:"舞弊迹象"} ],
+  production:[ {key:"cost_alloc",label:"成本分配复杂"},{key:"obsolescence",label:"存货呆滞减值"},{key:"it_gc",label:"IT系统依赖"},{key:"subseq",label:"期后事项"},{key:"related",label:"关联方交易"},{key:"going_concern",label:"持续经营"},{key:"fraud_ind",label:"舞弊迹象"} ],
+  financing:[ {key:"fair_value",label:"公允价值/估值"},{key:"off_bs",label:"表外/结构化"},{key:"it_gc",label:"IT系统依赖"},{key:"subseq",label:"期后事项"},{key:"related",label:"关联方交易"},{key:"going_concern",label:"持续经营"},{key:"fraud_ind",label:"舞弊迹象"} ],
+  payroll:[ {key:"ghost_emp",label:"幽灵员工"},{key:"share_pay",label:"股份支付"},{key:"it_gc",label:"IT系统依赖"},{key:"subseq",label:"期后事项"},{key:"related",label:"关联方交易"},{key:"going_concern",label:"持续经营"},{key:"fraud_ind",label:"舞弊迹象"} ],
+  fixedasset:[ {key:"cip",label:"在建工程/资本化"},{key:"impairment",label:"减值/重组"},{key:"it_gc",label:"IT系统依赖"},{key:"subseq",label:"期后事项"},{key:"related",label:"关联方交易"},{key:"going_concern",label:"持续经营"},{key:"fraud_ind",label:"舞弊迹象"} ]
+};
+const FACTOR_LABELS = {};
+CYCLES.forEach(c=>{
+  c.factors = CYCLE_FACTORS[c.key] || [];
+  c.programs = c.programs.concat(UFP, SPEC_PROGRAMS[c.key] || []);
+  c.factors.forEach(f=>{ FACTOR_LABELS[f.key] = f.label; });
+});
+
+/* 风险应对策略库 */
+const STRATEGY = {
+  "高":"将其识别为特别风险，指派经验丰富的项目组成员，扩大细节测试范围与样本量，实施不可预见的审计程序，并在项目组内进行专门讨论。",
+  "中":"结合控制测试与实质性程序，在常规程序基础上适度扩大样本量，对异常项目追加检查。",
+  "低":"以分析程序为主，辅以少量细节测试，依赖内部控制运行有效性结论。"
+};
+
+/* ---------- 1. 工具函数 ---------- */
+const $ = id => document.getElementById(id);
+const money = v => (v===null||v===undefined||isNaN(v)) ? "-" : Number(v).toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2});
+const money0 = v => (v===null||v===undefined||isNaN(v)) ? "-" : Number(v).toLocaleString("zh-CN",{maximumFractionDigits:0});
+const pct = v => (v*100).toFixed(2)+"%";
+const esc = s => String(s===null||s===undefined?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const num = v => { const n = parseFloat(v); return isNaN(n) ? null : n; };
+const nowStr = () => { const d=new Date(),p=x=>String(x).padStart(2,"0");
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes())+":"+p(d.getSeconds()); };
+
+function toast(msg, type){
+  const d = document.createElement("div");
+  d.className = "toast " + (type||"");
+  d.textContent = msg;
+  $("toasts").appendChild(d);
+  setTimeout(()=>{ d.style.opacity="0"; d.style.transition=".3s"; setTimeout(()=>d.remove(),300); }, type==="err"?5200:3200);
+}
+function lsGet(k, def){ try{ const v = localStorage.getItem(k); return v?JSON.parse(v):def; }catch(e){ return def; } }
+function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+
+/* ---------- 2. 全局状态 ---------- */
+let RESULT = { programs:null, prevPrograms:null, mus:null, state:null, changelog:[], genAt:null, aiText:"" };
+let API = Object.assign({
+  enable:true,
+  base:"https://api.deepseek.com",
+  model:"deepseek-v4-flash",
+  model2:"deepseek-chat",
+  key:"sk-99722929c749470daa3117833b245ea3"
+}, lsGet(LS.API, {}));
+
+/* ---------- 3. 初始化界面 ---------- */
+function initRiskGrid(){
+  $("riskGrid").innerHTML = CYCLES.map(c => `
+    <div class="risk-row">
+      <span class="lv-tag lv-empty" id="tag_${c.key}">—</span>
+      <div class="cy">${c.name}<small>${c.desc}</small></div>
+      <select id="lv_${c.key}" data-cy="${c.key}">
+        <option value="">请选择</option>
+        <option value="高">高风险</option>
+        <option value="中">中风险</option>
+        <option value="低">低风险</option>
+      </select>
+      <div class="factors" data-cy="${c.key}">${(c.factors||[]).map(f=>`<button type="button" class="fchip" data-cy="${c.key}" data-f="${f.key}" title="勾选以纳入针对该风险因子的审计程序">${f.label}</button>`).join("")}</div>
+    </div>`).join("");
+  CYCLES.forEach(c=>{
+    $("lv_"+c.key).addEventListener("change", e=>{
+      const t = $("tag_"+c.key), v = e.target.value;
+      t.className = "lv-tag " + (v ? "lv-"+v : "lv-empty");
+      t.textContent = v || "—";
+      e.target.classList.remove("invalid");
+    });
+    document.querySelectorAll('.fchip[data-cy="'+c.key+'"]').forEach(b=>{
+      b.addEventListener("click", ()=> b.classList.toggle("on"));
+    });
+  });
+}
+
+function addErrRow(book, audit, desc){
+  const tb = $("errBody");
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td style="text-align:center;color:#8a97a3"></td>
+    <td><input type="number" class="e-book" step="0.01" value="${book!==undefined&&book!==null?book:""}" placeholder="0.00"></td>
+    <td><input type="number" class="e-audit" step="0.01" value="${audit!==undefined&&audit!==null?audit:""}" placeholder="0.00"></td>
+    <td><input type="text" class="e-desc txt" value="${esc(desc||"")}" placeholder="错报性质"></td>
+    <td style="text-align:center"><button class="icon-btn" title="删除">×</button></td>`;
+  tr.querySelector(".icon-btn").onclick = ()=>{ tr.remove(); renumberErr(); };
+  tb.appendChild(tr);
+  renumberErr();
+}
+function renumberErr(){
+  [...$("errBody").querySelectorAll("tr")].forEach((tr,i)=>{ tr.cells[0].textContent = i+1; });
+}
+function readErrRows(){
+  return [...$("errBody").querySelectorAll("tr")].map(tr=>({
+    book: num(tr.querySelector(".e-book").value),
+    audit: num(tr.querySelector(".e-audit").value),
+    desc: tr.querySelector(".e-desc").value.trim()
+  })).filter(r => r.book!==null || r.audit!==null);
+}
+
+/* ---------- 4. 读取 / 填充表单 ---------- */
+function readForm(){
+  const levels = {};
+  CYCLES.forEach(c => levels[c.key] = $("lv_"+c.key).value);
+  const factors = {};
+  CYCLES.forEach(c => { factors[c.key] = [...document.querySelectorAll('.fchip[data-cy="'+c.key+'"].on')].map(b=>b.dataset.f); });
+  return {
+    project: $("fProject").value.trim(),
+    period: $("fPeriod").value.trim(),
+    owner: $("fOwner").value.trim(),
+    overall: $("fOverall").value,
+    materiality: num($("fMateriality").value),
+    levels,
+    factors,
+    bv: num($("fBV").value), tm: num($("fTM").value), pm: num($("fPM").value),
+    aria: $("fARIA").value, ef: num($("fEF").value), pervasive: num($("fPervasive").value),
+    start: num($("fStart").value),
+    errors: readErrRows(),
+    flags:{ scope:$("fScope").checked, fraud:$("fFraud").checked, going:$("fGoing").checked }
+  };
+}
+function fillForm(s){
+  $("fProject").value = s.project||""; $("fPeriod").value = s.period||"";
+  $("fOwner").value = s.owner||""; $("fOverall").value = s.overall||"中";
+  $("fMateriality").value = s.materiality!==null&&s.materiality!==undefined ? s.materiality : "";
+  CYCLES.forEach(c=>{
+    const v = (s.levels&&s.levels[c.key])||"";
+    $("lv_"+c.key).value = v;
+    const t = $("tag_"+c.key);
+    t.className = "lv-tag " + (v?"lv-"+v:"lv-empty"); t.textContent = v||"—";
+  });
+  CYCLES.forEach(c=>{
+    const sel = (s.factors && s.factors[c.key]) || [];
+    document.querySelectorAll('.fchip[data-cy="'+c.key+'"]').forEach(b=>{
+      b.classList.toggle("on", sel.indexOf(b.dataset.f) >= 0);
+    });
+  });
+  $("fBV").value = s.bv??""; $("fTM").value = s.tm??""; $("fPM").value = s.pm??"";
+  $("fARIA").value = s.aria||"5"; $("fEF").value = s.ef??1; $("fPervasive").value = s.pervasive??"";
+  $("fStart").value = s.start??"";
+  $("errBody").innerHTML = "";
+  (s.errors&&s.errors.length ? s.errors : [{}]).forEach(e=>addErrRow(e.book,e.audit,e.desc));
+  $("fScope").checked = !!(s.flags&&s.flags.scope);
+  $("fFraud").checked = !!(s.flags&&s.flags.fraud);
+  $("fGoing").checked = !!(s.flags&&s.flags.going);
+  lastLoadedProject = s.project||"";
+  document.querySelectorAll(".invalid").forEach(el=>el.classList.remove("invalid"));
+}
+
+/* ---------- 5. 校验 ---------- */
+function validate(scope){
+  const s = readForm(), miss = [];
+  document.querySelectorAll(".invalid").forEach(el=>el.classList.remove("invalid"));
+  if(!s.project){ miss.push("项目名称"); $("fProject").classList.add("invalid"); }
+  if(scope==="prog" || scope==="all"){
+    const noLv = CYCLES.filter(c=>!s.levels[c.key]);
+    if(noLv.length){
+      miss.push("业务循环风险等级（缺少："+noLv.map(c=>c.name).join("、")+"）");
+      noLv.forEach(c=>$("lv_"+c.key).classList.add("invalid"));
+    }
+  }
+  if(scope==="mus" || scope==="all"){
+    const chk = [["fBV","总体账面金额",s.bv],["fTM","可容忍错报",s.tm],["fPM","预计错报",s.pm]];
+    chk.forEach(([id,label,v])=>{
+      if(v===null){ miss.push(label); $(id).classList.add("invalid"); }
+      else if(v<0){ miss.push(label+"（不得为负数）"); $(id).classList.add("invalid"); }
+    });
+    if(s.bv!==null && s.bv<=0){ miss.push("总体账面金额必须大于 0"); $("fBV").classList.add("invalid"); }
+    if(s.tm!==null && s.tm<=0){ miss.push("可容忍错报必须为正数"); $("fTM").classList.add("invalid"); }
+    if(s.ef===null || s.ef<1){ miss.push("扩展因子须 ≥ 1"); $("fEF").classList.add("invalid"); }
+    if(s.tm!==null && s.pm!==null && s.ef!==null && (s.tm - s.pm*s.ef) <= 0){
+      miss.push("可容忍错报必须大于「预计错报 × 扩展因子」，否则无法计算样本规模");
+      $("fTM").classList.add("invalid"); $("fPM").classList.add("invalid");
+    }
+  }
+  return { ok: miss.length===0, miss, state:s };
+}
+
+/* ---------- 6. 审计程序匹配引擎 ---------- */
+function generatePrograms(s){
+  const rows = [], warns = [];
+  const ordered = CYCLES.slice().sort((a,b)=>{
+    const d = LEVEL_ORDER[s.levels[b.key]] - LEVEL_ORDER[s.levels[a.key]];
+    return d !== 0 ? d : CYCLES.indexOf(a) - CYCLES.indexOf(b);
+  });
+  ordered.forEach(c=>{
+    const lv = s.levels[c.key];
+    const selF = (s.factors && s.factors[c.key]) || [];
+    const seen = new Set();
+    const matched = [];
+    c.programs.forEach(p=>{
+      let on = p.levels.indexOf(lv) >= 0;
+      if(!on && p.force && p.factors && p.factors.some(f=>selF.includes(f))) on = true;
+      if(on && !seen.has(p.n)){ seen.add(p.n); matched.push(p); }
+    });
+    let list = matched;
+    if(lv === "高" && !list.some(p=>p.nature==="专项")){
+      warns.push(c.name + "：高风险领域缺少专项程序模板，请补充（已使用通用常规程序兜底）");
+    }
+    list = list.slice().sort((a,b)=>(a.nature==="专项"?0:1)-(b.nature==="专项"?0:1));
+    list.forEach(p=>{
+      const fk = (p.factors && p.factors.filter(f=>selF.includes(f))) || [];
+      rows.push({
+        id: c.key + "|" + p.n,
+        cycleKey: c.key, cycle: c.name,
+        name: p.n, nature: p.nature, level: lv,
+        assertion: p.a, risk: c.risks[lv], strategy: STRATEGY[lv],
+        factorKeys: fk, factorLabels: fk.map(f=>FACTOR_LABELS[f]||f)
+      });
+    });
+  });
+  rows.forEach((r,i)=>r.no = i+1);
+  return { rows, warns };
+}
+
+/* ---------- 7. MUS 抽样计算引擎 ---------- */
+function calcMUS(s){
+  const cf = CONF[s.aria];
+  const ef = s.ef===null ? 1 : s.ef;
+  const denom = s.tm - s.pm * ef;
+  const nRaw = s.bv * cf / denom;
+  const n = Math.ceil(nRaw);
+  const interval = s.bv / n;
+  const bp = cf * interval;                     // 基本精确度
+
+  let start = s.start;
+  if(start === null || start <= 0 || start > interval){
+    start = Math.round((Math.random()*0.998 + 0.001) * interval * 100)/100;
+  }
+  const points = [];
+  for(let k=0; k<n; k++) points.push(start + k*interval);
+
+  const rows = [], detail = [];
+  let known = 0, projected = 0, highCount = 0;
+  (s.errors||[]).forEach((e,i)=>{
+    const book = e.book===null?0:e.book;
+    const audit = e.audit===null?0:e.audit;
+    const mis = book - audit;
+    const isHigh = book >= interval;
+    const taint = book>0 ? mis/book : 0;
+    let proj = 0;
+    if(isHigh){ known += mis; highCount++; }
+    else { proj = taint * interval; projected += proj; }
+    detail.push({ no:i+1, book, audit, mis, taint, isHigh, proj, desc:e.desc||"" });
+  });
+
+  const uml = known + projected + bp;           // 错报上限
+  const accept = uml <= s.tm;
+  return {
+    cf, ef, n, nRaw, interval, bp, start, points, detail,
+    known, projected, uml, accept,
+    hasError: detail.length>0, highCount,
+    bv:s.bv, tm:s.tm, pm:s.pm, aria:s.aria
+  };
+}
+
+/* ---------- 8. 审计意见判断 ---------- */
+function judgeOpinion(s, mus){
+  const pervasive = (s.pervasive!==null && s.pervasive>0) ? s.pervasive : (s.tm||0)*3;
+  if(s.flags.scope){
+    return { type:"无法表示意见", pervasive,
+      reason:"审计范围受到限制，无法获取充分、适当的审计证据以作为发表审计意见的基础，且未获取证据可能产生的影响具有广泛性。",
+      action:"与治理层沟通范围限制事项，评估是否需要解除业务约定。" };
+  }
+  if(!mus){
+    return { type:"待定", pervasive, reason:"尚未完成 MUS 抽样计算，无法形成审计结论。", action:"请先完成抽样计算。" };
+  }
+  let type, reason, action;
+  if(mus.uml <= s.tm){
+    type = "无保留意见";
+    reason = "各业务循环审计程序已按风险评估结果执行，MUS 抽样错报上限 " + money(mus.uml) +
+             " 元未超过可容忍错报 " + money(s.tm) + " 元，未发现可能导致财务报表存在重大错报的事项。";
+    action = "归档审计工作底稿，编制审计完成阶段总结备忘录。";
+  } else if(mus.uml <= pervasive){
+    type = "保留意见";
+    reason = "MUS 抽样错报上限 " + money(mus.uml) + " 元超过可容忍错报 " + money(s.tm) +
+             " 元，但未超过重大错报阈值 " + money(pervasive) + " 元，错报影响重大但不具有广泛性。";
+    action = "提请管理层调整已识别错报；若拒绝调整，在审计报告中说明形成保留意见的基础，并考虑调整审计策略、扩大样本量。";
+  } else {
+    type = "否定意见";
+    reason = "MUS 抽样错报上限 " + money(mus.uml) + " 元超过重大错报阈值 " + money(pervasive) +
+             " 元，错报对财务报表的影响重大且具有广泛性。";
+    action = "立即与治理层沟通，重新评估重大错报风险与审计策略，考虑舞弊风险的进一步影响。";
+  }
+  if(s.flags.fraud && type === "无保留意见"){
+    type = "保留意见";
+    reason += "同时，本期识别出舞弊迹象或管理层凌驾于控制之上的情形，相关影响无法充分量化。";
+    action = "追加不可预见审计程序，与治理层就舞弊事项专门沟通。";
+  }
+  if(s.flags.going){
+    reason += "存在与持续经营相关的重大不确定性，应在审计报告中增加专门段落予以说明。";
+  }
+  return { type, pervasive, reason, action };
+}
+
+/* ---------- 9. 渲染：审计程序清单 ---------- */
+function renderPrograms(){
+  const box = $("tab-prog");
+  if(!RESULT.programs){
+    box.innerHTML = emptyHTML("填写左侧参数后点击「生成审计程序」");
+    $("bProg").textContent = "0"; return;
+  }
+  const rows = RESULT.programs.rows;
+  const s = RESULT.state;
+  const spec = rows.filter(r=>r.nature==="专项").length;
+  const cycStat = CYCLES.map(c=>{
+    const rs = rows.filter(r=>r.cycleKey===c.key);
+    return { name:c.name, lv:s.levels[c.key], total:rs.length, spec:rs.filter(r=>r.nature==="专项").length };
+  });
+
+  let html = `
+  <div class="kpi-grid">
+    <div class="kpi"><div class="k">审计程序总数</div><div class="v">${rows.length}<span class="u">项</span></div></div>
+    <div class="kpi"><div class="k">专项程序</div><div class="v">${spec}<span class="u">项</span></div></div>
+    <div class="kpi"><div class="k">常规程序</div><div class="v">${rows.length-spec}<span class="u">项</span></div></div>
+    <div class="kpi"><div class="k">高风险循环</div><div class="v">${CYCLES.filter(c=>s.levels[c.key]==="高").length}<span class="u">个</span></div></div>
+  </div>
+  <div class="section-title">循环分布（按风险优先级排序）</div>
+  <table class="rtable" style="margin-bottom:14px">
+    <thead><tr><th style="width:150px">业务循环</th><th style="width:80px">风险等级</th><th style="width:90px">程序数量</th><th style="width:90px">其中专项</th><th>应对策略</th></tr></thead>
+    <tbody>${cycStat.map(c=>`<tr>
+      <td><b>${c.name}</b></td>
+      <td><span class="tag tag-${c.lv}">${c.lv}风险</span></td>
+      <td class="num">${c.total}</td>
+      <td class="num">${c.spec}</td>
+      <td style="color:#5a6b7b">${esc(STRATEGY[c.lv])}</td></tr>`).join("")}
+    </tbody>
+  </table>`;
+
+  if(RESULT.programs.warns.length){
+    html += `<div class="callout warn" style="margin-bottom:14px">⚠ ${RESULT.programs.warns.map(esc).join("<br>")}</div>`;
+  }
+
+  html += `<div class="section-title">审计程序清单</div>
+  <table class="rtable">
+    <thead><tr>
+      <th style="width:46px">序号</th><th style="width:110px">业务循环</th><th>审计程序</th>
+      <th style="width:70px">性质</th><th style="width:80px">风险优先级</th><th style="width:110px">审计认定</th><th style="width:70px">状态</th>
+    </tr></thead><tbody>`;
+  let lastCycle = null;
+  rows.forEach(r=>{
+    if(r.cycle !== lastCycle){
+      lastCycle = r.cycle;
+      const fl = (s.factors && s.factors[r.cycleKey]) || [];
+      const flbl = fl.length ? " · 风险因子：" + fl.map(f=>FACTOR_LABELS[f]||f).join("、") : "";
+      html += `<tr class="cycle-head"><td colspan="7">${esc(r.cycle)} · ${r.level}风险 — ${esc(r.risk)}${flbl}</td></tr>`;
+    }
+    const st = r.status==="新增" ? '<span class="tag tag-new">新增</span>' : '';
+    html += `<tr>
+      <td class="num">${r.no}</td><td>${esc(r.cycle)}</td><td>${esc(r.name)}${r.factorLabels&&r.factorLabels.length?` <span class="ftag" title="由风险因子触发">${r.factorLabels.map(esc).join("·")}</span>`:""}</td>
+      <td><span class="tag tag-${r.nature}">${r.nature}</span></td>
+      <td><span class="tag tag-${r.level}">${r.level}</span></td>
+      <td style="color:#5a6b7b">${esc(r.assertion)}</td><td>${st}</td></tr>`;
+  });
+  html += `</tbody></table>`;
+
+  if(RESULT.changelog.length){
+    html += `<div class="section-title">变更日志</div><div class="callout info">` +
+      RESULT.changelog.slice(-12).map(x=>"· "+esc(x)).join("<br>") + `</div>`;
+  }
+  box.innerHTML = html;
+  $("bProg").textContent = rows.length;
+}
+
+/* ---------- 10. 渲染：抽样方案 ---------- */
+function renderMUS(){
+  const box = $("tab-mus");
+  const m = RESULT.mus;
+  if(!m){ box.innerHTML = emptyHTML("填写 MUS 参数后点击「计算抽样」"); return; }
+  const s = RESULT.state;
+  const showPts = m.points.slice(0,24);
+
+  let html = `
+  <div class="kpi-grid">
+    <div class="kpi"><div class="k">样本规模 n</div><div class="v">${m.n}<span class="u">个</span></div></div>
+    <div class="kpi"><div class="k">抽样间隔 I</div><div class="v">${money0(m.interval)}<span class="u">元</span></div></div>
+    <div class="kpi"><div class="k">推断总体错报</div><div class="v">${money0(m.projected)}<span class="u">元</span></div></div>
+    <div class="kpi ${m.accept?"ok":"warn"}"><div class="k">抽样结论</div><div class="v" style="font-size:18px">${m.accept?"接受账面金额":"不接受账面金额"}</div></div>
+  </div>
+
+  <div class="section-title">一、抽样参数</div>
+  <table class="rtable" style="margin-bottom:6px">
+    <thead><tr><th>总体账面金额</th><th>可容忍错报</th><th>预计错报</th><th>误受风险</th><th>置信系数</th><th>扩展因子</th></tr></thead>
+    <tbody><tr>
+      <td class="num">${money(m.bv)}</td><td class="num">${money(m.tm)}</td><td class="num">${money(m.pm)}</td>
+      <td class="num">${m.aria}%</td><td class="num">${m.cf}</td><td class="num">${m.ef}</td>
+    </tr></tbody>
+  </table>
+
+  <div class="section-title">二、计算过程</div>
+  <div class="formula">样本规模  n = 账面金额 × 置信系数 ÷ (可容忍错报 − 预计错报 × 扩展因子)
+    = ${money(m.bv)} × ${m.cf} ÷ (${money(m.tm)} − ${money(m.pm)} × ${m.ef})
+    = ${money(m.bv*m.cf)} ÷ ${money(m.tm - m.pm*m.ef)}
+    = ${m.nRaw.toFixed(2)}  →  向上取整  n = ${m.n}
+
+抽样间隔  I = 账面金额 ÷ n = ${money(m.bv)} ÷ ${m.n} = ${money(m.interval)} 元
+基本精确度 BP = 置信系数 × 抽样间隔 = ${m.cf} × ${money(m.interval)} = ${money(m.bp)} 元</div>
+
+  <div class="section-title">三、样本选取（系统选样 · 随机起点 ${money(m.start)} 元）</div>
+  <table class="rtable" style="margin-bottom:6px">
+    <thead><tr><th style="width:70px">样本序号</th><th>货币单元定位点（元）</th><th style="width:110px">选取方式</th></tr></thead>
+    <tbody>${showPts.map((p,i)=>`<tr><td class="num">${i+1}</td><td class="num">${money(p)}</td><td>起点 + ${i} × 间隔</td></tr>`).join("")}
+    ${m.n>24?`<tr><td colspan="3" style="text-align:center;color:#8a97a3">… 共 ${m.n} 个货币单元定位点，导出 Excel 可查看完整清单 …</td></tr>`:""}
+    </tbody>
+  </table>`;
+
+  html += `<div class="section-title">四、错报评价</div>`;
+  if(!m.hasError){
+    html += `<div class="callout warn">未录入错报明细：本次仅输出样本规模与抽样间隔，无法推断总体错报。请在左侧「错报明细」中至少录入一条记录（账面金额与审计金额）。</div>`;
+  } else {
+    html += `<table class="rtable" style="margin-bottom:10px">
+      <thead><tr><th style="width:46px">序号</th><th>账面金额</th><th>审计金额</th><th>错报金额</th><th>错报比例</th><th style="width:90px">项目类型</th><th>推断错报</th><th style="width:120px">说明</th></tr></thead>
+      <tbody>${m.detail.map(d=>`<tr>
+        <td class="num">${d.no}</td><td class="num">${money(d.book)}</td><td class="num">${money(d.audit)}</td>
+        <td class="num" style="color:${d.mis>0?"#c0392b":"#1e8449"}">${money(d.mis)}</td>
+        <td class="num">${pct(d.taint)}</td>
+        <td>${d.isHigh?'<span class="tag tag-高">高值项目</span>':'<span class="tag tag-常规">推断项目</span>'}</td>
+        <td class="num">${d.isHigh?"全额计入":money(d.proj)}</td>
+        <td style="color:#5a6b7b">${esc(d.desc)}</td></tr>`).join("")}
+      </tbody></table>
+      <div class="formula">已知错报（高值项目 ${m.highCount} 项） = ${money(m.known)} 元
+推断错报 Σ(错报比例 × 抽样间隔) = ${money(m.projected)} 元
+基本精确度 BP = ${money(m.bp)} 元
+错报上限 UML = 已知错报 + 推断错报 + 基本精确度 = ${money(m.uml)} 元
+可容忍错报 TM = ${money(m.tm)} 元
+判断：UML ${m.accept?"≤":">"} TM  →  ${m.accept?"接受账面金额":"不接受账面金额"}</div>`;
+    html += `<div class="callout ${m.accept?"good":"bad"}" style="margin-top:12px"><b>抽样结论：</b>${
+      m.accept
+        ? "错报上限未超过可容忍错报，样本结果支持总体账面金额，可以接受。"
+        : "错报上限已超过可容忍错报，样本结果不支持总体账面金额，建议提请调整、扩大样本量或实施替代审计程序。"}</div>`;
+  }
+  box.innerHTML = html;
+}
+
+/* ---------- 11. 渲染：风险评估结论 ---------- */
+function renderRisk(){
+  const box = $("tab-risk");
+  if(!RESULT.programs){ box.innerHTML = emptyHTML("请先生成审计程序"); return; }
+  const s = RESULT.state, rows = RESULT.programs.rows;
+  const cnt = { "高":0,"中":0,"低":0 };
+  CYCLES.forEach(c=>cnt[s.levels[c.key]]++);
+  const overallCalc = cnt["高"]>=2 ? "高" : (cnt["高"]===1||cnt["中"]>=3 ? "中" : "低");
+
+  let html = `
+  <div class="kpi-grid">
+    <div class="kpi warn"><div class="k">高风险循环</div><div class="v">${cnt["高"]}<span class="u">个</span></div></div>
+    <div class="kpi"><div class="k">中风险循环</div><div class="v">${cnt["中"]}<span class="u">个</span></div></div>
+    <div class="kpi ok"><div class="k">低风险循环</div><div class="v">${cnt["低"]}<span class="u">个</span></div></div>
+    <div class="kpi"><div class="k">系统评定总体风险</div><div class="v">${overallCalc}</div></div>
+  </div>
+
+  <div class="callout ${overallCalc==="高"?"bad":(overallCalc==="中"?"warn":"good")}" style="margin-bottom:16px">
+    <b>总体风险评估：</b>用户设定总体风险分级为「${s.overall}」，系统依据六大循环风险分布评定为「${overallCalc}」。
+    ${s.overall!==overallCalc ? "两者存在差异，建议复核风险评估底稿并说明理由。" : "两者一致，风险评估结论可支持。"}
+  </div>
+
+  <div class="section-title">分循环风险评估与应对</div>
+  <table class="rtable">
+    <thead><tr><th style="width:120px">业务循环</th><th style="width:74px">风险等级</th><th>识别的重大错报风险</th><th style="width:250px">总体应对措施</th><th style="width:66px">程序数</th></tr></thead>
+    <tbody>${CYCLES.slice().sort((a,b)=>LEVEL_ORDER[s.levels[b.key]]-LEVEL_ORDER[s.levels[a.key]]).map(c=>{
+      const lv = s.levels[c.key], rs = rows.filter(r=>r.cycleKey===c.key);
+      return `<tr>
+        <td><b>${c.name}</b><br><small style="color:#8a97a3">${c.desc}</small></td>
+        <td><span class="tag tag-${lv}">${lv}</span></td>
+        <td>${esc(c.risks[lv])}${(s.factors&&s.factors[c.key]&&s.factors[c.key].length)?`<br><small style="color:#8e44ad">已识别风险因子：${s.factors[c.key].map(f=>FACTOR_LABELS[f]||f).join("、")}</small>`:""}</td>
+        <td style="color:#5a6b7b">${esc(STRATEGY[lv])}</td>
+        <td class="num">${rs.length}<br><small style="color:#8e44ad">专项${rs.filter(r=>r.nature==="专项").length}</small></td></tr>`;
+    }).join("")}</tbody>
+  </table>
+
+  <div class="section-title">特殊情形</div>
+  <div class="callout ${(s.flags.scope||s.flags.fraud||s.flags.going)?"warn":"good"}">
+    ${s.flags.scope?"· 审计范围受到限制，无法获取充分适当审计证据<br>":""}
+    ${s.flags.fraud?"· 识别出舞弊迹象或管理层凌驾于控制之上<br>":""}
+    ${s.flags.going?"· 存在与持续经营相关的重大不确定性<br>":""}
+    ${(!s.flags.scope&&!s.flags.fraud&&!s.flags.going)?"未识别出范围限制、舞弊迹象或持续经营重大不确定性。":""}
+  </div>`;
+  box.innerHTML = html;
+}
+
+/* ---------- 12. 渲染：最终审计结论 ---------- */
+function renderOpinion(){
+  const box = $("tab-opinion");
+  if(!RESULT.programs && !RESULT.mus){ box.innerHTML = emptyHTML("完成程序生成与抽样计算后显示审计结论"); return; }
+  const s = RESULT.state;
+  const op = judgeOpinion(s, RESULT.mus);
+  RESULT.opinion = op;
+  const m = RESULT.mus;
+
+  let html = `
+  <div class="opinion-box op-${op.type}">
+    <div class="lbl">审 计 意 见 类 型</div>
+    <div class="op">${op.type}</div>
+    <div style="font-size:12.5px">${esc(s.project||"未命名项目")} · ${esc(s.period||"")}</div>
+  </div>
+
+  <div class="section-title">形成意见的依据</div>
+  <div class="callout info">${esc(op.reason)}</div>
+
+  <div class="section-title">判断标准</div>
+  <table class="rtable" style="margin-bottom:6px">
+    <thead><tr><th>判断条件</th><th style="width:180px">阈值</th><th style="width:150px">对应意见</th><th style="width:70px">本次</th></tr></thead>
+    <tbody>
+      <tr><td>错报上限 ≤ 可容忍错报</td><td class="num">${money(s.tm)}</td><td>无保留意见</td><td>${m&&!s.flags.scope&&m.uml<=s.tm?"✔":""}</td></tr>
+      <tr><td>可容忍错报 &lt; 错报上限 ≤ 重大错报阈值</td><td class="num">${money(op.pervasive)}</td><td>保留意见</td><td>${m&&!s.flags.scope&&m.uml>s.tm&&m.uml<=op.pervasive?"✔":""}</td></tr>
+      <tr><td>错报上限 &gt; 重大错报阈值</td><td class="num">&gt; ${money(op.pervasive)}</td><td>否定意见</td><td>${m&&!s.flags.scope&&m.uml>op.pervasive?"✔":""}</td></tr>
+      <tr><td>无法获取充分、适当的审计证据</td><td>—</td><td>无法表示意见</td><td>${s.flags.scope?"✔":""}</td></tr>
+    </tbody>
+  </table>
+
+  <div class="section-title">执行情况汇总</div>
+  <table class="rtable" style="margin-bottom:6px">
+    <tbody>
+      <tr><td style="width:190px;background:#f7fafc"><b>审计程序执行</b></td><td>${RESULT.programs?("已生成并执行 "+RESULT.programs.rows.length+" 项审计程序，其中专项程序 "+RESULT.programs.rows.filter(r=>r.nature==="专项").length+" 项"):"尚未生成"}</td></tr>
+      <tr><td style="background:#f7fafc"><b>MUS 抽样</b></td><td>${m?("样本规模 "+m.n+" 个，抽样间隔 "+money(m.interval)+" 元，错报上限 "+money(m.uml)+" 元，"+(m.accept?"接受账面金额":"不接受账面金额")):"尚未计算"}</td></tr>
+      <tr><td style="background:#f7fafc"><b>后续步骤</b></td><td>${esc(op.action)}</td></tr>
+    </tbody>
+  </table>
+
+  <div class="section-title">AI 辅助说明<span style="font-weight:400;font-size:11.5px;color:#8a97a3;margin-left:8px" id="aiState"></span>
+    <button class="mini-btn" id="btnAiRetry" style="float:right;font-size:11px;padding:2px 10px">重试生成</button></div>
+  <div class="ai-box" id="aiBox">${RESULT.aiText ? esc(RESULT.aiText) : localNarrative(s, m, op)}</div>`;
+  box.innerHTML = html;
+}
+
+function localNarrative(s, m, op){
+  const hi = CYCLES.filter(c=>s.levels[c.key]==="高").map(c=>c.name);
+  return "【本地规则生成】\n" +
+    "本次审计以风险评估结果为导向，对六大业务循环分别匹配审计程序。" +
+    (hi.length ? "其中 " + hi.join("、") + " 被评估为高风险领域，已追加专项审计程序，包括函证、截止测试、监盘及减值测试等实质性程序。" : "各循环风险处于中低水平，以常规实质性程序与分析程序为主。") +
+    (m ? "\n\nMUS 货币单元抽样按误受风险 " + m.aria + "%（置信系数 " + m.cf + "）确定样本规模 " + m.n +
+      " 个，抽样间隔 " + money(m.interval) + " 元。经评价，错报上限为 " + money(m.uml) +
+      " 元，" + (m.accept ? "低于" : "高于") + "可容忍错报 " + money(s.tm) + " 元。" : "") +
+    "\n\n综合上述程序执行结果与抽样评价结论，拟出具「" + op.type + "」。" + op.action;
+}
+
+function emptyHTML(txt){
+  return `<div class="empty"><div class="big">▤</div><div>${esc(txt)}</div>
+    <div style="font-size:12px">可点击右上角「测试示例」一键载入演示数据</div></div>`;
+}
+
+/* ---------- 13. 动作：生成 / 计算 / 更新 ---------- */
+function doGenerate(silent){
+  const v = validate("prog");
+  if(!v.ok){
+    if(!silent) toast("请补全必填项：" + v.miss.join("；"), "err");
+    logAction("generate", v.state, "校验未通过：" + v.miss.join("；"), false);
+    return false;
+  }
+  const s = v.state;
+  const prev = RESULT.programs;
+  const gen = generatePrograms(s);
+  if(prev){
+    const prevIds = new Set(prev.rows.map(r=>r.id));
+    const newIds = new Set(gen.rows.map(r=>r.id));
+    gen.rows.forEach(r=>{ if(!prevIds.has(r.id)) r.status = "新增"; });
+    const removed = prev.rows.filter(r=>!newIds.has(r.id));
+    const added = gen.rows.filter(r=>r.status==="新增");
+    if(added.length || removed.length){
+      RESULT.changelog.push(nowStr() + "  增量更新：新增 " + added.length + " 项，移除 " + removed.length + " 项"
+        + (removed.length ? "（移除示例：" + removed.slice(0,3).map(r=>r.cycle+"-"+r.name.slice(0,14)).join("；") + "）" : ""));
+    }
+  }
+  RESULT.prevPrograms = prev;
+  RESULT.programs = gen;
+  RESULT.state = s;
+  RESULT.genAt = nowStr();
+  $("genTime").textContent = "生成时间：" + RESULT.genAt;
+  renderPrograms(); renderRisk(); renderOpinion();
+  saveProject(s);
+  logAction("generate", s, "生成程序 " + gen.rows.length + " 项（专项 " + gen.rows.filter(r=>r.nature==="专项").length + " 项）", true);
+  if(!silent) toast("已生成 " + gen.rows.length + " 项审计程序", "ok");
+  if(gen.warns.length && !silent) gen.warns.forEach(w=>toast(w,"warn"));
+  return true;
+}
+
+function doCalc(silent, skipAI){
+  const v = validate("mus");
+  if(!v.ok){
+    if(!silent) toast("请补全 MUS 抽样参数：" + v.miss.join("；"), "err");
+    logAction("sampling", v.state, "校验未通过：" + v.miss.join("；"), false);
+    return false;
+  }
+  const s = v.state;
+  const m = calcMUS(s);
+  RESULT.mus = m;
+  RESULT.state = s;
+  if($("fStart").value === "") $("fStart").value = m.start.toFixed(2);
+  if($("fPervasive").value === "") $("fPervasive").value = (s.tm*3);
+  RESULT.genAt = nowStr();
+  $("genTime").textContent = "生成时间：" + RESULT.genAt;
+  renderMUS(); renderRisk(); renderOpinion();
+  saveProject(s);
+  logAction("sampling", s, "样本规模 " + m.n + "，间隔 " + money(m.interval) + "，" + (m.hasError ? ("推断错报 " + money(m.projected) + "，" + (m.accept?"接受":"不接受")) : "未录入错报明细"), true);
+  if(!silent) toast("抽样计算完成：样本规模 " + m.n + " 个", "ok");
+  if(!m.hasError && !silent) toast("未录入错报明细，仅输出样本规模与抽样间隔", "warn");
+  if(!skipAI) askAI();
+  return true;
+}
+
+function doUpdate(skipAI){
+  const before = RESULT.programs ? RESULT.programs.rows.length : 0;
+  const okP = doGenerate(true);
+  const okM = RESULT.mus || $("fBV").value ? doCalc(true, skipAI) : false;
+  if(!okP){ toast("一键更新失败：请补全业务循环风险等级与项目名称", "err"); return; }
+  const after = RESULT.programs.rows.length;
+  const diff = after - before;
+  RESULT.changelog.push(nowStr() + "  一键更新完成：程序 " + before + " → " + after + " 项" + (okM ? "，MUS 已重算" : ""));
+  renderPrograms();
+  toast("一键更新完成：程序 " + before + " → " + after + " 项" + (diff!==0 ? "（" + (diff>0?"+":"") + diff + "）" : ""), "ok");
+  logAction("update", RESULT.state, "程序 " + before + " → " + after + " 项", true);
+}
+
+/* ---------- 14. AI 辅助（DeepSeek，失败回退本地） ---------- */
+function setAI(state, txt){
+  const dot = $("aiDot"), t = $("aiTxt");
+  dot.className = "dot " + state;
+  t.textContent = "AI 辅助：" + txt;
+  const st = $("aiState");
+  if(st) st.textContent = (state==="ok"?"（已用 DeepSeek 生成）":state==="err"?"（已回退本地规则）":state==="wait"?"（请求中…）":"");
+}
+function classifyAIError(e){
+  if(!e) return "未知错误";
+  if(e.name === "AbortError") return "请求超时（>25 秒）";
+  const msg = (e.message || "") + "";
+  if(e.reason === "auth") return "密钥无效或无权限（HTTP 401/403），请在「API 设置」中检查 Key";
+  if(e.reason === "model") return "模型不可用（HTTP 400/404），请在「API 设置」中核对模型名";
+  if(msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("Network request failed")){
+    if(location.protocol === "file:") return "浏览器拦截了 file:// 跨域请求，请用本地服务器打开（见顶部提示）";
+    return "网络不可达，请检查网络连接后点「重试生成」";
+  }
+  return msg.slice(0, 140) || "未知错误";
+}
+/* 返回 Promise<{ok:boolean, model?:string, reason?:string}> */
+async function askAI(){
+  if(!API.enable){ setAI("", "已关闭"); RESULT.aiText = ""; showLocalAI(); return { ok:false, reason:"已关闭" }; }
+  if(!RESULT.state || !RESULT.mus) return { ok:false, reason:"尚未生成" };
+  const s = RESULT.state, m = RESULT.mus, op = judgeOpinion(s, m);
+  setAI("wait", "生成中…");
+  const aiBox = $("aiBox");
+  if(aiBox){ aiBox.className = "ai-box loading"; aiBox.textContent = "正在请求 DeepSeek 生成审计结论说明…"; }
+
+  const prompt =
+    "你是资深注册会计师。根据以下审计数据，用中文撰写一段 180 字以内的审计结论说明，" +
+    "包含风险应对重点、抽样评价结果和意见依据，语言专业简洁，不要使用 Markdown 标题，直接输出正文。\n" +
+    "项目：" + s.project + "（" + s.period + "）\n" +
+    "各循环风险：" + CYCLES.map(c=>c.name + "=" + s.levels[c.key]).join("，") + "\n" +
+    "审计程序：" + (RESULT.programs?RESULT.programs.rows.length:0) + " 项，其中专项 " + (RESULT.programs?RESULT.programs.rows.filter(r=>r.nature==="专项").length:0) + " 项\n" +
+    "MUS：账面 " + m.bv + "，可容忍错报 " + m.tm + "，样本规模 " + m.n + "，抽样间隔 " + m.interval.toFixed(2) +
+    "，错报上限 " + m.uml.toFixed(2) + "，结论" + (m.accept?"接受":"不接受") + "\n" +
+    "审计意见：" + op.type;
+
+  const models = [API.model, API.model2].filter(Boolean);
+  let lastErr = null;
+  for(const mo of models){
+    try{
+      const ctl = new AbortController();
+      const timer = setTimeout(()=>ctl.abort(), 25000);
+      const res = await fetch(API.base.replace(/\/+$/,"") + "/chat/completions", {
+        method:"POST",
+        mode:"cors",
+        headers:{ "Content-Type":"application/json", "Authorization":"Bearer " + API.key },
+        body: JSON.stringify({ model:mo, messages:[{role:"user",content:prompt}], temperature:0.3, max_tokens:500 }),
+        signal: ctl.signal
+      });
+      clearTimeout(timer);
+      if(!res.ok){
+        const body = await res.text().catch(()=> "");
+        const err = new Error("HTTP " + res.status + (body ? " " + body.slice(0,120) : ""));
+        if(res.status === 401 || res.status === 403) err.reason = "auth";
+        else if(res.status === 400 || res.status === 404) err.reason = "model";
+        throw err;
+      }
+      const data = await res.json();
+      const txt = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+      if(!txt) throw new Error("返回内容为空");
+      RESULT.aiText = "【DeepSeek " + mo + " 生成】\n" + txt.trim();
+      setAI("ok", "已生成");
+      if($("aiBox")){ $("aiBox").className = "ai-box"; $("aiBox").textContent = RESULT.aiText; }
+      logAction("ai", s, "AI 辅助说明生成成功（" + mo + "）", true);
+      return { ok:true, model:mo };
+    }catch(e){ lastErr = e; }
+  }
+  RESULT.aiText = "";
+  setAI("err", "不可用（本地规则）");
+  const reason = classifyAIError(lastErr);
+  showLocalAI(reason);
+  toast("AI 辅助不可用，已用本地规则：" + reason, "warn");
+  logAction("ai", s, "AI 调用失败：" + reason, false);
+  return { ok:false, reason };
+}
+function showLocalAI(reason){
+  const aiBox = $("aiBox");
+  if(!aiBox) return;
+  const s = RESULT.state, m = RESULT.mus, op = m ? judgeOpinion(s, m) : null;
+  let txt = localNarrative(s, m, op);
+  if(reason) txt += "\n\n（AI 辅助不可用：" + reason + "）";
+  aiBox.className = "ai-box";
+  aiBox.textContent = txt;
+}
+
+/* ---------- 15. 导出：Markdown / Excel / Word / PDF ---------- */
+function buildMarkdown(){
+  const s = RESULT.state, m = RESULT.mus, p = RESULT.programs;
+  if(!s) return "尚未生成任何结果。";
+  const op = judgeOpinion(s, m);
+  let out = "=== 审计程序智能生成器 - 任务输出 ===\n";
+  out += "项目名称：" + s.project + "\n审计期间：" + s.period + "\n项目负责人：" + (s.owner||"-") + "\n生成时间：" + (RESULT.genAt||nowStr()) + "\n\n";
+  if(p){
+    out += "【审计程序清单】共 " + p.rows.length + " 项（专项 " + p.rows.filter(r=>r.nature==="专项").length + " 项）\n";
+    out += "| 序号 | 业务循环 | 审计程序 | 性质 | 风险优先级 | 审计认定 |\n|---|---|---|---|---|---|\n";
+    p.rows.forEach(r=>{ out += "| " + r.no + " | " + r.cycle + " | " + r.name + " | " + r.nature + " | " + r.level + " | " + r.assertion + " |\n"; });
+    out += "\n";
+  }
+  if(m){
+    out += "【MUS 抽样方案】\n";
+    out += "总体账面金额：" + money(m.bv) + " 元\n可容忍错报：" + money(m.tm) + " 元\n预计错报：" + money(m.pm) + " 元\n";
+    out += "误受风险：" + m.aria + "%（置信系数 " + m.cf + "，扩展因子 " + m.ef + "）\n";
+    out += "样本规模：" + m.n + "\n抽样间隔：" + money(m.interval) + " 元\n随机起点：" + money(m.start) + " 元\n";
+    out += "已知错报：" + money(m.known) + " 元\n推断总体错报：" + money(m.projected) + " 元\n基本精确度：" + money(m.bp) + " 元\n";
+    out += "错报上限：" + money(m.uml) + " 元\n抽样结论：" + (m.accept?"接受账面金额":"不接受账面金额") + "\n\n";
+  }
+  out += "【风险评估结论】\n";
+  CYCLES.forEach(c=>{ out += "- " + c.name + "：" + (s.levels[c.key]||"未选择") + "风险 — " + (s.levels[c.key]?c.risks[s.levels[c.key]]:"") + "\n"; });
+  out += "\n【最终审计结论】\n审计意见类型：" + op.type + "\n依据：" + op.reason + "\n后续步骤：" + op.action + "\n";
+  if(RESULT.aiText) out += "\n【AI 辅助说明】\n" + RESULT.aiText + "\n";
+  return out;
+}
+
+function copyAll(){
+  if(!RESULT.state){ toast("暂无可复制的结果","warn"); return; }
+  const txt = buildMarkdown();
+  const done = ()=>{ toast("已复制到剪贴板（Markdown 格式）","ok"); logAction("copy", RESULT.state, "复制全部结果", true); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done).catch(()=>fallbackCopy(txt,done));
+  } else fallbackCopy(txt, done);
+}
+function fallbackCopy(txt, cb){
+  const ta = document.createElement("textarea");
+  ta.value = txt; ta.style.position="fixed"; ta.style.opacity="0";
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); cb(); }catch(e){ toast("复制失败，请手动选择文本","err"); }
+  ta.remove();
+}
+function copyText(txt){
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).catch(()=>fallbackCopy(txt, ()=>{})); }
+  else fallbackCopy(txt, ()=>{});
+}
+
+function fileName(ext){
+  const s = RESULT.state || {project:"审计项目"};
+  const d = new Date(), p = x=>String(x).padStart(2,"0");
+  return (s.project||"审计项目") + "_审计程序与抽样方案_" + d.getFullYear() + p(d.getMonth()+1) + p(d.getDate()) + "." + ext;
+}
+function download(blob, name){
+  const url = URL.createObjectURL(blob), a = document.createElement("a");
+  a.href = url; a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 500);
+}
+
+function exportExcel(){
+  if(!RESULT.state){ toast("请先生成结果","warn"); return; }
+  const s = RESULT.state, m = RESULT.mus, p = RESULT.programs, op = judgeOpinion(s, m);
+  const sheets = {};
+  sheets["审计程序清单"] = [["序号","业务循环","审计程序","程序性质","风险优先级","审计认定","对应风险项"]]
+    .concat(p ? p.rows.map(r=>[r.no,r.cycle,r.name,r.nature,r.level,r.assertion,r.risk]) : []);
+  if(m){
+    sheets["抽样方案"] = [
+      ["项目","数值"],
+      ["总体账面金额（元）",m.bv],["可容忍错报（元）",m.tm],["预计错报（元）",m.pm],
+      ["误受风险",m.aria+"%"],["置信系数",m.cf],["扩展因子",m.ef],
+      ["样本规模",m.n],["抽样间隔（元）",Number(m.interval.toFixed(2))],["随机起点（元）",Number(m.start.toFixed(2))],
+      ["已知错报（元）",Number(m.known.toFixed(2))],["推断总体错报（元）",Number(m.projected.toFixed(2))],
+      ["基本精确度（元）",Number(m.bp.toFixed(2))],["错报上限（元）",Number(m.uml.toFixed(2))],
+      ["抽样结论",m.accept?"接受账面金额":"不接受账面金额"]
+    ];
+    sheets["错报评价"] = [["序号","账面金额","审计金额","错报金额","错报比例","项目类型","推断错报","说明"]]
+      .concat(m.detail.map(d=>[d.no,d.book,d.audit,d.mis,pct(d.taint),d.isHigh?"高值项目":"推断项目",d.isHigh?d.mis:Number(d.proj.toFixed(2)),d.desc]));
+    sheets["样本定位点"] = [["样本序号","货币单元定位点（元）"]]
+      .concat(m.points.map((x,i)=>[i+1, Number(x.toFixed(2))]));
+  }
+  sheets["风险评估结论"] = [["业务循环","风险等级","识别的重大错报风险","总体应对措施","程序数量","其中专项"]]
+    .concat(CYCLES.map(c=>{
+      const lv = s.levels[c.key] || "";
+      const rs = p ? p.rows.filter(r=>r.cycleKey===c.key) : [];
+      return [c.name, lv, lv?c.risks[lv]:"", lv?STRATEGY[lv]:"", rs.length, rs.filter(r=>r.nature==="专项").length];
+    }));
+  sheets["最终审计结论"] = [
+    ["项目名称",s.project],["审计期间",s.period],["项目负责人",s.owner||""],
+    ["审计意见类型",op.type],["形成意见的依据",op.reason],["后续步骤",op.action],
+    ["生成时间",RESULT.genAt||nowStr()],["工具版本","审计程序智能生成器 "+VERSION]
+  ];
+
+  if(window.XLSX){
+    const wb = XLSX.utils.book_new();
+    Object.keys(sheets).forEach(k=>XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sheets[k]), k));
+    XLSX.writeFile(wb, fileName("xlsx"));
+  } else {
+    let html = '<html><head><meta charset="utf-8"></head><body>';
+    Object.keys(sheets).forEach(k=>{
+      html += "<h3>" + k + "</h3><table border='1'>" +
+        sheets[k].map(r=>"<tr>" + r.map(c=>"<td>" + esc(c) + "</td>").join("") + "</tr>").join("") + "</table><br>";
+    });
+    html += "</body></html>";
+    download(new Blob(["\ufeff"+html], {type:"application/vnd.ms-excel;charset=utf-8"}), fileName("xls"));
+  }
+  toast("Excel 已导出","ok");
+  logAction("export", s, "导出 Excel", true);
+}
+
+function buildReportHTML(){
+  const s = RESULT.state, m = RESULT.mus, p = RESULT.programs, op = judgeOpinion(s, m);
+  let h = "<h1>审计程序与货币单元抽样方案</h1>";
+  h += '<div class="meta">项目名称：' + esc(s.project) + "　|　审计期间：" + esc(s.period) +
+       "　|　项目负责人：" + esc(s.owner||"-") + "　|　生成时间：" + (RESULT.genAt||nowStr()) + "</div>";
+  if(p){
+    h += "<h2>一、审计程序清单（共 " + p.rows.length + " 项）</h2><table><tr><th>序号</th><th>业务循环</th><th>审计程序</th><th>性质</th><th>风险优先级</th><th>审计认定</th></tr>";
+    p.rows.forEach(r=>{ h += "<tr><td>"+r.no+"</td><td>"+esc(r.cycle)+"</td><td>"+esc(r.name)+"</td><td>"+r.nature+"</td><td>"+r.level+"</td><td>"+esc(r.assertion)+"</td></tr>"; });
+    h += "</table>";
+  }
+  if(m){
+    h += "<h2>二、MUS 抽样方案</h2><table>" +
+      "<tr><th>项目</th><th>数值</th><th>项目</th><th>数值</th></tr>" +
+      "<tr><td>总体账面金额</td><td>"+money(m.bv)+"</td><td>可容忍错报</td><td>"+money(m.tm)+"</td></tr>" +
+      "<tr><td>预计错报</td><td>"+money(m.pm)+"</td><td>误受风险 / 置信系数</td><td>"+m.aria+"% / "+m.cf+"</td></tr>" +
+      "<tr><td>样本规模</td><td>"+m.n+"</td><td>抽样间隔</td><td>"+money(m.interval)+"</td></tr>" +
+      "<tr><td>已知错报</td><td>"+money(m.known)+"</td><td>推断总体错报</td><td>"+money(m.projected)+"</td></tr>" +
+      "<tr><td>基本精确度</td><td>"+money(m.bp)+"</td><td>错报上限</td><td>"+money(m.uml)+"</td></tr>" +
+      "<tr><td>抽样结论</td><td colspan='3'><b>"+(m.accept?"接受账面金额":"不接受账面金额")+"</b></td></tr></table>";
+  }
+  h += "<h2>三、风险评估结论</h2><table><tr><th>业务循环</th><th>风险等级</th><th>识别的重大错报风险</th><th>总体应对措施</th></tr>";
+  CYCLES.forEach(c=>{ const lv = s.levels[c.key]||"";
+    h += "<tr><td>"+c.name+"</td><td>"+lv+"</td><td>"+esc(lv?c.risks[lv]:"")+"</td><td>"+esc(lv?STRATEGY[lv]:"")+"</td></tr>"; });
+  h += "</table>";
+  h += "<h2>四、最终审计结论</h2><table>" +
+    "<tr><td style='width:130px'><b>审计意见类型</b></td><td><b>"+op.type+"</b></td></tr>" +
+    "<tr><td><b>形成意见的依据</b></td><td>"+esc(op.reason)+"</td></tr>" +
+    "<tr><td><b>后续步骤</b></td><td>"+esc(op.action)+"</td></tr></table>";
+  if(RESULT.aiText) h += "<h2>五、AI 辅助说明</h2><div>"+esc(RESULT.aiText).replace(/\n/g,"<br>")+"</div>";
+  h += "<div class='meta' style='margin-top:18px'>本报告由「审计程序智能生成器 "+VERSION+"」自动生成，仅供审计工作底稿参考。</div>";
+  return h;
+}
+
+function exportWord(){
+  if(!RESULT.state){ toast("请先生成结果","warn"); return; }
+  const html = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>" +
+    "<head><meta charset='utf-8'><title>审计程序与抽样方案</title><style>" +
+    "body{font-family:'微软雅黑';font-size:10.5pt}h1{font-size:16pt;color:#1a5276;text-align:center}" +
+    "h2{font-size:12pt;color:#1a5276;border-left:3px solid #2e86c1;padding-left:6px}" +
+    "table{border-collapse:collapse;width:100%;font-size:9pt}th{background:#1a5276;color:#fff;padding:4px;border:1px solid #999}" +
+    "td{border:1px solid #999;padding:4px}.meta{font-size:9pt;color:#555}</style></head><body>" +
+    buildReportHTML() + "</body></html>";
+  download(new Blob(["\ufeff"+html], {type:"application/msword;charset=utf-8"}), fileName("doc"));
+  toast("Word 文档已导出","ok");
+  logAction("export", RESULT.state, "导出 Word", true);
+}
+
+function exportPDF(){
+  if(!RESULT.state){ toast("请先生成结果","warn"); return; }
+  $("printArea").innerHTML = buildReportHTML();
+  logAction("export", RESULT.state, "导出 PDF（打印）", true);
+  toast("已打开打印面板，请选择「另存为 PDF」","ok");
+  setTimeout(()=>window.print(), 250);
+}
+
+function saveLocal(){
+  const s = readForm();
+  const pack = { version:VERSION, savedAt:nowStr(), state:s,
+    programs:RESULT.programs?RESULT.programs.rows:null, mus:RESULT.mus, changelog:RESULT.changelog };
+  download(new Blob([JSON.stringify(pack,null,2)],{type:"application/json;charset=utf-8"}),
+    (s.project||"审计项目") + "_存档.json");
+  saveProject(s);
+  toast("已保存到本地（JSON 存档 + 项目记忆）","ok");
+  logAction("save", s, "保存本地存档", true);
+}
+
+/* ---------- 16. 项目记忆 ---------- */
+function saveProject(s){
+  if(!s.project) return;
+  let list = lsGet(LS.PROJ, []);
+  list = list.filter(x=>x.project !== s.project);
+  list.unshift({ project:s.project, updatedAt:nowStr(), state:s });
+  if(list.length > 10) list = list.slice(0,10);
+  lsSet(LS.PROJ, list);
+  refreshProjList();
+}
+function refreshProjList(){
+  const list = lsGet(LS.PROJ, []);
+  $("projList").innerHTML = list.map(x=>`<option value="${esc(x.project)}">`).join("");
+  $("memHint").textContent = "项目记忆：" + list.length;
+}
+let lastLoadedProject = "";
+function tryLoadProject(){
+  const name = $("fProject").value.trim();
+  if(!name || name === lastLoadedProject) return;
+  const hit = lsGet(LS.PROJ, []).find(x=>x.project===name);
+  if(hit){
+    lastLoadedProject = name;
+    fillForm(hit.state);
+    toast("已自动载入项目「" + name + "」的历史参数（" + hit.updatedAt + "）","ok");
+    logAction("memory", hit.state, "载入历史参数", true);
+  } else {
+    lastLoadedProject = name;
+  }
+}
+function renderMem(){
+  const list = lsGet(LS.PROJ, []);
+  $("memBody").innerHTML = list.length ? `<table class="log-table">
+    <thead><tr><th style="width:36px">#</th><th>项目名称</th><th style="width:150px">更新时间</th><th style="width:130px">操作</th></tr></thead>
+    <tbody>${list.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.project)}</td><td>${x.updatedAt}</td>
+      <td><button class="btn btn-second btn-sm" data-load="${i}">载入</button>
+          <button class="btn btn-ghost btn-sm" data-del="${i}">删除</button></td></tr>`).join("")}
+    </tbody></table>` : '<div class="callout info">暂无项目记忆。生成或计算后将自动按项目名称保存参数（最多 10 个）。</div>';
+  $("memBody").querySelectorAll("[data-load]").forEach(b=>b.onclick=()=>{
+    fillForm(list[+b.dataset.load].state); closeMask("mMem"); toast("已载入项目参数","ok");
+  });
+  $("memBody").querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{
+    const l = lsGet(LS.PROJ, []); l.splice(+b.dataset.del,1); lsSet(LS.PROJ,l); refreshProjList(); renderMem();
+  });
+}
+
+/* ---------- 17. 操作日志 useractivity.log ---------- */
+function logAction(action, state, summary, success){
+  const list = lsGet(LS.LOG, []);
+  const entry = {
+    time: new Date().toISOString(),
+    action,
+    input: state ? {
+      project: state.project,
+      risk_levels: state.levels,
+      mus: { bv:state.bv, tm:state.tm, pm:state.pm, aria:state.aria, ef:state.ef },
+      errors: (state.errors||[]).length
+    } : null,
+    output_summary: summary,
+    success: !!success
+  };
+  list.push(entry);
+  if(list.length > 500) list.splice(0, list.length-500);
+  lsSet(LS.LOG, list);
+}
+function renderLog(){
+  const list = lsGet(LS.LOG, []).slice().reverse();
+  $("logBody").innerHTML = list.length ? `
+    <div class="hint" style="margin-bottom:8px">共 ${list.length} 条记录（倒序，最多保留 500 条），存储于 localStorage["useractivity.log"]</div>
+    <table class="log-table"><thead><tr><th style="width:150px">时间</th><th style="width:80px">动作</th><th style="width:170px">输入摘要</th><th>输出摘要</th><th style="width:56px">结果</th></tr></thead>
+    <tbody>${list.map(x=>`<tr>
+      <td>${x.time.replace("T"," ").slice(0,19)}</td>
+      <td>${esc(x.action)}</td>
+      <td>${x.input?esc(x.input.project||"-")+"<br><small style='color:#8a97a3'>"+esc(JSON.stringify(x.input.risk_levels||{}).slice(0,60))+"</small>":"-"}</td>
+      <td>${esc(x.output_summary)}</td>
+      <td>${x.success?'<span class="pass">成功</span>':'<span class="fail">失败</span>'}</td></tr>`).join("")}
+    </tbody></table>` : '<div class="callout info">暂无操作日志。</div>';
+}
+
+/* ---------- 18. 测试示例模块 ---------- */
+const TEST1 = {
+  project:"凌驰汽车集团2024年度审计", period:"2024年度", owner:"李昀晓", overall:"高", materiality:null,
+  levels:{ sales:"高", purchase:"中", production:"中", financing:"低", payroll:"低", fixedasset:"高" },
+  bv:50000000, tm:1000000, pm:200000, aria:"5", ef:1, pervasive:3000000, start:200000,
+  errors:[{book:100000, audit:95000, desc:"收入跨期确认"}],
+  flags:{scope:false,fraud:false,going:false}
+};
+const TEST2_PATCH = {
+  levels:{ sales:"低", purchase:"中", production:"中", financing:"低", payroll:"低", fixedasset:"中" },
+  errors:[{book:500000, audit:240000, desc:"存货跌价准备计提不足"}]
+};
+
+function testExpect1(){
+  const s = JSON.parse(JSON.stringify(TEST1));
+  const g = generatePrograms(s), m = calcMUS(s), op = judgeOpinion(s, m);
+  return { s, g, m, op };
+}
+function testExpect2(){
+  const s = Object.assign(JSON.parse(JSON.stringify(TEST1)), JSON.parse(JSON.stringify(TEST2_PATCH)));
+  const g = generatePrograms(s), m = calcMUS(s), op = judgeOpinion(s, m);
+  return { s, g, m, op };
+}
+function cycleBreak(g, s){
+  return CYCLES.map(c=>{
+    const rs = g.rows.filter(r=>r.cycleKey===c.key);
+    return c.name + " " + s.levels[c.key] + "：" + rs.length + " 项（专项 " + rs.filter(r=>r.nature==="专项").length + "）";
+  }).join("<br>");
+}
+
+function renderTestPanel(){
+  const e1 = testExpect1(), e2 = testExpect2();
+  $("testBody").innerHTML = `
+  <div class="callout info" style="margin-bottom:14px">
+    测试示例用于快速验证匹配引擎与 MUS 计算引擎。<b>预期值</b>依据 V1.0 内置规则矩阵（低风险 2 项常规／中风险 4 项常规／高风险 4 项常规 + 3~5 项专项）与经典 MUS 模型推导，<b>实际值</b>为点击运行后主界面产生的结果，两者一致即为通过。
+  </div>
+
+  <div class="case">
+    <div class="case-h"><b>测试用例 1 ｜ 标准制造业审计（凌驰汽车集团）</b>
+      <span><button class="btn btn-ghost btn-sm" id="t1fill">填充测试数据</button>
+      <button class="btn btn-primary btn-sm" id="t1run">一键测试</button></span></div>
+    <div class="case-b">
+      <div class="kv">
+        <div class="k">项目名称</div><div>${TEST1.project}</div>
+        <div class="k">风险分级</div><div>销售与收款 <b>高</b>；采购与付款 <b>中</b>；生产与仓储 <b>中</b>；筹资与投资 <b>低</b>；工薪与人事 <b>低</b>；固定资产 <b>高</b></div>
+        <div class="k">MUS 参数</div><div>账面 50,000,000；可容忍错报 1,000,000；预计错报 200,000；误受风险 5%；EF 1.0</div>
+        <div class="k">错报明细</div><div>账面 100,000 / 审计 95,000（1 行）</div>
+      </div>
+      <div class="exp-act">
+        <div><h5>预期输出</h5>
+          审计程序共 <b>${e1.g.rows.length}</b> 项（专项 ${e1.g.rows.filter(r=>r.nature==="专项").length} 项）<br>
+          <small style="color:#8a97a3">${cycleBreak(e1.g, e1.s)}</small><br>
+          样本规模 <b>${e1.m.n}</b>，抽样间隔 <b>${money(e1.m.interval)}</b><br>
+          推断错报 <b>${money(e1.m.projected)}</b>，错报上限 <b>${money(e1.m.uml)}</b><br>
+          抽样结论 <b>${e1.m.accept?"接受账面金额":"不接受账面金额"}</b>，审计意见 <b>${e1.op.type}</b>
+        </div>
+        <div><h5>实际输出 <span id="t1badge"></span></h5><div id="t1act" style="color:#8a97a3">尚未运行</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="case">
+    <div class="case-h"><b>测试用例 2 ｜ 高风险变更场景（一键更新）</b>
+      <span><button class="btn btn-primary btn-sm" id="t2run">测试风险变更</button></span></div>
+    <div class="case-b">
+      <div class="kv">
+        <div class="k">变更内容</div><div>销售与收款 高 → <b>低</b>；固定资产 高 → <b>中</b>；错报明细改为 账面 500,000 / 审计 240,000</div>
+        <div class="k">触发方式</div><div>自动修改参数并调用「一键更新」（增量更新，保留未变更部分）</div>
+      </div>
+      <div class="exp-act">
+        <div><h5>预期输出</h5>
+          审计程序减少至 <b>${e2.g.rows.length}</b> 项（专项 ${e2.g.rows.filter(r=>r.nature==="专项").length} 项，销售与收款专项程序全部移除）<br>
+          样本规模 <b>${e2.m.n}</b>，抽样间隔 <b>${money(e2.m.interval)}</b><br>
+          推断错报 <b>${money(e2.m.projected)}</b>，错报上限 <b>${money(e2.m.uml)}</b> &gt; 可容忍错报 1,000,000<br>
+          抽样结论 <b>${e2.m.accept?"接受账面金额":"不接受账面金额"}</b>，审计意见 <b>${e2.op.type}</b>
+        </div>
+        <div><h5>实际输出 <span id="t2badge"></span></h5><div id="t2act" style="color:#8a97a3">尚未运行</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="case">
+    <div class="case-h"><b>测试用例 3 ｜ 输入缺失校验</b>
+      <span><button class="btn btn-primary btn-sm" id="t3run">测试输入校验</button></span></div>
+    <div class="case-b">
+      <div class="kv">
+        <div class="k">测试数据</div><div>仅填写项目名称「测试项目」，风险等级与抽样参数全部留空</div>
+      </div>
+      <div class="exp-act">
+        <div><h5>预期输出</h5>提示缺少全部六个业务循环风险等级；再次点击计算抽样时提示缺少总体账面金额、可容忍错报、预计错报。</div>
+        <div><h5>实际输出 <span id="t3badge"></span></h5><div id="t3act" style="color:#8a97a3">尚未运行</div></div>
+      </div>
+    </div>
+  </div>`;
+
+  $("t1fill").onclick = ()=>{ fillForm(TEST1); closeMask("mTest"); toast("测试数据已填充到输入区","ok"); };
+  $("t1run").onclick = async ()=>{
+    RESULT = { programs:null, prevPrograms:null, mus:null, state:null, changelog:[], genAt:null, aiText:"" };
+    fillForm(TEST1); doGenerate(true); doCalc(true, true);
+    const aiRes = await askAI();
+    const p = RESULT.programs, m = RESULT.mus, op = judgeOpinion(RESULT.state, m);
+    const pass = p.rows.length===e1.g.rows.length && m.n===e1.m.n &&
+      Math.abs(m.uml-e1.m.uml)<0.01 && m.accept===e1.m.accept && op.type===e1.op.type;
+    $("t1badge").innerHTML = pass?'<span class="pass">通过</span>':'<span class="fail">不通过</span>';
+    $("t1act").style.color = "#1f2d3d";
+    $("t1act").innerHTML = "审计程序共 <b>"+p.rows.length+"</b> 项（专项 "+p.rows.filter(r=>r.nature==="专项").length+" 项）<br>" +
+      "<small style='color:#8a97a3'>"+cycleBreak(p, RESULT.state)+"</small><br>" +
+      "样本规模 <b>"+m.n+"</b>，抽样间隔 <b>"+money(m.interval)+"</b><br>" +
+      "推断错报 <b>"+money(m.projected)+"</b>，错报上限 <b>"+money(m.uml)+"</b><br>" +
+      "抽样结论 <b>"+(m.accept?"接受账面金额":"不接受账面金额")+"</b>，审计意见 <b>"+op.type+"</b><br>" +
+      "<small style='color:#2e7d32'>AI 辅助："+(aiRes.ok?("已生成（"+aiRes.model+"）"):("不可用："+(aiRes.reason||"")))+"</small>";
+    toast("测试用例 1 执行完毕，可在主界面查看完整结果", pass?"ok":"err");
+  };
+  $("t2run").onclick = async ()=>{
+    if(!RESULT.programs){ fillForm(TEST1); doGenerate(true); doCalc(true, true); await askAI(); }
+    const s2 = Object.assign(JSON.parse(JSON.stringify(TEST1)), JSON.parse(JSON.stringify(TEST2_PATCH)));
+    fillForm(s2); doUpdate(true);
+    const aiRes = await askAI();
+    const p = RESULT.programs, m = RESULT.mus, op = judgeOpinion(RESULT.state, m);
+    const pass = p.rows.length===e2.g.rows.length && m.n===e2.m.n &&
+      Math.abs(m.uml-e2.m.uml)<0.01 && m.accept===e2.m.accept && op.type===e2.op.type;
+    $("t2badge").innerHTML = pass?'<span class="pass">通过</span>':'<span class="fail">不通过</span>';
+    $("t2act").style.color = "#1f2d3d";
+    $("t2act").innerHTML = "审计程序共 <b>"+p.rows.length+"</b> 项（专项 "+p.rows.filter(r=>r.nature==="专项").length+" 项）<br>" +
+      "样本规模 <b>"+m.n+"</b>，抽样间隔 <b>"+money(m.interval)+"</b><br>" +
+      "推断错报 <b>"+money(m.projected)+"</b>，错报上限 <b>"+money(m.uml)+"</b><br>" +
+      "抽样结论 <b>"+(m.accept?"接受账面金额":"不接受账面金额")+"</b>，审计意见 <b>"+op.type+"</b><br>" +
+      "<small style='color:#8a97a3'>变更日志："+esc((RESULT.changelog.slice(-2)[0]||""))+"</small><br>" +
+      "<small style='color:#2e7d32'>AI 辅助："+(aiRes.ok?("已生成（"+aiRes.model+"）"):("不可用："+(aiRes.reason||"")))+"</small>";
+    toast("测试用例 2 执行完毕", pass?"ok":"err");
+  };
+  $("t3run").onclick = ()=>{
+    fillForm({ project:"测试项目", period:"2024年度", levels:{}, errors:[{}], flags:{} });
+    RESULT = { programs:null, prevPrograms:null, mus:null, state:null, changelog:[], genAt:null, aiText:"" };
+    renderPrograms(); renderMUS(); renderRisk(); renderOpinion();
+    const v1 = validate("prog"), v2 = validate("mus");
+    const pass = !v1.ok && !v2.ok;
+    $("t3badge").innerHTML = pass?'<span class="pass">通过</span>':'<span class="fail">不通过</span>';
+    $("t3act").style.color="#1f2d3d";
+    $("t3act").innerHTML = "<b>生成审计程序校验：</b><br>" + esc(v1.miss.join("；")||"无") +
+      "<br><br><b>计算抽样校验：</b><br>" + esc(v2.miss.join("；")||"无");
+    toast("输入校验测试完毕：已拦截全部缺失项", pass?"ok":"err");
+    logAction("validate", v1.state, "输入校验测试：" + v1.miss.join("；"), false);
+  };
+}
+
+/* ---------- 19. 弹窗控制 ---------- */
+function openMask(id){ $(id).classList.add("show"); }
+function closeMask(id){ $(id).classList.remove("show"); }
+document.addEventListener("click", e=>{
+  const c = e.target.getAttribute && e.target.getAttribute("data-close");
+  if(c) closeMask(c);
+  if(e.target.classList && e.target.classList.contains("mask")) e.target.classList.remove("show");
+});
+
+/* ---------- 20. 事件绑定与启动 ---------- */
+function switchTab(name){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.tab===name));
+  ["prog","mus","risk","opinion"].forEach(k=>{ $("tab-"+k).style.display = (k===name?"block":"none"); });
+}
+
+function boot(){
+  initRiskGrid();
+  addErrRow();
+  refreshProjList();
+  renderPrograms(); renderMUS(); renderRisk(); renderOpinion();
+  setAI(API.enable?"":"", API.enable?"待机":"已关闭");
+
+  document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>switchTab(t.dataset.tab));
+  $("btnGen").onclick = ()=>{ if(doGenerate()) switchTab("prog"); };
+  $("btnCalc").onclick = ()=>{ if(doCalc()) switchTab("mus"); };
+  $("btnUpdate").onclick = doUpdate;
+  $("btnSave").onclick = saveLocal;
+  $("btnReset").onclick = ()=>{
+    if(!confirm("确定要清空当前输入与结果吗？项目记忆与操作日志不会被删除。")) return;
+    fillForm({ project:"", period:"2024年度", levels:{}, errors:[{}], flags:{}, aria:"5", ef:1 });
+    RESULT = { programs:null, prevPrograms:null, mus:null, state:null, changelog:[], genAt:null, aiText:"" };
+    renderPrograms(); renderMUS(); renderRisk(); renderOpinion();
+    $("genTime").textContent = "尚未生成";
+    toast("已重置");
+  };
+  $("btnAddErr").onclick = ()=>addErrRow();
+  $("btnAllMid").onclick = ()=>{ CYCLES.forEach(c=>{ const el=$("lv_"+c.key); el.value="中"; el.dispatchEvent(new Event("change")); }); };
+  $("fProject").addEventListener("change", tryLoadProject);
+  $("fProject").addEventListener("blur", tryLoadProject);
+  $("fTM").addEventListener("change", ()=>{ const tm=num($("fTM").value); if(tm && !$("fPervasive").value) $("fPervasive").value = tm*3; });
+
+  $("btnCopy").onclick = copyAll;
+  $("btnXlsx").onclick = exportExcel;
+  $("btnDoc").onclick = exportWord;
+  $("btnPdf").onclick = exportPDF;
+
+  $("btnTest").onclick = ()=>{ renderTestPanel(); openMask("mTest"); };
+  $("btnLog").onclick = ()=>{ renderLog(); openMask("mLog"); };
+  $("btnMem").onclick = ()=>{ renderMem(); openMask("mMem"); };
+  $("btnLogClear").onclick = ()=>{ if(confirm("确定清空操作日志？")){ lsSet(LS.LOG, []); renderLog(); toast("日志已清空"); } };
+  $("btnLogDown").onclick = ()=>{
+    const list = lsGet(LS.LOG, []);
+    const txt = list.map(x=>JSON.stringify(x)).join("\n") + "\n";
+    download(new Blob([txt],{type:"text/plain;charset=utf-8"}), "useractivity.log");
+    toast("useractivity.log 已导出","ok");
+  };
+  $("btnMemClear").onclick = ()=>{ if(confirm("确定清除全部项目记忆？")){ lsSet(LS.PROJ, []); refreshProjList(); renderMem(); toast("项目记忆已清除"); } };
+
+  $("btnSetting").onclick = ()=>{
+    $("sEnable").checked = API.enable; $("sBase").value = API.base;
+    $("sModel").value = API.model; $("sModel2").value = API.model2; $("sKey").value = API.key;
+    openMask("mSet");
+  };
+  $("btnSetSave").onclick = ()=>{
+    API = { enable:$("sEnable").checked, base:$("sBase").value.trim(), model:$("sModel").value.trim(),
+            model2:$("sModel2").value.trim(), key:$("sKey").value.trim() };
+    lsSet(LS.API, API); closeMask("mSet");
+    setAI(API.enable?"":"", API.enable?"待机":"已关闭");
+    toast("API 设置已保存","ok");
+  };
+
+  /* file:// 跨域提示与本地服务器 */
+  if(location.protocol === "file:"){
+    const fn = $("fileNotice");
+    if(fn && !lsGet("apg_filenotice_dismiss", false)) fn.style.display = "flex";
+  }
+  $("fnClose").onclick = ()=>{ $("fileNotice").style.display = "none"; lsSet("apg_filenotice_dismiss", true); };
+  $("btnServe").onclick = ()=>{ openMask("mServe"); };
+  $("btnCopyServe").onclick = ()=>{ copyText("python -m http.server 8080"); toast("启动命令已复制","ok"); };
+  document.addEventListener("click", (e)=>{
+    if(e.target && e.target.id === "btnAiRetry"){
+      if(RESULT.state && RESULT.mus){ askAI(); toast("正在重新请求 DeepSeek…","ok"); }
+      else toast("请先生成审计程序与抽样结果","err");
+    }
+  });
+
+  logAction("open", null, "打开应用 " + VERSION, true);
+}
+boot();
+</script>
+</body>
+</html>

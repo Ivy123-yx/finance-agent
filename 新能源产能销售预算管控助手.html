@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>翠能科技集团 · 新能源产能销售预算管控助手</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">翠</div>
+    <span>翠能科技集团 · 新能源产能销售预算管控助手</span>
+  </div>
+  <div class="status-badge idle" id="taskStatus">就绪</div>
+</header>
+
+<!-- Tab 导航 -->
+<nav class="tabnav">
+  <button class="tab-btn active" data-tab="tab-budget">📊 预算编制</button>
+  <button class="tab-btn" data-tab="tab-invoice">🧾 发票校验</button>
+  <button class="tab-btn" data-tab="tab-deviation">📈 偏差分析</button>
+</nav>
+
+<!-- 布局 -->
+<div class="layout">
+  <main class="main">
+
+    <!-- ===== Tab1 预算编制 ===== -->
+    <section class="tab-panel active" id="tab-budget">
+      <div class="section-card">
+        <div class="card-head">
+          <h3>① 年度产能-销售预算自动编制（滚动预算）</h3>
+          <span class="tip">输入年度产能目标 → 自动生成 12 个月预算基线</span>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>光伏组件产能</label>
+            <input id="capPv" type="number" step="0.1" style="width:90px"><span class="unit">GW</span></div>
+          <div class="field"><label>储能产能</label>
+            <input id="capEss" type="number" step="0.1" style="width:90px"><span class="unit">GWh</span></div>
+          <div class="field"><label>电力产能</label>
+            <input id="capPower" type="number" step="0.1" style="width:90px"><span class="unit">GW</span></div>
+          <div class="field"><label>发电量</label>
+            <input id="capGen" type="number" step="0.1" style="width:90px"><span class="unit">亿kWh</span></div>
+          <div class="field"><label>预算年度</label>
+            <input id="budYear" type="number" style="width:90px"></div>
+        </div>
+        <div class="actions">
+          <button id="btnCompile">编制预算</button>
+          <button class="secondary" id="btnBudExcel">导出 Excel</button>
+          <button class="secondary" id="btnBudPdf">导出 PDF</button>
+        </div>
+        <div class="card-head" style="margin-top:10px">
+          <h3 style="font-size:13px">个性化记忆 · 产能模板</h3>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>历史模板</label>
+            <select id="tplSelect" style="width:200px"></select></div>
+          <button class="secondary" id="btnSaveTpl">保存为模板</button>
+          <div class="field"><label>模板名称</label>
+            <input id="tplName" type="text" placeholder="如：年度基线-常规" style="width:180px"></div>
+        </div>
+      </div>
+      <div class="panels" id="budPanels">
+        <div class="empty">点击「编制预算」生成数据面板</div>
+      </div>
+      <div class="table-scroll" id="budTableWrap">
+        <div class="empty">暂无预算数据，请先编制预算</div>
+      </div>
+    </section>
+
+    <!-- ===== Tab2 发票校验 ===== -->
+    <section class="tab-panel" id="tab-invoice">
+      <div class="section-card">
+        <div class="card-head">
+          <h3>② 销售发票合规校验与自动记账（规则引擎）</h3>
+          <span class="tip">四项校验：税率 / 票号 / 黑名单 / 金额阈值</span>
+        </div>
+        <div class="form-grid">
+          <div class="field"><label>单张金额阈值（元）</label>
+            <input id="cfgThreshold" type="number" value="5000000" style="width:120px"></div>
+          <div class="field"><label>待校验发票数</label>
+            <input id="invCount" type="text" value="0" readonly style="width:60px"></div>
+        </div>
+        <div class="actions">
+          <button id="btnLoadDemo">载入演示发票(5张)</button>
+          <button class="secondary" id="btnLoadPool">生成完整发票池</button>
+          <button class="secondary" id="btnVerify">校验发票</button>
+          <label class="tip" style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;background:#eef3f9;padding:7px 12px;border-radius:6px;border:1px solid var(--border)">
+            📎 上传 Excel/CSV
+            <input id="fileInput" type="file" accept=".csv,.txt,.xls,.xlsx" style="display:none">
+          </label>
+          <button class="secondary" id="btnInvExcel">导出 Excel</button>
+          <button class="secondary" id="btnInvPdf">导出 PDF</button>
+        </div>
+      </div>
+      <div class="panels" id="invStats">
+        <div class="empty">载入发票并校验后显示统计</div>
+      </div>
+      <div id="invPassWrap"><div class="empty">校验通过明细将在此显示</div></div>
+      <div id="invBlockWrap"><div class="empty">异常拦截明细将在此显示</div></div>
+      <div id="invEntryWrap"><div class="empty">自动记账凭证将在此显示</div></div>
+    </section>
+
+    <!-- ===== Tab3 偏差分析 ===== -->
+    <section class="tab-panel" id="tab-deviation">
+      <div class="section-card">
+        <div class="card-head">
+          <h3>③ 预算执行偏差分析与预警留痕</h3>
+          <span class="tip">绝对/相对偏差 · 移动平均 · 同比/环比 · ±5% 预警</span>
+        </div>
+        <div class="actions">
+          <button id="btnAnalyze">执行偏差分析</button>
+          <button class="secondary" id="btnDevExcel">导出 Excel</button>
+          <button class="secondary" id="btnDevPdf">导出 PDF</button>
+        </div>
+      </div>
+      <div class="panels" id="devPanels">
+        <div class="empty">执行偏差分析后显示数据面板</div>
+      </div>
+      <div class="chart-wrap" id="devChart"></div>
+      <div class="table-scroll" id="devTableWrap"><div class="empty">暂无分析数据</div></div>
+      <div id="devAggWrap"></div>
+
+      <div class="section-card" style="margin-top:16px">
+        <div class="card-head"><h3>预算调整与版本审计</h3></div>
+        <div class="form-grid">
+          <div class="field"><label>产品</label>
+            <select id="adjProduct" style="width:120px">
+              <option value="pv">光伏组件</option><option value="ess">储能</option>
+              <option value="power">电力</option><option value="gen">发电</option>
+            </select></div>
+          <div class="field"><label>月份</label>
+            <select id="adjMonth" style="width:70px"></select></div>
+          <div class="field"><label>调整后不含税收入(亿)</label>
+            <input id="adjNewValue" type="number" step="0.01" style="width:100px"></div>
+          <div class="field"><label>调整原因</label>
+            <input id="adjReason" type="text" style="width:200px"></div>
+          <button class="secondary" id="btnAdjust">提交调整（留痕）</button>
+        </div>
+        <div id="auditWrap" style="margin-top:10px"><div class="empty">暂无预算调整记录</div></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 右侧边栏 -->
+  <aside class="sidebar">
+    <div class="side-card">
+      <h3>预警通知 <span class="cnt" id="warnCount">0</span></h3>
+      <div class="warn-list" id="warnList"><div class="empty">暂无预警</div></div>
+    </div>
+    <div class="side-card">
+      <h3>操作日志</h3>
+      <div class="log-list" id="logList"><div class="empty">暂无操作记录</div></div>
+    </div>
+    <div class="side-card">
+      <h3>关于</h3>
+      <p class="tip">本智能体聚焦新能源企业年度产能-销售预算编制、发票校验、预算执行监控与偏差分析闭环管理。</p>
+      <p class="tip">规则依据：税法 / 企业会计准则（非企业内嵌制度）。示例数据为可复现演示，可离线运行。</p>
+    </div>
+  </aside>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/budget.js"></script>
+<script src="js/invoice.js"></script>
+<script src="js/deviation.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
